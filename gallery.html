@@ -1,90 +1,534 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <title>Gallery</title>
+<title>Gallery</title>
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 10px;
-        }
+<style>
 
-        nav {
-            text-align: right;
-            margin-bottom: 10px;
-        }
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: black;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+}
 
-        nav a {
-            margin-left: 20px;
-            text-decoration: none;
-            color: black;
-        }
 
-        h1 {
-            text-align: center;
-        }
+nav {
+    position: fixed;
+    top: 15px;
+    right: 20px;
+    z-index: 20;
+}
 
-        img {
-            width: 100%;
-            height: auto;
-            display: block;
-            margin-bottom: 10px;
-        }
-    </style>
+
+nav a {
+    color: white;
+    margin-left: 20px;
+    text-decoration: none;
+}
+
+
+#viewer {
+    width: 100vw;
+    height: calc(100vh - 90px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
+#photo {
+    max-width: 95vw;
+    max-height: 85vh;
+    object-fit: contain;
+    opacity: 1;
+    transition: opacity 0.35s ease;
+}
+
+
+
+#left,
+#right {
+    position: fixed;
+    top: 0;
+    width: 50%;
+    height: 100%;
+    z-index: 5;
+}
+
+
+#left {
+    left: 0;
+}
+
+
+#right {
+    right: 0;
+}
+
+
+
+#counter {
+    position: fixed;
+    bottom: 95px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    z-index: 20;
+}
+
+
+
+#thumbnails {
+
+    position: fixed;
+    bottom: 0;
+    left: 0;
+
+    width: 100%;
+    height: 80px;
+
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+
+    background: rgba(0,0,0,0.6);
+
+    overflow-x: auto;
+
+    padding: 5px;
+}
+
+
+
+.thumb {
+
+    height: 70px;
+    cursor: pointer;
+    opacity: 0.6;
+
+}
+
+
+
+.thumb.active {
+
+    opacity: 1;
+
+}
+
+
+
+#fullscreen {
+
+    position: fixed;
+    top: 15px;
+    left: 20px;
+
+    z-index: 20;
+
+    background: rgba(0,0,0,0.5);
+
+    color: white;
+
+    border: 1px solid white;
+
+    padding: 8px 12px;
+
+    cursor: pointer;
+
+}
+
+
+</style>
+
 </head>
+
+
 
 <body>
 
+
+<button id="fullscreen">
+Fullscreen
+</button>
+
+
 <nav>
-    <a href="index.html">Home</a>
-    <a href="collections.html">Collections</a>
+<a href="index.html">Home</a>
+<a href="collections.html">Collections</a>
 </nav>
 
-<h1 id="title"></h1>
 
-<div id="gallery"></div>
+
+<div id="viewer">
+
+<img id="photo">
+
+</div>
+
+
+
+<div id="left"></div>
+<div id="right"></div>
+
+
+<div id="counter"></div>
+
+
+<div id="thumbnails"></div>
+
 
 
 <script>
 
-const base = "https://filedn.com/lbA2Vsf4s7Fj5KoVfXs5UL4/";
 
-const params = new URLSearchParams(window.location.search);
+const base =
+"https://filedn.com/lbA2Vsf4s7Fj5KoVfXs5UL4/";
 
-const collection = params.get("collection");
+
+const params =
+new URLSearchParams(window.location.search);
+
+
+const collection =
+params.get("collection");
+
+
+let images = [];
+
+let current = 0;
+
 
 
 fetch("collections.json")
+
 .then(response => response.json())
+
 .then(data => {
 
-    const selected = data.find(x => x.name === collection);
 
-    if (!selected) {
-        document.getElementById("title").innerHTML = "Collection not found";
-        return;
-    }
+const selected =
+data.find(x => x.name === collection);
 
-    document.getElementById("title").innerHTML = selected.name;
 
-    const gallery = document.getElementById("gallery");
+if (!selected) {
+    return;
+}
 
-    for (let i = 1; i <= selected.images; i++) {
 
-        const img = document.createElement("img");
+for (let i = 1; i <= selected.images; i++) {
 
-        img.src = `${base}${selected.name}/${i}.jpg`;
 
-        gallery.appendChild(img);
+    images.push(
+        `${base}${selected.name}/${i}.jpg`
+    );
 
-    }
 
-})
-.catch(error => {
-    console.log("Error loading collection:", error);
+}
+
+
+
+createThumbnails();
+
+
+showImage();
+
+
+
 });
+
+
+
+
+
+function showImage() {
+
+
+const photo =
+document.getElementById("photo");
+
+
+
+photo.style.opacity = 0;
+
+
+
+setTimeout(() => {
+
+
+photo.src =
+images[current];
+
+
+photo.onload = () => {
+
+    photo.style.opacity = 1;
+
+};
+
+
+}, 200);
+
+
+
+updateCounter();
+
+updateThumbnails();
+
+
+
+}
+
+
+
+
+
+function nextImage() {
+
+
+current++;
+
+
+if (current >= images.length) {
+
+    current = 0;
+
+}
+
+
+showImage();
+
+
+}
+
+
+
+
+
+function previousImage() {
+
+
+current--;
+
+
+if (current < 0) {
+
+    current = images.length - 1;
+
+}
+
+
+showImage();
+
+
+}
+
+
+
+
+
+function createThumbnails() {
+
+
+const container =
+document.getElementById("thumbnails");
+
+
+images.forEach((src,index)=>{
+
+
+const img =
+document.createElement("img");
+
+
+img.src = src;
+
+
+img.className =
+"thumb";
+
+
+img.onclick = () => {
+
+
+current=index;
+
+showImage();
+
+
+};
+
+
+container.appendChild(img);
+
+
+});
+
+
+}
+
+
+
+
+function updateThumbnails() {
+
+
+const thumbs =
+document.querySelectorAll(".thumb");
+
+
+thumbs.forEach((t,i)=>{
+
+
+if(i === current) {
+
+    t.classList.add("active");
+
+}
+else {
+
+    t.classList.remove("active");
+
+}
+
+
+});
+
+
+}
+
+
+
+
+
+function updateCounter() {
+
+
+document.getElementById("counter")
+.innerHTML =
+`${current+1} / ${images.length}`;
+
+
+}
+
+
+
+
+
+document.getElementById("right")
+.onclick = nextImage;
+
+
+document.getElementById("left")
+.onclick = previousImage;
+
+
+
+
+
+document.addEventListener(
+"keydown",
+function(event){
+
+
+if(event.key === "ArrowRight") {
+
+    nextImage();
+
+}
+
+
+if(event.key === "ArrowLeft") {
+
+    previousImage();
+
+}
+
+
+});
+
+
+
+
+
+// Mobile swipe support
+
+let touchStartX = 0;
+
+
+document.addEventListener(
+"touchstart",
+function(event){
+
+touchStartX =
+event.changedTouches[0].screenX;
+
+});
+
+
+
+document.addEventListener(
+"touchend",
+function(event){
+
+
+let touchEndX =
+event.changedTouches[0].screenX;
+
+
+
+if(touchEndX < touchStartX - 50){
+
+    nextImage();
+
+}
+
+
+
+if(touchEndX > touchStartX + 50){
+
+    previousImage();
+
+}
+
+
+
+});
+
+
+
+
+
+
+// Fullscreen
+
+document.getElementById("fullscreen")
+.onclick = function(){
+
+
+if(!document.fullscreenElement){
+
+    document.documentElement.requestFullscreen();
+
+}
+else {
+
+    document.exitFullscreen();
+
+}
+
+
+};
+
+
 
 </script>
 
+
 </body>
+
 </html>
