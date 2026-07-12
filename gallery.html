@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gallery</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 10px;
+        }
+
+        nav {
+            text-align: right;
+            margin-bottom: 10px;
+        }
+
+        nav a {
+            margin-left: 20px;
+            text-decoration: none;
+            color: black;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        img {
+            width: 100%;
+            height: auto;
+            display: block;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+<nav>
+    <a href="index.html">Home</a>
+    <a href="collections.html">Collections</a>
+</nav>
+
+<h1 id="title"></h1>
+
+<div id="gallery"></div>
+
+
+<script>
+
+const base = "https://filedn.com/lbA2Vsf4s7Fj5KoVfXs5UL4/";
+
+const params = new URLSearchParams(window.location.search);
+
+const collection = params.get("collection");
+
+
+fetch("collections.json")
+.then(response => response.json())
+.then(data => {
+
+    const selected = data.find(x => x.name === collection);
+
+    if (!selected) {
+        document.getElementById("title").innerHTML = "Collection not found";
+        return;
+    }
+
+    document.getElementById("title").innerHTML = selected.name;
+
+    const gallery = document.getElementById("gallery");
+
+    for (let i = 1; i <= selected.images; i++) {
+
+        const img = document.createElement("img");
+
+        img.src = `${base}${selected.name}/${i}.jpg`;
+
+        gallery.appendChild(img);
+
+    }
+
+})
+.catch(error => {
+    console.log("Error loading collection:", error);
+});
+
+</script>
+
+</body>
+</html>
