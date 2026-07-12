@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Collections</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+}
+
+nav {
+    text-align: right;
+    margin-bottom: 20px;
+}
+
+nav a {
+    margin-left: 20px;
+    text-decoration: none;
+    color: black;
+}
+
+.collection {
+    font-size: 20px;
+    margin-bottom: 10px;
+}
+
+.collection a {
+    text-decoration: none;
+    color: black;
+}
+</style>
+
+</head>
+
+<body>
+
+<nav>
+<a href="index.html">Home</a>
+<a href="collections.html">Collections</a>
+</nav>
+
+<h1>Collections</h1>
+
+<div id="collections"></div>
+
+
+<script>
+
+fetch("collections.json")
+.then(response => response.json())
+.then(data => {
+
+    const container = document.getElementById("collections");
+
+    data.forEach(collection => {
+
+        const div = document.createElement("div");
+        div.className = "collection";
+
+        div.innerHTML = `
+            <a href="gallery.html?collection=${collection.name}">
+                ${collection.name}
+            </a>
+        `;
+
+        container.appendChild(div);
+
+    });
+
+});
+
+</script>
+
+
+</body>
+</html>
