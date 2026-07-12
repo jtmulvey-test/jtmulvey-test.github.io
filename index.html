@@ -2,11 +2,23 @@
 <html>
 <head>
     <title>Photography Gallery</title>
+
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
         img {
             width: 100%;
             height: auto;
-            margin-bottom: 20px;
+            display: block;
+            margin-bottom: 10px;
         }
     </style>
 </head>
@@ -15,9 +27,22 @@
 
 <h1>Yosemite 2024</h1>
 
-<img src="https://filedn.com/lbA2Vsf4s7Fj5KoVfXs5UL4/2024%20Yosemite/Image_1.jpg">
-<img src="https://filedn.com/lbA2Vsf4s7Fj5KoVfXs5UL4/2024%20Yosemite/Image_2.jpg">
-<img src="https://filedn.com/lbA2Vsf4s7Fj5KoVfXs5UL4/2024%20Yosemite/Image_3.jpg">
+<div id="gallery"></div>
+
+<script>
+function addGallery(folder, count) {
+    const gallery = document.getElementById("gallery");
+    const base = "https://filedn.com/lbA2Vsf4s7Fj5KoVfXs5UL4/";
+
+    for (let i = 1; i <= count; i++) {
+        const img = document.createElement("img");
+        img.src = `${base}${folder}/${i}.jpg`;
+        gallery.appendChild(img);
+    }
+}
+
+addGallery("2024%20Yosemite", 3);
+</script>
 
 </body>
 </html>
