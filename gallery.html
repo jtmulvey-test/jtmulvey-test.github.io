@@ -15,7 +15,6 @@ html, body {
     font-family: Arial, sans-serif;
 }
 
-
 nav {
     position: fixed;
     top: 15px;
@@ -23,13 +22,23 @@ nav {
     z-index: 20;
 }
 
-
 nav a {
     color: white;
     margin-left: 20px;
     text-decoration: none;
 }
 
+#fullscreen {
+    position: fixed;
+    top: 15px;
+    left: 20px;
+    z-index: 20;
+    background: rgba(0,0,0,0.5);
+    color: white;
+    border: 1px solid white;
+    padding: 8px 12px;
+    cursor: pointer;
+}
 
 #viewer {
     width: 100vw;
@@ -39,16 +48,12 @@ nav a {
     align-items: center;
 }
 
-
 #photo {
     max-width: 95vw;
     max-height: 85vh;
     object-fit: contain;
-    opacity: 1;
     transition: opacity 0.35s ease;
 }
-
-
 
 #left,
 #right {
@@ -59,17 +64,13 @@ nav a {
     z-index: 5;
 }
 
-
 #left {
     left: 0;
 }
 
-
 #right {
     right: 0;
 }
-
-
 
 #counter {
     position: fixed;
@@ -79,8 +80,6 @@ nav a {
     color: white;
     z-index: 20;
 }
-
-
 
 #thumbnails {
 
@@ -92,27 +91,25 @@ nav a {
     height: 80px;
 
     display: flex;
-    justify-content: center;
     gap: 8px;
 
-    background: rgba(0,0,0,0.6);
+    background: rgba(0,0,0,0.7);
 
     overflow-x: auto;
 
     padding: 5px;
+
 }
-
-
 
 .thumb {
 
     height: 70px;
+
     cursor: pointer;
-    opacity: 0.6;
+
+    opacity: 0.5;
 
 }
-
-
 
 .thumb.active {
 
@@ -120,33 +117,9 @@ nav a {
 
 }
 
-
-
-#fullscreen {
-
-    position: fixed;
-    top: 15px;
-    left: 20px;
-
-    z-index: 20;
-
-    background: rgba(0,0,0,0.5);
-
-    color: white;
-
-    border: 1px solid white;
-
-    padding: 8px 12px;
-
-    cursor: pointer;
-
-}
-
-
 </style>
 
 </head>
-
 
 
 <body>
@@ -163,13 +136,9 @@ Fullscreen
 </nav>
 
 
-
 <div id="viewer">
-
 <img id="photo">
-
 </div>
-
 
 
 <div id="left"></div>
@@ -189,16 +158,15 @@ Fullscreen
 const base =
 "https://filedn.com/lbA2Vsf4s7Fj5KoVfXs5UL4/";
 
-
 const params =
 new URLSearchParams(window.location.search);
-
 
 const collection =
 params.get("collection");
 
 
 let images = [];
+let thumbnails = [];
 
 let current = 0;
 
@@ -215,18 +183,29 @@ const selected =
 data.find(x => x.name === collection);
 
 
+
 if (!selected) {
+
+    document.getElementById("counter").innerHTML =
+    "Collection not found";
+
     return;
+
 }
 
 
-for (let i = 1; i <= selected.images; i++) {
+
+for(let i = 1; i <= selected.images; i++) {
 
 
     images.push(
-        `${base}${selected.name}/${i}.jpg`
+        `${base}${selected.name}/originals/${i}.jpg`
     );
 
+
+    thumbnails.push(
+        `${base}${selected.name}/thumbnails/${i}.jpg`
+    );
 
 }
 
@@ -234,9 +213,9 @@ for (let i = 1; i <= selected.images; i++) {
 
 createThumbnails();
 
-
 showImage();
 
+preloadNearbyImages();
 
 
 });
@@ -245,33 +224,32 @@ showImage();
 
 
 
-function showImage() {
+function showImage(){
 
 
 const photo =
 document.getElementById("photo");
 
 
-
 photo.style.opacity = 0;
 
 
 
-setTimeout(() => {
+setTimeout(()=>{
 
 
 photo.src =
 images[current];
 
 
-photo.onload = () => {
+photo.onload = ()=>{
 
     photo.style.opacity = 1;
 
 };
 
 
-}, 200);
+},200);
 
 
 
@@ -279,6 +257,7 @@ updateCounter();
 
 updateThumbnails();
 
+preloadNearbyImages();
 
 
 }
@@ -287,13 +266,55 @@ updateThumbnails();
 
 
 
-function nextImage() {
+
+function preloadNearbyImages(){
+
+
+let preloadIndexes = [
+
+    current - 1,
+
+    current + 1
+
+];
+
+
+
+preloadIndexes.forEach(index=>{
+
+
+if(index >= 0 && index < images.length){
+
+
+    const img =
+    new Image();
+
+
+    img.src =
+    images[index];
+
+
+}
+
+
+});
+
+
+}
+
+
+
+
+
+
+
+function nextImage(){
 
 
 current++;
 
 
-if (current >= images.length) {
+if(current >= images.length){
 
     current = 0;
 
@@ -309,15 +330,16 @@ showImage();
 
 
 
-function previousImage() {
+
+function previousImage(){
 
 
 current--;
 
 
-if (current < 0) {
+if(current < 0){
 
-    current = images.length - 1;
+    current = images.length-1;
 
 }
 
@@ -331,31 +353,40 @@ showImage();
 
 
 
-function createThumbnails() {
+
+
+function createThumbnails(){
 
 
 const container =
 document.getElementById("thumbnails");
 
 
-images.forEach((src,index)=>{
+
+thumbnails.forEach((src,index)=>{
 
 
 const img =
 document.createElement("img");
 
 
-img.src = src;
-
-
 img.className =
 "thumb";
 
 
-img.onclick = () => {
+// Lazy loading
+img.loading = "lazy";
 
 
-current=index;
+img.src =
+src;
+
+
+
+img.onclick = ()=>{
+
+
+current = index;
 
 showImage();
 
@@ -363,7 +394,9 @@ showImage();
 };
 
 
+
 container.appendChild(img);
+
 
 
 });
@@ -374,24 +407,37 @@ container.appendChild(img);
 
 
 
-function updateThumbnails() {
+
+
+
+function updateThumbnails(){
 
 
 const thumbs =
 document.querySelectorAll(".thumb");
 
 
-thumbs.forEach((t,i)=>{
+
+thumbs.forEach((thumb,index)=>{
 
 
-if(i === current) {
+if(index === current){
 
-    t.classList.add("active");
+    thumb.classList.add("active");
+
+
+    // Automatically scroll selected thumbnail into view
+    thumb.scrollIntoView({
+        behavior:"smooth",
+        block:"nearest",
+        inline:"center"
+    });
+
 
 }
-else {
+else{
 
-    t.classList.remove("active");
+    thumb.classList.remove("active");
 
 }
 
@@ -405,11 +451,12 @@ else {
 
 
 
-function updateCounter() {
 
 
-document.getElementById("counter")
-.innerHTML =
+function updateCounter(){
+
+
+document.getElementById("counter").innerHTML =
 `${current+1} / ${images.length}`;
 
 
@@ -419,12 +466,18 @@ document.getElementById("counter")
 
 
 
-document.getElementById("right")
-.onclick = nextImage;
-
 
 document.getElementById("left")
-.onclick = previousImage;
+.onclick =
+previousImage;
+
+
+
+document.getElementById("right")
+.onclick =
+nextImage;
+
+
 
 
 
@@ -432,17 +485,17 @@ document.getElementById("left")
 
 document.addEventListener(
 "keydown",
-function(event){
+event=>{
 
 
-if(event.key === "ArrowRight") {
+if(event.key === "ArrowRight"){
 
     nextImage();
 
 }
 
 
-if(event.key === "ArrowLeft") {
+if(event.key === "ArrowLeft"){
 
     previousImage();
 
@@ -455,17 +508,21 @@ if(event.key === "ArrowLeft") {
 
 
 
-// Mobile swipe support
+
+
+// Mobile swipe
 
 let touchStartX = 0;
 
 
 document.addEventListener(
 "touchstart",
-function(event){
+event=>{
+
 
 touchStartX =
 event.changedTouches[0].screenX;
+
 
 });
 
@@ -473,7 +530,7 @@ event.changedTouches[0].screenX;
 
 document.addEventListener(
 "touchend",
-function(event){
+event=>{
 
 
 let touchEndX =
@@ -504,10 +561,11 @@ if(touchEndX > touchStartX + 50){
 
 
 
+
 // Fullscreen
 
 document.getElementById("fullscreen")
-.onclick = function(){
+.onclick = ()=>{
 
 
 if(!document.fullscreenElement){
@@ -515,7 +573,7 @@ if(!document.fullscreenElement){
     document.documentElement.requestFullscreen();
 
 }
-else {
+else{
 
     document.exitFullscreen();
 
