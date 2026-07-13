@@ -33,28 +33,13 @@
             left: 20px;
             z-index: 30;
             width: 40px;
+            height: 280px;
         }
 
-        #controls {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            opacity: 1;
-            transform: translateY(0);
-            transition:
-                opacity 0.25s ease,
-                transform 0.25s ease;
-            pointer-events: auto;
-        }
-
-        #controls.collapsed {
-            opacity: 0;
-            transform: translateY(-30px);
-            pointer-events: none;
-        }
-
-        #controls button,
-        #expandControls {
+        .control-button {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 40px;
             height: 40px;
             padding: 0;
@@ -65,41 +50,97 @@
             cursor: pointer;
             font-size: 16px;
             text-align: center;
+            transition:
+                transform 0.3s ease,
+                opacity 0.2s ease;
+        }
+
+        #collapseControls {
+            transform: translateY(0);
+            z-index: 6;
+        }
+
+        #fullscreen {
+            transform: translateY(48px);
+            z-index: 5;
+        }
+
+        #hideUI {
+            transform: translateY(96px);
+            z-index: 4;
+        }
+
+        #zoomIn {
+            transform: translateY(144px);
+            z-index: 3;
+        }
+
+        #zoomOut {
+            transform: translateY(192px);
+            z-index: 2;
+        }
+
+        #controls.collapsed #fullscreen,
+        #controls.collapsed #hideUI,
+        #controls.collapsed #zoomIn,
+        #controls.collapsed #zoomOut {
+            transform: translateY(0);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #collapseControls {
+            transition:
+                transform 0.3s ease,
+                opacity 0.2s ease;
+        }
+
+        #controls.collapsed #collapseControls {
+            opacity: 0;
+            pointer-events: none;
         }
 
         #expandControls {
             position: absolute;
             top: 0;
             left: 0;
+            z-index: 7;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: 1px solid white;
+            cursor: pointer;
+            font-size: 16px;
             opacity: 0;
-            transform: translateY(-20px);
             pointer-events: none;
-            transition:
-                opacity 0.25s ease,
-                transform 0.25s ease;
+            transition: opacity 0.2s ease;
         }
 
         #expandControls.visible {
             opacity: 1;
-            transform: translateY(0);
             pointer-events: auto;
         }
 
         #version {
-            margin-top: 8px;
+            position: absolute;
+            top: 240px;
+            left: 0;
             width: 40px;
             color: red;
             font-size: 12px;
             text-align: center;
             opacity: 0.8;
             transition:
-                opacity 0.25s ease,
-                transform 0.25s ease;
+                transform 0.3s ease,
+                opacity 0.2s ease;
         }
 
         #version.collapsed {
+            transform: translateY(-240px);
             opacity: 0;
-            transform: translateY(-30px);
         }
 
         #viewer {
@@ -195,11 +236,35 @@
 <body>
     <div id="controlArea">
         <div id="controls">
-            <button id="collapseControls" aria-label="Collapse controls">&lt;</button>
-            <button id="fullscreen" aria-label="Toggle fullscreen">F</button>
-            <button id="hideUI" aria-label="Hide interface">H</button>
-            <button id="zoomIn" aria-label="Zoom in">+</button>
-            <button id="zoomOut" aria-label="Zoom out">−</button>
+            <button
+                id="collapseControls"
+                class="control-button"
+                aria-label="Collapse controls"
+            >&lt;</button>
+
+            <button
+                id="fullscreen"
+                class="control-button"
+                aria-label="Toggle fullscreen"
+            >F</button>
+
+            <button
+                id="hideUI"
+                class="control-button"
+                aria-label="Hide interface"
+            >H</button>
+
+            <button
+                id="zoomIn"
+                class="control-button"
+                aria-label="Zoom in"
+            >+</button>
+
+            <button
+                id="zoomOut"
+                class="control-button"
+                aria-label="Zoom out"
+            >−</button>
         </div>
 
         <button id="expandControls" aria-label="Expand controls">&gt;</button>
@@ -220,7 +285,7 @@
     <div id="thumbnails"></div>
 
     <script>
-        const version = "v1.3.9";
+        const version = "v1.3.10";
         document.getElementById("version").textContent = version;
 
         const base =
@@ -505,7 +570,7 @@
 
             window.setTimeout(function () {
                 expandControls.classList.add("visible");
-            }, 120);
+            }, 220);
         }
 
         function expandMediaControls() {
@@ -515,7 +580,7 @@
             window.setTimeout(function () {
                 controls.classList.remove("collapsed");
                 versionElement.classList.remove("collapsed");
-            }, 120);
+            }, 80);
         }
 
         function showUI() {
