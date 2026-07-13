@@ -252,23 +252,25 @@
 
         .help-row {
             display: grid;
-            grid-template-columns: 50px 1fr;
+            grid-template-columns: 44px 1fr;
             gap: 12px;
             align-items: center;
             margin: 12px 0;
         }
 
         .help-key {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            box-sizing: border-box;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 36px;
-            min-height: 30px;
-            padding: 2px 6px;
-            box-sizing: border-box;
             border: 1px solid white;
-            border-radius: 16px;
+            border-radius: 50%;
             font-weight: bold;
+            line-height: 1;
+            flex-shrink: 0;
         }
 
         #closeHelp {
@@ -391,28 +393,28 @@
 
             <div class="help-row">
                 <span class="help-key">F</span>
-                <p>Enter or exit fullscreen mode (keypress "F")</p>
+                <p>Enter or exit Full Screen Mode (keypress "F")</p>
             </div>
 
             <div class="help-row">
                 <span class="help-key">H</span>
-                <p>Enter or exit hide mode (keypress "H")</p>
+                <p>Enter or exit Hide Mode (keypress "H")</p>
             </div>
 
             <div class="help-row">
                 <span class="help-key">+</span>
-                <p>Zoom into the current photograph (keypress "+")</p>
+                <p>Zoom in for the current photograph (keypress "+")</p>
             </div>
 
             <div class="help-row">
                 <span class="help-key">−</span>
-                <p>Zoom out of the current photograph (keypress "-")</p>
+                <p>Zoom out for the current photograph (keypress "-")</p>
             </div>
         </div>
     </div>
 
     <script>
-        const version = "v1.3.14";
+        const version = "v1.3.15";
         document.getElementById("version").textContent = version;
 
         const base =
