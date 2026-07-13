@@ -52,6 +52,25 @@ nav a {
 }
 
 
+#version {
+
+    position: fixed;
+
+    top: 55px;
+
+    left: 20px;
+
+    z-index: 20;
+
+    color: white;
+
+    font-size: 12px;
+
+    opacity: 0.7;
+
+}
+
+
 
 #viewer {
 
@@ -101,13 +120,11 @@ nav a {
 }
 
 
-
 #left {
 
     left: 0;
 
 }
-
 
 
 #right {
@@ -226,6 +243,9 @@ Fullscreen
 </button>
 
 
+<div id="version"></div>
+
+
 
 <nav>
 <a href="index.html">Home</a>
@@ -260,14 +280,26 @@ Fullscreen
 <script>
 
 
+// ==========================
+// Version
+// ==========================
+
+const version = "v1.1";
+
+document.getElementById("version").innerHTML = version;
+
+
+
+// ==========================
+// Settings
+// ==========================
+
 const base =
 "https://filedn.com/lbA2Vsf4s7Fj5KoVfXs5UL4/JM_Photos/";
 
 
-
 const params =
 new URLSearchParams(window.location.search);
-
 
 
 const collection =
