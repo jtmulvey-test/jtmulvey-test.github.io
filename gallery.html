@@ -29,6 +29,7 @@
         nav a {
             color: white;
             text-decoration: none;
+            font-size: 22.4px;
         }
 
         #controlArea {
@@ -36,23 +37,23 @@
             top: 15px;
             left: 20px;
             z-index: 30;
-            width: 88px;
-            height: 280px;
+            width: 106px;
+            height: 340px;
         }
 
         .control-button {
             position: absolute;
             top: 0;
             left: 0;
-            width: 40px;
-            height: 40px;
+            width: 48px;
+            height: 48px;
             padding: 0;
             border: 1px solid white;
             border-radius: 50%;
             background: rgba(0, 0, 0, 0.5);
             color: white;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 19.2px;
             text-align: center;
             transition:
                 transform 0.3s ease,
@@ -77,27 +78,27 @@
 
         #helpButton {
             z-index: 6;
-            transform: translate(48px, 0);
+            transform: translate(58px, 0);
         }
 
         #fullscreen {
             z-index: 5;
-            transform: translateY(48px);
+            transform: translateY(58px);
         }
 
         #hideUI {
             z-index: 4;
-            transform: translateY(96px);
+            transform: translateY(116px);
         }
 
         #zoomIn {
             z-index: 3;
-            transform: translateY(144px);
+            transform: translateY(174px);
         }
 
         #zoomOut {
             z-index: 2;
-            transform: translateY(192px);
+            transform: translateY(232px);
         }
 
         #controls.collapsed #helpButton,
@@ -112,9 +113,9 @@
 
         #version {
             position: absolute;
-            top: 240px;
+            top: 290px;
             left: 0;
-            width: 40px;
+            width: 48px;
             color: red;
             font-size: 12px;
             text-align: center;
@@ -125,7 +126,7 @@
         }
 
         #version.collapsed {
-            transform: translateY(-240px);
+            transform: translateY(-290px);
             opacity: 0;
         }
 
@@ -168,6 +169,7 @@
             user-select: none;
             -webkit-user-drag: none;
             pointer-events: none;
+            visibility: visible;
         }
 
         #fadeOverlay {
@@ -465,7 +467,7 @@
     </div>
 
     <script>
-        const version = "v1.3.18";
+        const version = "v1.3.19";
         document.getElementById("version").textContent = version;
 
         const base =
@@ -666,6 +668,52 @@
             );
         }
 
+        function waitForDisplayedPhoto() {
+            return new Promise(resolve => {
+                let completed = false;
+
+                function finish() {
+                    if (completed) {
+                        return;
+                    }
+
+                    completed = true;
+                    photo.removeEventListener("load", handleLoad);
+                    photo.removeEventListener("error", handleError);
+                    resolve();
+                }
+
+                function handleLoad() {
+                    finish();
+                }
+
+                function handleError() {
+                    finish();
+                }
+
+                if (photo.complete && photo.naturalWidth > 0) {
+                    finish();
+                    return;
+                }
+
+                photo.addEventListener("load", handleLoad);
+                photo.addEventListener("error", handleError);
+
+                window.setTimeout(finish, 2000);
+            }).then(async function () {
+                if (typeof photo.decode === "function") {
+                    try {
+                        await photo.decode();
+                    } catch (error) {
+                        /*
+                        Continue if decode() rejects after the image has
+                        already loaded successfully.
+                        */
+                    }
+                }
+            });
+        }
+
         function preloadNearbyImages() {
             if (images.length < 2) {
                 return;
@@ -683,7 +731,7 @@
                 ).catch(function () {
                     /*
                     Any failure will be reported if the photograph is
-                    actually requested later.
+                    requested later.
                     */
                 });
             });
@@ -691,16 +739,23 @@
 
         async function transitionToImage(index) {
             const src = images[index];
+            let loadedImage;
 
             try {
-                await getCachedImage(src, true);
+                loadedImage = await getCachedImage(src, true);
             } catch (error) {
                 console.error(error);
                 return;
             }
 
+            const loadedSource =
+                loadedImage.currentSrc || loadedImage.src || src;
+
             if (displayedIndex === -1) {
-                photo.src = src;
+                photo.src = loadedSource;
+                await waitForDisplayedPhoto();
+
+                photo.style.visibility = "visible";
                 displayedIndex = index;
                 return;
             }
@@ -710,19 +765,35 @@
             }
 
             /*
-            Only the flat black overlay is animated. The full-resolution
-            photograph remains opaque and is replaced while covered.
+            Fade the flat black overlay fully into view before altering
+            the displayed photograph.
             */
             fadeOverlay.classList.add("visible");
             await waitForOverlayTransition();
 
-            photo.src = src;
+            /*
+            Ensure the fully opaque overlay has been painted before the
+            old photograph is hidden or replaced.
+            */
+            await waitForTwoFrames();
+
+            /*
+            Keep the photograph hidden beneath the black overlay while
+            the browser applies and paints the new source.
+            */
+            photo.style.visibility = "hidden";
+            photo.src = loadedSource;
+
+            await waitForDisplayedPhoto();
+            await waitForTwoFrames();
+
             displayedIndex = index;
 
             /*
-            Give the browser time to paint the decoded photograph beneath
-            the black overlay before revealing it.
+            Reveal the photograph while the overlay is still completely
+            black, then allow two paint frames before fading back out.
             */
+            photo.style.visibility = "visible";
             await waitForTwoFrames();
 
             fadeOverlay.classList.remove("visible");
@@ -1167,6 +1238,19 @@
                     helpOverlay.classList.contains(
                         "visible"
                     )
+                ) {
+                    return;
+                }
+
+                /*
+                Allow browser and operating-system shortcuts such as
+                Ctrl + Plus, Ctrl + Minus, and Command + Plus without
+                also changing the photograph zoom.
+                */
+                if (
+                    event.ctrlKey ||
+                    event.metaKey ||
+                    event.altKey
                 ) {
                     return;
                 }
