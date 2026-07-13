@@ -27,16 +27,22 @@
             text-decoration: none;
         }
 
-        #fullscreen {
+        #controls {
             position: fixed;
             top: 15px;
             left: 20px;
             z-index: 30;
+            display: flex;
+            gap: 8px;
+        }
+
+        #controls button {
             background: rgba(0, 0, 0, 0.5);
             color: white;
             border: 1px solid white;
             padding: 8px 12px;
             cursor: pointer;
+            font-size: 16px;
         }
 
         #version {
@@ -55,6 +61,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            overflow: hidden;
         }
 
         #photo {
@@ -62,7 +69,11 @@
             max-height: 85vh;
             object-fit: contain;
             opacity: 1;
-            transition: opacity 0.35s ease;
+            transition:
+                opacity 0.35s ease,
+                transform 0.2s ease;
+            transform-origin: center center;
+            user-select: none;
         }
 
         #left,
@@ -128,7 +139,11 @@
 </head>
 
 <body>
-    <button id="fullscreen">Fullscreen</button>
+    <div id="controls">
+        <button id="fullscreen">Fullscreen</button>
+        <button id="zoomOut">−</button>
+        <button id="zoomIn">+</button>
+    </div>
 
     <div id="version"></div>
 
@@ -148,7 +163,7 @@
     <div id="thumbnails"></div>
 
     <script>
-        const version = "v1.3.1";
+        const version = "v1.3.2";
         document.getElementById("version").textContent = version;
 
         const base =
@@ -157,9 +172,17 @@
         const params = new URLSearchParams(window.location.search);
         const collection = params.get("collection");
 
+        const photo = document.getElementById("photo");
+
         let images = [];
         let thumbnails = [];
         let current = 0;
+
+        let zoomLevel = 1;
+
+        const minimumZoom = 1;
+        const maximumZoom = 4;
+        const zoomStep = 0.5;
 
         fetch("collections.json")
             .then(response => {
@@ -207,9 +230,9 @@
                 return;
             }
 
-            const photo = document.getElementById("photo");
             const newImage = new Image();
 
+            resetZoom();
             photo.style.opacity = 0;
 
             newImage.onload = function () {
@@ -307,6 +330,45 @@
             showImage();
         }
 
+        function updateZoom() {
+            photo.style.transform = `scale(${zoomLevel})`;
+        }
+
+        function zoomIn() {
+            zoomLevel = Math.min(
+                maximumZoom,
+                zoomLevel + zoomStep
+            );
+
+            updateZoom();
+        }
+
+        function zoomOut() {
+            zoomLevel = Math.max(
+                minimumZoom,
+                zoomLevel - zoomStep
+            );
+
+            updateZoom();
+        }
+
+        function resetZoom() {
+            zoomLevel = minimumZoom;
+            updateZoom();
+        }
+
+        document.getElementById("zoomIn")
+            .addEventListener("click", function (event) {
+                event.stopPropagation();
+                zoomIn();
+            });
+
+        document.getElementById("zoomOut")
+            .addEventListener("click", function (event) {
+                event.stopPropagation();
+                zoomOut();
+            });
+
         document.getElementById("left")
             .addEventListener("click", previousImage);
 
@@ -321,30 +383,20 @@
             if (event.key === "ArrowLeft") {
                 previousImage();
             }
-        });
 
-        let touchStartX = 0;
-
-        document.addEventListener("touchstart", function (event) {
-            touchStartX =
-                event.changedTouches[0].screenX;
-        });
-
-        document.addEventListener("touchend", function (event) {
-            const touchEndX =
-                event.changedTouches[0].screenX;
-
-            if (touchEndX < touchStartX - 50) {
-                nextImage();
+            if (event.key === "+" || event.key === "=") {
+                zoomIn();
             }
 
-            if (touchEndX > touchStartX + 50) {
-                previousImage();
+            if (event.key === "-") {
+                zoomOut();
             }
         });
 
         document.getElementById("fullscreen")
-            .addEventListener("click", function () {
+            .addEventListener("click", function (event) {
+                event.stopPropagation();
+
                 if (!document.fullscreenElement) {
                     document.documentElement
                         .requestFullscreen()
