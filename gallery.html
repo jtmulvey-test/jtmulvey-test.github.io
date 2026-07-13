@@ -4,6 +4,8 @@
 <head>
 <title>Gallery</title>
 
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <style>
 
 html, body {
@@ -20,7 +22,7 @@ nav {
     position: fixed;
     top: 15px;
     right: 20px;
-    z-index: 30;
+    z-index: 40;
 }
 
 
@@ -31,12 +33,26 @@ nav a {
 }
 
 
-#fullscreen {
+
+#controls {
+
     position: fixed;
+
     top: 15px;
+
     left: 20px;
 
-    z-index: 30;
+    z-index: 40;
+
+    display: flex;
+
+    gap: 8px;
+
+}
+
+
+
+button {
 
     background: rgba(0,0,0,0.5);
 
@@ -47,7 +63,11 @@ nav a {
     padding: 8px 12px;
 
     cursor: pointer;
+
+    font-size: 16px;
+
 }
+
 
 
 
@@ -59,7 +79,7 @@ nav a {
 
     left: 20px;
 
-    z-index: 30;
+    z-index: 40;
 
     color: red;
 
@@ -68,6 +88,8 @@ nav a {
     opacity: 0.8;
 
 }
+
+
 
 
 
@@ -83,7 +105,10 @@ nav a {
 
     align-items: center;
 
+    overflow: hidden;
+
 }
+
 
 
 
@@ -99,38 +124,31 @@ nav a {
 
     transition: opacity 0.35s ease;
 
-}
+    cursor: default;
 
+    user-select: none;
 
-
-#left,
-#right {
-
-    position: fixed;
-
-    top: 0;
-
-    width: 50%;
-
-    height: 100%;
-
-    z-index: 5;
+    transform-origin: center center;
 
 }
 
 
-#left {
 
-    left: 0;
+
+.zoomed #photo {
+
+    cursor: grab;
+
+}
+
+
+
+.zoomed #photo:active {
+
+    cursor: grabbing;
 
 }
 
-
-#right {
-
-    right: 0;
-
-}
 
 
 
@@ -148,10 +166,9 @@ nav a {
 
     color: white;
 
-    z-index: 25;
+    z-index: 30;
 
 }
-
 
 
 
@@ -170,16 +187,14 @@ nav a {
 
     height: 80px;
 
-    z-index: 20;
+    z-index: 40;
 
 
     display: flex;
 
     align-items: center;
 
-
     justify-content: center;
-
 
     gap: 8px;
 
@@ -189,9 +204,7 @@ nav a {
 
     overflow-x: auto;
 
-
     padding: 5px;
-
 
     box-sizing: border-box;
 
@@ -219,6 +232,7 @@ nav a {
 
 
 
+
 .thumb:hover {
 
     opacity: 0.8;
@@ -235,30 +249,42 @@ nav a {
 
 
 
+
 </style>
 
 </head>
 
 
-
 <body>
 
+
+<div id="controls">
 
 <button id="fullscreen">
 Fullscreen
 </button>
 
+<button id="zoomOut">
+−
+</button>
+
+<button id="zoomIn">
++
+</button>
+
+</div>
 
 
 <div id="version"></div>
 
 
-
 <nav>
-<a href="index.html">Home</a>
-<a href="collections.html">Collections</a>
-</nav>
 
+<a href="index.html">Home</a>
+
+<a href="collections.html">Collections</a>
+
+</nav>
 
 
 <div id="viewer">
@@ -268,34 +294,18 @@ Fullscreen
 </div>
 
 
-
-<div id="left"></div>
-
-<div id="right"></div>
-
-
-
 <div id="counter"></div>
 
 
-
 <div id="thumbnails"></div>
-
-
-
-
-
-<script>
-
 
 // ==========================
 // Version
 // ==========================
 
-const version = "v1.4";
+const version = "v1.5";
 
 document.getElementById("version").innerHTML = version;
-
 
 
 
@@ -307,15 +317,12 @@ const base =
 "https://filedn.com/lbA2Vsf4s7Fj5KoVfXs5UL4/JM_Photos/";
 
 
-
 const params =
 new URLSearchParams(window.location.search);
 
 
-
 const collection =
 params.get("collection");
-
 
 
 let images = [];
@@ -326,6 +333,39 @@ let current = 0;
 
 
 
+// ==========================
+// Zoom settings
+// ==========================
+
+let zoomLevel = 1;
+
+const zoomStep = 0.5;
+
+const maxZoom = 4;
+
+const minZoom = 1;
+
+
+let panX = 0;
+
+let panY = 0;
+
+
+let dragging = false;
+
+let startX = 0;
+
+let startY = 0;
+
+let startPanX = 0;
+
+let startPanY = 0;
+
+
+
+const photo =
+document.getElementById("photo");
+
 
 
 // ==========================
@@ -333,7 +373,7 @@ let current = 0;
 // ==========================
 
 fetch("collections.json")
-    
+
 .then(response => response.json())
 
 .then(data => {
@@ -384,7 +424,6 @@ showImage();
 
 
 
-
 // ==========================
 // Display image
 // ==========================
@@ -392,34 +431,29 @@ showImage();
 function showImage(){
 
 
-const photo =
-document.getElementById("photo");
-
-
-
 photo.style.opacity = 0;
 
 
-
-const newImage = new Image();
-
+const img = new Image();
 
 
-newImage.onload = function(){
+img.onload = function(){
 
 
-    photo.src = newImage.src;
+    photo.src = img.src;
 
     photo.style.opacity = 1;
+
+
+    resetZoom();
 
 
 };
 
 
 
-newImage.src =
+img.src =
 images[current];
-
 
 
 updateCounter();
@@ -431,8 +465,6 @@ preloadNext();
 
 
 }
-
-
 
 
 
@@ -461,7 +493,6 @@ if(index >= 0 && index < images.length){
 
 
 }
-
 
 
 
@@ -520,8 +551,6 @@ container.appendChild(img);
 
 
 
-
-
 function updateThumbnails(){
 
 
@@ -541,11 +570,11 @@ if(index === current){
 
     thumb.scrollIntoView({
 
-        behavior: "smooth",
+        behavior:"smooth",
 
-        inline: "center",
+        inline:"center",
 
-        block: "nearest"
+        block:"nearest"
 
     });
 
@@ -554,12 +583,9 @@ if(index === current){
 
 else{
 
-
     thumb.classList.remove("active");
 
-
 }
-
 
 
 });
@@ -571,13 +597,11 @@ else{
 
 
 
-
-
 function updateCounter(){
 
 
 document.getElementById("counter").innerHTML =
-`${current+1} / ${images.length}`;
+`${current + 1} / ${images.length}`;
 
 
 }
@@ -585,10 +609,8 @@ document.getElementById("counter").innerHTML =
 
 
 
-
-
 // ==========================
-// Navigation
+// Image navigation
 // ==========================
 
 function nextImage(){
@@ -608,7 +630,6 @@ showImage();
 
 
 }
-
 
 
 
@@ -634,23 +655,6 @@ showImage();
 
 
 
-
-document.getElementById("left")
-.onclick =
-previousImage;
-
-
-
-document.getElementById("right")
-.onclick =
-nextImage;
-
-
-
-
-
-
-// Keyboard
 
 document.addEventListener(
 "keydown",
@@ -678,18 +682,23 @@ if(event.key === "ArrowLeft"){
 
 
 
-
 // ==========================
-// Swipe
+// Swipe navigation
 // ==========================
 
 let touchStartX = 0;
 
 
-
 document.addEventListener(
 "touchstart",
 function(event){
+
+
+if(zoomLevel > 1){
+
+    return;
+
+}
 
 
 touchStartX =
@@ -705,6 +714,13 @@ document.addEventListener(
 function(event){
 
 
+if(zoomLevel > 1){
+
+    return;
+
+}
+
+
 let touchEndX =
 event.changedTouches[0].screenX;
 
@@ -717,7 +733,6 @@ if(touchEndX < touchStartX - 50){
 }
 
 
-
 if(touchEndX > touchStartX + 50){
 
     previousImage();
@@ -725,9 +740,285 @@ if(touchEndX > touchStartX + 50){
 }
 
 
+});
+
+
+
+
+
+
+
+// ==========================
+// Zoom
+// ==========================
+
+function updateZoom(){
+
+
+photo.style.transform =
+`translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
+
+
+
+if(zoomLevel > 1){
+
+    document.body.classList.add("zoomed");
+
+}
+else{
+
+    document.body.classList.remove("zoomed");
+
+}
+
+
+}
+
+
+
+
+function zoomIn(){
+
+
+if(zoomLevel < maxZoom){
+
+    zoomLevel += zoomStep;
+
+}
+
+
+updateZoom();
+
+
+}
+
+
+
+
+function zoomOut(){
+
+
+if(zoomLevel > minZoom){
+
+    zoomLevel -= zoomStep;
+
+
+    if(zoomLevel < minZoom){
+
+        zoomLevel = minZoom;
+
+    }
+
+
+}
+
+
+
+if(zoomLevel === 1){
+
+    panX = 0;
+
+    panY = 0;
+
+}
+
+
+
+updateZoom();
+
+
+}
+
+
+
+
+function resetZoom(){
+
+
+zoomLevel = 1;
+
+panX = 0;
+
+panY = 0;
+
+updateZoom();
+
+
+}
+
+
+
+
+
+document.getElementById("zoomIn")
+.onclick = zoomIn;
+
+
+document.getElementById("zoomOut")
+.onclick = zoomOut;
+
+
+
+
+
+
+// ==========================
+// Mouse pan
+// ==========================
+
+photo.addEventListener(
+"mousedown",
+function(event){
+
+
+if(zoomLevel <= 1){
+
+    return;
+
+}
+
+
+dragging = true;
+
+
+startX = event.clientX;
+
+startY = event.clientY;
+
+
+startPanX = panX;
+
+startPanY = panY;
+
+
 
 });
 
+
+
+
+document.addEventListener(
+"mousemove",
+function(event){
+
+
+if(!dragging){
+
+    return;
+
+}
+
+
+panX =
+startPanX + (event.clientX - startX);
+
+
+panY =
+startPanY + (event.clientY - startY);
+
+
+
+updateZoom();
+
+
+
+});
+
+
+
+
+document.addEventListener(
+"mouseup",
+function(){
+
+
+dragging = false;
+
+
+});
+
+
+
+
+
+
+
+// ==========================
+// Touch pan while zoomed
+// ==========================
+
+photo.addEventListener(
+"touchstart",
+function(event){
+
+
+if(zoomLevel <= 1){
+
+    return;
+
+}
+
+
+dragging = true;
+
+
+startX =
+event.touches[0].clientX;
+
+
+startY =
+event.touches[0].clientY;
+
+
+startPanX = panX;
+
+startPanY = panY;
+
+
+
+});
+
+
+
+photo.addEventListener(
+"touchmove",
+function(event){
+
+
+if(!dragging){
+
+    return;
+
+}
+
+
+panX =
+startPanX +
+(event.touches[0].clientX - startX);
+
+
+
+panY =
+startPanY +
+(event.touches[0].clientY - startY);
+
+
+
+updateZoom();
+
+
+
+});
+
+
+
+photo.addEventListener(
+"touchend",
+function(){
+
+dragging = false;
+
+});
 
 
 
@@ -747,7 +1038,6 @@ if(!document.fullscreenElement){
     document.documentElement.requestFullscreen();
 
 }
-
 else{
 
     document.exitFullscreen();
@@ -756,12 +1046,3 @@ else{
 
 
 };
-
-
-
-</script>
-
-
-</body>
-
-</html>
