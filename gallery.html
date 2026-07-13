@@ -292,7 +292,7 @@ Fullscreen
 // Version
 // ==========================
 
-const version = "v1.3";
+const version = "v1.4";
 
 document.getElementById("version").innerHTML = version;
 
@@ -332,8 +332,8 @@ let current = 0;
 // Load collection
 // ==========================
 
-fetch("collections.json")
-
+fetch("https://filedn.com/lbA2Vsf4s7Fj5KoVfXs5UL4/JM_Photos/collections.json")
+    
 .then(response => response.json())
 
 .then(data => {
