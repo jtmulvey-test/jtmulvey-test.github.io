@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>About | JM Photography</title>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <style>
+        :root {
+            --page-background: #000000;
+            --primary-text: #ffffff;
+            --secondary-text: rgba(255, 255, 255, 0.65);
+            --subtle-border: rgba(255, 255, 255, 0.14);
+            --card-background: #0b0b0b;
+            --page-width: 1100px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            min-height: 100%;
+            margin: 0;
+            background: var(--page-background);
+            color: var(--primary-text);
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        a {
+            color: inherit;
+        }
+
+        #topLeftLogo {
+            position: fixed;
+            top: 15px;
+            left: 20px;
+            z-index: 50;
+            display: block;
+            width: 175px;
+            text-decoration: none;
+        }
+
+        #topLeftLogo img {
+            display: block;
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+            user-select: none;
+            -webkit-user-drag: none;
+            transition:
+                opacity 0.2s ease,
+                transform 0.25s ease;
+        }
+
+        #topLeftLogo:hover img {
+            opacity: 0.75;
+            transform: scale(1.025);
+        }
+
+        #topLeftLogo:focus-visible {
+            outline: 1px solid white;
+            outline-offset: 5px;
+        }
+
+        #version {
+            position: fixed;
+            top: 102px;
+            left: 20px;
+            z-index: 50;
+            color: red;
+            font-size: 12px;
+            line-height: 1;
+            opacity: 0.85;
+        }
+
+        nav {
+            position: fixed;
+            top: 15px;
+            right: 20px;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        nav a {
+            color: white;
+            font-size: 22.4px;
+            line-height: 1.1;
+            text-decoration: none;
+            transition:
+                opacity 0.2s ease,
+                transform 0.2s ease;
+        }
+
+        nav a:hover {
+            opacity: 0.65;
+            transform: translateX(-3px);
+        }
+
+        nav a:focus-visible {
+            outline: 1px solid white;
+            outline-offset: 5px;
+            border-radius: 2px;
+        }
+
+        #page {
+            width: min(var(--page-width), calc(100% - 64px));
+            margin: 0 auto;
+            padding: 130px 0 80px;
+        }
+
+        #pageHeader {
+            margin-bottom: 48px;
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(42px, 7vw, 82px);
+            font-weight: 500;
+            line-height: 0.95;
+            letter-spacing: -0.045em;
+        }
+
+        #aboutLayout {
+            display: grid;
+            grid-template-columns: minmax(260px, 0.9fr) minmax(320px, 1.1fr);
+            gap: 44px;
+            align-items: start;
+        }
+
+        #aboutPhotoWrap {
+            overflow: hidden;
+            background: #111;
+            border: 1px solid var(--subtle-border);
+            border-radius: 18px;
+        }
+
+        #aboutPhoto {
+            display: block;
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+        }
+
+        #aboutTextCard {
+            padding: 34px;
+            background: var(--card-background);
+            border: 1px solid var(--subtle-border);
+            border-radius: 18px;
+        }
+
+        .about-section {
+            margin-bottom: 34px;
+        }
+
+        .about-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .about-section h2 {
+            margin: 0 0 14px;
+            font-size: 24px;
+            font-weight: 500;
+            letter-spacing: -0.02em;
+        }
+
+        .about-section p {
+            margin: 0;
+            color: var(--secondary-text);
+            font-size: 17px;
+            line-height: 1.75;
+        }
+
+        #status {
+            color: var(--secondary-text);
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        #status.error {
+            color: #ff6b6b;
+        }
+
+        @media (max-width: 900px) {
+            #topLeftLogo {
+                width: 145px;
+            }
+
+            #version {
+                top: 88px;
+            }
+
+            #page {
+                width: min(100% - 32px, 680px);
+                padding-top: 150px;
+            }
+
+            #aboutLayout {
+                grid-template-columns: 1fr;
+                gap: 28px;
+            }
+
+            #aboutTextCard {
+                padding: 26px;
+            }
+        }
+
+        @media (max-width: 520px) {
+            #topLeftLogo {
+                top: 14px;
+                left: 14px;
+                width: 120px;
+            }
+
+            #version {
+                top: 76px;
+                left: 14px;
+            }
+
+            nav {
+                right: 14px;
+            }
+
+            nav a {
+                font-size: 18px;
+            }
+
+            #page {
+                width: calc(100% - 28px);
+                padding-top: 150px;
+            }
+
+            h1 {
+                font-size: 42px;
+            }
+
+            #aboutTextCard {
+                padding: 22px;
+                border-radius: 14px;
+            }
+
+            #aboutPhotoWrap {
+                border-radius: 14px;
+            }
+
+            .about-section h2 {
+                font-size: 22px;
+            }
+
+            .about-section p {
+                font-size: 16px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                scroll-behavior: auto !important;
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <a
+        id="topLeftLogo"
+        href="index.html"
+        aria-label="JM Photography home"
+    >
+        <img
+            src="logo.png"
+            alt="JM Photography"
+        >
+    </a>
+
+    <div id="version">v1.0.1</div>
+
+    <nav aria-label="Main navigation">
+        <a href="index.html">Home</a>
+        <a href="collections.html">Collections</a>
+        <a href="about.html">About</a>
+    </nav>
+
+    <main id="page">
+        <header id="pageHeader">
+            <h1>About</h1>
+        </header>
+
+        <section id="aboutLayout">
+            <div id="aboutPhotoWrap">
+                <img
+                    id="aboutPhoto"
+                    src="about/1.jpg"
+                    alt="Justin"
+                >
+            </div>
+
+            <div id="aboutTextCard">
+                <div id="status">Loading about text...</div>
+                <div id="aboutContent"></div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const aboutContent =
+            document.getElementById("aboutContent");
+
+        const status =
+            document.getElementById("status");
+
+        function titleCaseHeading(text) {
+            return text
+                .trim()
+                .replace(/:$/, "")
+                .split(" ")
+                .map(word => {
+                    if (word.length === 0) {
+                        return word;
+                    }
+
+                    return (
+                        word.charAt(0).toUpperCase() +
+                        word.slice(1)
+                    );
+                })
+                .join(" ");
+        }
+
+        function renderAboutText(text) {
+            const sections =
+                text
+                    .split(/\n\s*\n/)
+                    .map(section => section.trim())
+                    .filter(Boolean);
+
+            aboutContent.innerHTML = "";
+
+            sections.forEach(section => {
+                const lines =
+                    section
+                        .split(/\r?\n/)
+                        .map(line => line.trim())
+                        .filter(Boolean);
+
+                if (lines.length === 0) {
+                    return;
+                }
+
+                const headingLine = lines[0];
+                const bodyText =
+                    lines.slice(1).join(" ");
+
+                const sectionElement =
+                    document.createElement("section");
+
+                sectionElement.className =
+                    "about-section";
+
+                const heading =
+                    document.createElement("h2");
+
+                heading.textContent =
+                    titleCaseHeading(headingLine);
+
+                const paragraph =
+                    document.createElement("p");
+
+                paragraph.textContent = bodyText;
+
+                sectionElement.appendChild(heading);
+                sectionElement.appendChild(paragraph);
+
+                aboutContent.appendChild(sectionElement);
+            });
+        }
+
+        fetch("about/about.txt")
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(
+                        `Unable to load about text: ${response.status}`
+                    );
+                }
+
+                return response.text();
+            })
+            .then(text => {
+                status.style.display = "none";
+                renderAboutText(text);
+            })
+            .catch(error => {
+                status.classList.add("error");
+                status.textContent =
+                    "Unable to load about text.";
+
+                console.error(error);
+            });
+    </script>
+</body>
+</html>
