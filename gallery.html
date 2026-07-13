@@ -55,9 +55,10 @@
                 opacity 0.2s ease;
         }
 
-        #collapseControls {
+        #toggleControls {
             transform: translateY(0);
             z-index: 6;
+            opacity: 1;
         }
 
         #fullscreen {
@@ -87,41 +88,6 @@
             transform: translateY(0);
             opacity: 0;
             pointer-events: none;
-        }
-
-        #collapseControls {
-            transition:
-                transform 0.3s ease,
-                opacity 0.2s ease;
-        }
-
-        #controls.collapsed #collapseControls {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        #expandControls {
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 7;
-            width: 40px;
-            height: 40px;
-            padding: 0;
-            border-radius: 50%;
-            background: rgba(0, 0, 0, 0.5);
-            color: white;
-            border: 1px solid white;
-            cursor: pointer;
-            font-size: 16px;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.2s ease;
-        }
-
-        #expandControls.visible {
-            opacity: 1;
-            pointer-events: auto;
         }
 
         #version {
@@ -237,9 +203,9 @@
     <div id="controlArea">
         <div id="controls">
             <button
-                id="collapseControls"
+                id="toggleControls"
                 class="control-button"
-                aria-label="Collapse controls"
+                aria-label="Toggle controls"
             >&lt;</button>
 
             <button
@@ -267,8 +233,6 @@
             >−</button>
         </div>
 
-        <button id="expandControls" aria-label="Expand controls">&gt;</button>
-
         <div id="version"></div>
     </div>
 
@@ -285,7 +249,7 @@
     <div id="thumbnails"></div>
 
     <script>
-        const version = "v1.3.10";
+        const version = "v1.3.11";
         document.getElementById("version").textContent = version;
 
         const base =
@@ -297,8 +261,8 @@
         const photo = document.getElementById("photo");
         const viewer = document.getElementById("viewer");
         const controls = document.getElementById("controls");
-        const expandControls =
-            document.getElementById("expandControls");
+        const toggleControls =
+            document.getElementById("toggleControls");
         const versionElement =
             document.getElementById("version");
 
@@ -563,38 +527,38 @@
             }
         }
 
-        function collapseMediaControls() {
-            controlsCollapsed = true;
-            controls.classList.add("collapsed");
-            versionElement.classList.add("collapsed");
+        function toggleMediaControls() {
+            controlsCollapsed = !controlsCollapsed;
 
-            window.setTimeout(function () {
-                expandControls.classList.add("visible");
-            }, 220);
-        }
+            controls.classList.toggle(
+                "collapsed",
+                controlsCollapsed
+            );
 
-        function expandMediaControls() {
-            controlsCollapsed = false;
-            expandControls.classList.remove("visible");
+            versionElement.classList.toggle(
+                "collapsed",
+                controlsCollapsed
+            );
 
-            window.setTimeout(function () {
-                controls.classList.remove("collapsed");
-                versionElement.classList.remove("collapsed");
-            }, 80);
+            toggleControls.textContent =
+                controlsCollapsed ? ">" : "<";
         }
 
         function showUI() {
             document.body.classList.remove("ui-hidden");
 
-            if (controlsCollapsed) {
-                controls.classList.add("collapsed");
-                versionElement.classList.add("collapsed");
-                expandControls.classList.add("visible");
-            } else {
-                controls.classList.remove("collapsed");
-                versionElement.classList.remove("collapsed");
-                expandControls.classList.remove("visible");
-            }
+            controls.classList.toggle(
+                "collapsed",
+                controlsCollapsed
+            );
+
+            versionElement.classList.toggle(
+                "collapsed",
+                controlsCollapsed
+            );
+
+            toggleControls.textContent =
+                controlsCollapsed ? ">" : "<";
         }
 
         async function enterHideMode() {
@@ -632,12 +596,9 @@
         document.getElementById("hideUI")
             .addEventListener("click", toggleUI);
 
-        document.getElementById("collapseControls")
-            .addEventListener("click", collapseMediaControls);
-
-        expandControls.addEventListener(
+        toggleControls.addEventListener(
             "click",
-            expandMediaControls
+            toggleMediaControls
         );
 
         photo.addEventListener("dblclick", function (event) {
