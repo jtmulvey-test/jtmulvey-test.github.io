@@ -23,6 +23,7 @@ html, body {
 }
 
 
+
 nav {
 
     position: fixed;
@@ -34,6 +35,7 @@ nav {
     z-index: 20;
 
 }
+
 
 
 nav a {
@@ -61,19 +63,23 @@ nav a {
 
 
 
+
 #collections {
 
-    display: flex;
+    display: grid;
 
-    flex-wrap: wrap;
-
-    justify-content: center;
+    grid-template-columns: repeat(5, 1fr);
 
     gap: 30px;
 
     padding: 40px;
 
+    max-width: 1600px;
+
+    margin: auto;
+
 }
+
 
 
 
@@ -90,11 +96,13 @@ nav a {
 
 
 
+
+
 .collection img {
 
-    width: 250px;
+    width: 100%;
 
-    height: 250px;
+    aspect-ratio: 1 / 1;
 
     object-fit: cover;
 
@@ -106,6 +114,8 @@ nav a {
 
 
 
+
+
 .collection:hover img {
 
     opacity: 0.8;
@@ -114,9 +124,39 @@ nav a {
 
 
 
+
+
 .name {
 
     font-size: 18px;
+
+}
+
+
+
+
+
+
+@media (max-width: 700px) {
+
+
+    #collections {
+
+        grid-template-columns: repeat(2, 1fr);
+
+        gap: 15px;
+
+        padding: 20px;
+
+    }
+
+
+    .name {
+
+        font-size: 14px;
+
+    }
+
 
 }
 
@@ -131,6 +171,7 @@ nav a {
 <body>
 
 
+
 <nav>
 
 <a href="index.html">Home</a>
@@ -138,6 +179,8 @@ nav a {
 <a href="collections.html">Collections</a>
 
 </nav>
+
+
 
 
 
@@ -149,7 +192,11 @@ Collections
 
 
 
+
+
 <div id="collections"></div>
+
+
 
 
 
@@ -178,8 +225,10 @@ document.getElementById("collections");
 collections.forEach(collection => {
 
 
+
 const link =
 document.createElement("a");
+
 
 
 link.className =
@@ -189,6 +238,8 @@ link.className =
 
 link.href =
 `gallery.html?collection=${collection.name}`;
+
+
 
 
 
@@ -204,9 +255,13 @@ img.src =
 
 img.onerror = function(){
 
+
     img.style.display = "none";
 
+
 };
+
+
 
 
 
@@ -214,12 +269,16 @@ const name =
 document.createElement("div");
 
 
+
 name.className =
 "name";
 
 
+
 name.innerHTML =
 collection.name;
+
+
 
 
 
@@ -236,7 +295,9 @@ container.appendChild(link);
 });
 
 
+
 })
+
 
 
 .catch(error => {
@@ -254,6 +315,7 @@ console.error(error);
 
 
 </script>
+
 
 
 </body>
