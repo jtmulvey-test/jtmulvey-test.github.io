@@ -47,9 +47,41 @@
             color: inherit;
         }
 
-        #version {
+        #topLeftLogo {
             position: fixed;
             top: 15px;
+            left: 20px;
+            z-index: 50;
+            display: block;
+            width: 175px;
+            text-decoration: none;
+        }
+
+        #topLeftLogo img {
+            display: block;
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+            user-select: none;
+            -webkit-user-drag: none;
+            transition:
+                opacity 0.2s ease,
+                transform 0.25s ease;
+        }
+
+        #topLeftLogo:hover img {
+            opacity: 0.75;
+            transform: scale(1.025);
+        }
+
+        #topLeftLogo:focus-visible {
+            outline: 1px solid white;
+            outline-offset: 5px;
+        }
+
+        #version {
+            position: fixed;
+            top: 102px;
             left: 20px;
             z-index: 50;
             color: red;
@@ -69,36 +101,7 @@
             gap: 8px;
         }
 
-        #navLogoLink {
-            display: block;
-            width: 145px;
-            margin-bottom: 8px;
-            text-decoration: none;
-        }
-
-        #navLogo {
-            display: block;
-            width: 100%;
-            height: auto;
-            object-fit: contain;
-            user-select: none;
-            -webkit-user-drag: none;
-            transition:
-                opacity 0.2s ease,
-                transform 0.25s ease;
-        }
-
-        #navLogoLink:hover #navLogo {
-            opacity: 0.75;
-            transform: scale(1.025);
-        }
-
-        #navLogoLink:focus-visible {
-            outline: 1px solid white;
-            outline-offset: 5px;
-        }
-
-        nav a:not(#navLogoLink) {
+        nav a {
             color: white;
             font-size: 22.4px;
             line-height: 1.1;
@@ -108,12 +111,12 @@
                 transform 0.2s ease;
         }
 
-        nav a:not(#navLogoLink):hover {
+        nav a:hover {
             opacity: 0.65;
             transform: translateX(-3px);
         }
 
-        nav a:not(#navLogoLink):focus-visible {
+        nav a:focus-visible {
             outline: 1px solid white;
             outline-offset: 5px;
             border-radius: 2px;
@@ -390,6 +393,14 @@
         }
 
         @media (max-width: 820px) {
+            #topLeftLogo {
+                width: 145px;
+            }
+
+            #version {
+                top: 88px;
+            }
+
             #page {
                 width: min(100% - 32px, 680px);
                 padding-top: 150px;
@@ -424,7 +435,14 @@
         }
 
         @media (max-width: 520px) {
+            #topLeftLogo {
+                top: 14px;
+                left: 14px;
+                width: 120px;
+            }
+
             #version {
+                top: 76px;
                 left: 14px;
             }
 
@@ -432,12 +450,7 @@
                 right: 14px;
             }
 
-            #navLogoLink {
-                width: 115px;
-                margin-bottom: 5px;
-            }
-
-            nav a:not(#navLogoLink) {
+            nav a {
                 font-size: 18px;
             }
 
@@ -478,21 +491,20 @@
 </head>
 
 <body>
-    <div id="version">v1.1.4</div>
+    <a
+        id="topLeftLogo"
+        href="index.html"
+        aria-label="JM Photography home"
+    >
+        <img
+            src="logo.png"
+            alt="JM Photography"
+        >
+    </a>
+
+    <div id="version">v1.1.5</div>
 
     <nav aria-label="Main navigation">
-        <a
-            id="navLogoLink"
-            href="index.html"
-            aria-label="JM Photography home"
-        >
-            <img
-                id="navLogo"
-                src="logo.png"
-                alt="JM Photography"
-            >
-        </a>
-
         <a href="index.html">Home</a>
         <a href="collections.html">Collections</a>
     </nav>
