@@ -28,8 +28,23 @@
 
         nav a {
             color: white;
-            text-decoration: none;
             font-size: 22.4px;
+            line-height: 1.1;
+            text-decoration: none;
+            transition:
+                opacity 0.2s ease,
+                transform 0.2s ease;
+        }
+
+        nav a:hover {
+            opacity: 0.65;
+            transform: translateX(-3px);
+        }
+
+        nav a:focus-visible {
+            outline: 1px solid white;
+            outline-offset: 5px;
+            border-radius: 2px;
         }
 
         #controlArea {
@@ -55,15 +70,34 @@
             cursor: pointer;
             font-size: 19.2px;
             text-align: center;
+            transform-origin: center center;
             transition:
-                transform 0.3s ease,
+                color 0.2s ease,
+                background-color 0.2s ease,
+                border-color 0.2s ease,
+                transform 0.25s ease,
                 opacity 0.2s ease;
+        }
+
+        .control-button:hover {
+            color: black;
+            background: white;
+            border-color: white;
+        }
+
+        .control-button:focus-visible {
+            outline: 1px solid white;
+            outline-offset: 5px;
         }
 
         #toggleControls {
             z-index: 8;
             transform: translateY(0);
             opacity: 1;
+        }
+
+        #toggleControls:hover {
+            transform: translateY(0) scale(0.94);
         }
 
         #toggleIcon {
@@ -81,9 +115,22 @@
             transform: translate(58px, 0);
         }
 
+        #helpButton:hover {
+            transform: translate(58px, 0) scale(0.94);
+        }
+
+        #helpButton .help-icon {
+            display: inline-block;
+            transform: translateY(2px);
+        }
+
         #fullscreen {
             z-index: 6;
             transform: translateY(58px);
+        }
+
+        #fullscreen:hover {
+            transform: translateY(58px) scale(0.94);
         }
 
         #hideUI {
@@ -91,9 +138,17 @@
             transform: translateY(116px);
         }
 
+        #hideUI:hover {
+            transform: translateY(116px) scale(0.94);
+        }
+
         #autoplayButton {
             z-index: 4;
             transform: translateY(174px);
+        }
+
+        #autoplayButton:hover {
+            transform: translateY(174px) scale(0.94);
         }
 
         #autoplayButton .play-icon {
@@ -106,9 +161,17 @@
             transform: translateY(232px);
         }
 
+        #zoomIn:hover {
+            transform: translateY(232px) scale(0.94);
+        }
+
         #zoomOut {
             z-index: 2;
             transform: translateY(290px);
+        }
+
+        #zoomOut:hover {
+            transform: translateY(290px) scale(0.94);
         }
 
         #controls.collapsed #helpButton,
@@ -360,6 +423,16 @@
             border-radius: 50%;
             cursor: pointer;
             font-size: 18px;
+            transition:
+                color 0.2s ease,
+                background-color 0.2s ease,
+                transform 0.2s ease;
+        }
+
+        #closeHelp:hover {
+            color: black;
+            background: white;
+            transform: scale(0.94);
         }
 
         body.ui-hidden #controlArea,
@@ -395,7 +468,8 @@
             #version,
             #toggleIcon,
             #helpOverlay,
-            #helpPanel {
+            #helpPanel,
+            #closeHelp {
                 transition-duration: 0.01ms;
             }
         }
@@ -417,7 +491,9 @@
                 id="helpButton"
                 class="control-button"
                 aria-label="Show help"
-            >?</button>
+            >
+                <span class="help-icon">?</span>
+            </button>
 
             <button
                 id="fullscreen"
@@ -455,8 +531,7 @@
         <div id="version"></div>
     </div>
 
-    <nav>
-        <a href="index.html">Home</a>
+    <nav aria-label="Main navigation">
         <a href="collections.html">Collections</a>
     </nav>
 
@@ -522,7 +597,7 @@
                     min="2"
                     max="60"
                     step="1"
-                    value="6"
+                    value="7"
                 >
 
                 <span>seconds</span>
@@ -546,7 +621,7 @@
     </div>
 
     <script>
-        const version = "v1.4.2";
+        const version = "v1.4.3";
         document.getElementById("version").textContent = version;
 
         const params = new URLSearchParams(window.location.search);
@@ -635,13 +710,16 @@
                     return;
                 }
 
+                const normalizedBase =
+                    base.endsWith("/") ? base : `${base}/`;
+
                 for (let i = 1; i <= selected.images; i++) {
                     images.push(
-                        `${base}${selected.name}/originals/${i}.jpg`
+                        `${normalizedBase}${selected.name}/originals/${i}.jpg`
                     );
 
                     thumbnails.push(
-                        `${base}${selected.name}/thumbnails/${i}.jpg`
+                        `${normalizedBase}${selected.name}/thumbnails/${i}.jpg`
                     );
                 }
 
@@ -1142,7 +1220,7 @@
             );
 
             if (!Number.isFinite(newDelay)) {
-                newDelay = 6;
+                newDelay = 7;
             }
 
             newDelay = Math.min(
