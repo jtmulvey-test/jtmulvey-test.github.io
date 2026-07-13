@@ -245,11 +245,6 @@
             font-size: 24px;
         }
 
-        #helpPanel h3 {
-            margin: 22px 0 10px;
-            font-size: 16px;
-        }
-
         #helpPanel p {
             margin: 8px 0;
             line-height: 1.45;
@@ -259,8 +254,8 @@
             display: grid;
             grid-template-columns: 50px 1fr;
             gap: 12px;
-            align-items: start;
-            margin: 10px 0;
+            align-items: center;
+            margin: 12px 0;
         }
 
         .help-key {
@@ -342,7 +337,7 @@
             <button
                 id="hideUI"
                 class="control-button"
-                aria-label="Hide interface"
+                aria-label="Toggle hide mode"
             >H</button>
 
             <button
@@ -374,88 +369,50 @@
     <div id="thumbnails"></div>
 
     <div id="helpOverlay" aria-hidden="true">
-        <div id="helpPanel" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+        <div
+            id="helpPanel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="helpTitle"
+        >
             <button id="closeHelp" aria-label="Close help">×</button>
 
             <h2 id="helpTitle">Gallery Controls</h2>
 
             <div class="help-row">
-                <span class="help-key">&lt;</span>
-                <p>Collapse the media controls into the top circle.</p>
-            </div>
-
-            <div class="help-row">
                 <span class="help-key">&gt;</span>
-                <p>Expand the media controls.</p>
+                <p>Expand the media controls</p>
             </div>
 
             <div class="help-row">
-                <span class="help-key">?</span>
-                <p>Open or close this help panel.</p>
+                <span class="help-key">&lt;</span>
+                <p>Collapse the media controls</p>
             </div>
 
             <div class="help-row">
                 <span class="help-key">F</span>
-                <p>Enter or exit fullscreen mode.</p>
+                <p>Enter or exit fullscreen mode (keypress "F")</p>
             </div>
 
             <div class="help-row">
                 <span class="help-key">H</span>
-                <p>
-                    Enter hide mode. Hide mode starts fullscreen and removes
-                    everything except the photograph and image counter.
-                </p>
+                <p>Enter or exit hide mode (keypress "H")</p>
             </div>
 
             <div class="help-row">
                 <span class="help-key">+</span>
-                <p>Zoom farther into the current photograph.</p>
+                <p>Zoom into the current photograph (keypress "+")</p>
             </div>
 
             <div class="help-row">
                 <span class="help-key">−</span>
-                <p>Zoom out. Returning to the minimum zoom recenters the photograph.</p>
-            </div>
-
-            <h3>Keyboard and mouse</h3>
-
-            <div class="help-row">
-                <span class="help-key">←</span>
-                <p>Display the previous photograph.</p>
-            </div>
-
-            <div class="help-row">
-                <span class="help-key">→</span>
-                <p>Display the next photograph.</p>
-            </div>
-
-            <div class="help-row">
-                <span class="help-key">Esc</span>
-                <p>Exit hide mode, close help, and exit fullscreen.</p>
-            </div>
-
-            <div class="help-row">
-                <span class="help-key">2×</span>
-                <p>
-                    Double-click a photograph to zoom toward that location.
-                    Double-click again to reset the zoom.
-                </p>
-            </div>
-
-            <div class="help-row">
-                <span class="help-key">Drag</span>
-                <p>When zoomed in, click and drag to move around the photograph.</p>
-            </div>
-
-            <div class="help-row">
-                <span class="help-key">Thumb</span>
-                <p>Select a thumbnail to jump directly to that photograph.</p>
+                <p>Zoom out of the current photograph (keypress "-")</p>
             </div>
         </div>
     </div>
 
     <script>
-        const version = "v1.3.13";
+        const version = "v1.3.14";
         document.getElementById("version").textContent = version;
 
         const base =
@@ -923,10 +880,6 @@
             }
 
             if (helpOverlay.classList.contains("visible")) {
-                if (key === "?") {
-                    hideHelp();
-                }
-
                 return;
             }
 
@@ -942,7 +895,7 @@
                 zoomIn();
             }
 
-            if (key === "-") {
+            if (key === "-" || key === "_") {
                 zoomOut();
             }
 
@@ -952,10 +905,6 @@
 
             if (key === "h") {
                 toggleUI();
-            }
-
-            if (key === "?") {
-                toggleHelp();
             }
         });
     </script>
