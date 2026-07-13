@@ -53,14 +53,14 @@
             left: 20px;
             z-index: 50;
             display: block;
-            width: 175px;
+            height: 87px;
             text-decoration: none;
         }
 
         #topLeftLogo img {
             display: block;
-            width: 100%;
-            height: auto;
+            width: auto;
+            height: 100%;
             object-fit: contain;
             user-select: none;
             -webkit-user-drag: none;
@@ -81,7 +81,7 @@
 
         #version {
             position: fixed;
-            top: 102px;
+            top: 107px;
             left: 20px;
             z-index: 50;
             color: red;
@@ -396,11 +396,11 @@
 
         @media (max-width: 820px) {
             #topLeftLogo {
-                width: 145px;
+                height: 70px;
             }
 
             #version {
-                top: 88px;
+                top: 90px;
             }
 
             #page {
@@ -440,11 +440,11 @@
             #topLeftLogo {
                 top: 14px;
                 left: 14px;
-                width: 120px;
+                height: 56px;
             }
 
             #version {
-                top: 76px;
+                top: 75px;
                 left: 14px;
             }
 
@@ -504,7 +504,7 @@
         >
     </a>
 
-    <div id="version">v1.1.6</div>
+    <div id="version">v1.1.7</div>
 
     <nav aria-label="Main navigation">
         <a href="index.html">Home</a>
@@ -741,6 +741,18 @@
                     );
                 }
 
+                const sortedCollections =
+                    [...collections].sort((a, b) => {
+                        return String(b.name).localeCompare(
+                            String(a.name),
+                            undefined,
+                            {
+                                numeric: true,
+                                sensitivity: "base"
+                            }
+                        );
+                    });
+
                 grid.innerHTML = "";
 
                 grid.setAttribute(
@@ -748,7 +760,7 @@
                     "false"
                 );
 
-                if (collections.length === 0) {
+                if (sortedCollections.length === 0) {
                     status.textContent =
                         "No collections found.";
 
@@ -761,13 +773,13 @@
                 status.style.display = "none";
 
                 collectionSummary.textContent =
-                    `${collections.length} ${
-                        collections.length === 1
+                    `${sortedCollections.length} ${
+                        sortedCollections.length === 1
                             ? "collection"
                             : "collections"
                     }`;
 
-                collections.forEach(collection => {
+                sortedCollections.forEach(collection => {
                     grid.appendChild(
                         createCollectionCard(
                             base,
