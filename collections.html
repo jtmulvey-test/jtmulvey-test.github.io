@@ -10,6 +10,8 @@
         content="width=device-width, initial-scale=1.0"
     >
 
+    <link rel="icon" type="image/png" href="favicon.png">
+
     <style>
         :root {
             --page-background: #000000;
@@ -307,7 +309,7 @@
             border-radius: 50%;
             font-size: 19px;
             line-height: 1;
-            transform: translate(1px, -1px);
+            transform: translate(1px, 1px);
             transition:
                 color 0.3s ease,
                 transform 0.3s ease,
@@ -315,11 +317,16 @@
                 border-color 0.3s ease;
         }
 
+        .card-arrow span {
+            display: inline-block;
+            transform: translateY(-2px);
+        }
+
         .collection-card:hover .card-arrow {
             color: black;
             background: white;
             border-color: white;
-            transform: translate(4px, -1px);
+            transform: translate(4px, 1px);
         }
 
         #status {
@@ -504,7 +511,7 @@
         >
     </a>
 
-    <div id="version">v1.1.7</div>
+    <div id="version">v1.1.8</div>
 
     <nav aria-label="Main navigation">
         <a href="index.html">Home</a>
@@ -697,12 +704,17 @@
                 document.createElement("span");
 
             arrow.className = "card-arrow";
-            arrow.textContent = "→";
-
             arrow.setAttribute(
                 "aria-hidden",
                 "true"
             );
+
+            const arrowSymbol =
+                document.createElement("span");
+
+            arrowSymbol.textContent = "→";
+
+            arrow.appendChild(arrowSymbol);
 
             textContainer.appendChild(title);
             textContainer.appendChild(subtitle);
