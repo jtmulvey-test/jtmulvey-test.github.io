@@ -61,6 +61,16 @@
             opacity: 1;
         }
 
+        #toggleIcon {
+            display: inline-block;
+            opacity: 1;
+            transition: opacity 0.15s ease;
+        }
+
+        #toggleIcon.fading {
+            opacity: 0;
+        }
+
         #fullscreen {
             transform: translateY(48px);
             z-index: 5;
@@ -206,7 +216,7 @@
                 id="toggleControls"
                 class="control-button"
                 aria-label="Toggle controls"
-            >&lt;</button>
+            ><span id="toggleIcon">&lt;</span></button>
 
             <button
                 id="fullscreen"
@@ -249,7 +259,7 @@
     <div id="thumbnails"></div>
 
     <script>
-        const version = "v1.3.11";
+        const version = "v1.3.12";
         document.getElementById("version").textContent = version;
 
         const base =
@@ -263,6 +273,8 @@
         const controls = document.getElementById("controls");
         const toggleControls =
             document.getElementById("toggleControls");
+        const toggleIcon =
+            document.getElementById("toggleIcon");
         const versionElement =
             document.getElementById("version");
 
@@ -281,6 +293,7 @@
         let startingPanY = 0;
 
         let controlsCollapsed = false;
+        let toggleIconTimer = null;
 
         const minimumZoom = 1;
         const maximumZoom = 4;
@@ -527,6 +540,19 @@
             }
         }
 
+        function updateToggleIcon() {
+            window.clearTimeout(toggleIconTimer);
+
+            toggleIcon.classList.add("fading");
+
+            toggleIconTimer = window.setTimeout(function () {
+                toggleIcon.textContent =
+                    controlsCollapsed ? ">" : "<";
+
+                toggleIcon.classList.remove("fading");
+            }, 150);
+        }
+
         function toggleMediaControls() {
             controlsCollapsed = !controlsCollapsed;
 
@@ -540,8 +566,7 @@
                 controlsCollapsed
             );
 
-            toggleControls.textContent =
-                controlsCollapsed ? ">" : "<";
+            updateToggleIcon();
         }
 
         function showUI() {
@@ -557,8 +582,10 @@
                 controlsCollapsed
             );
 
-            toggleControls.textContent =
+            toggleIcon.textContent =
                 controlsCollapsed ? ">" : "<";
+
+            toggleIcon.classList.remove("fading");
         }
 
         async function enterHideMode() {
