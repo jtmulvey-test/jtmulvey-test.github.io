@@ -1,327 +1,193 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-
-<title>Collections</title>
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-
-<style>
-
-html, body {
-
-    margin: 0;
-
-    padding: 0;
-
-    min-height: 100%;
-
-    background: black;
-
-    color: white;
-
-    font-family: Arial, sans-serif;
-
-}
-
-
-
-nav {
-
-    position: fixed;
-
-    top: 15px;
-
-    right: 20px;
-
-    z-index: 20;
-
-}
-
-
-
-nav a {
-
-    color: white;
-
-    margin-left: 20px;
-
-    text-decoration: none;
-
-}
-
-
-
-#title {
-
-    text-align: center;
-
-    padding-top: 70px;
-
-    font-size: 30px;
-
-}
-
-
-
-
-
-#collections {
-
-    display: grid;
-
-    grid-template-columns: repeat(5, 1fr);
-
-    gap: 30px;
-
-    padding: 40px;
-
-    max-width: 1600px;
-
-    margin: auto;
-
-}
-
-
-
-
-
-.collection {
-
-    text-align: center;
-
-    color: white;
-
-    text-decoration: none;
-
-}
-
-
-
-
-
-.collection img {
-
-    width: 100%;
-
-    aspect-ratio: 1 / 1;
-
-    object-fit: cover;
-
-    display: block;
-
-    margin-bottom: 10px;
-
-}
-
-
-
-
-
-.collection:hover img {
-
-    opacity: 0.8;
-
-}
-
-
-
-
-
-.name {
-
-    font-size: 18px;
-
-}
-
-
-
-
-
-
-@media (max-width: 900px) {
-
-
-    #collections {
-
-        grid-template-columns: repeat(2, 1fr);
-
-        gap: 15px;
-
-        padding: 20px;
-
-    }
-
-
-    .name {
-
-        font-size: 14px;
-
-    }
-
-
-}
-
-
-
-</style>
-
+    <title>Collections</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100%;
+            background: black;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+
+        nav {
+            position: fixed;
+            top: 15px;
+            right: 20px;
+            z-index: 30;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-size: 22.4px;
+        }
+
+        #page {
+            width: min(1200px, calc(100% - 40px));
+            margin: 0 auto;
+            padding: 90px 20px 50px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            margin: 0 0 35px;
+            text-align: center;
+            font-size: 36px;
+            font-weight: normal;
+        }
+
+        #collectionsGrid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 24px;
+            justify-items: center;
+        }
+
+        .collection-card {
+            width: 100%;
+            color: white;
+            text-decoration: none;
+            text-align: center;
+        }
+
+        .collection-card img {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+            display: block;
+            background: #111;
+        }
+
+        .collection-title {
+            margin-top: 10px;
+            font-size: 16px;
+            word-break: break-word;
+        }
+
+        #status {
+            text-align: center;
+            color: white;
+            opacity: 0.8;
+            font-size: 18px;
+        }
+
+        @media (max-width: 900px) {
+            #collectionsGrid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 18px;
+            }
+
+            #page {
+                width: 100%;
+                padding: 85px 16px 40px;
+            }
+
+            h1 {
+                font-size: 30px;
+            }
+
+            .collection-title {
+                font-size: 15px;
+            }
+        }
+    </style>
 </head>
 
-
-
 <body>
-
-
-
-<nav>
-
-<a href="index.html">Home</a>
-
-<a href="collections.html">Collections</a>
-
-</nav>
-
-
-
-
-
-<div id="title">
-
-Collections
-
-</div>
-
-
-
-
-
-<div id="collections"></div>
-
-
-
-
-
-
-
-<script>
-
-
-const base =
-"https://filedn.com/lbA2Vsf4s7Fj5KoVfXs5UL4/JM_Photos/";
-
-
-
-fetch("collections.json")
-
-.then(response => response.json())
-
-.then(collections => {
-
-
-const container =
-document.getElementById("collections");
-
-
-
-collections.forEach(collection => {
-
-
-
-const link =
-document.createElement("a");
-
-
-
-link.className =
-"collection";
-
-
-
-link.href =
-`gallery.html?collection=${collection.name}`;
-
-
-
-
-
-const img =
-document.createElement("img");
-
-
-
-img.src =
-`${base}${collection.name}/title_thumbnail/collection_thumbnail.jpg`;
-
-
-
-img.onerror = function(){
-
-
-    img.style.display = "none";
-
-
-};
-
-
-
-
-
-const name =
-document.createElement("div");
-
-
-
-name.className =
-"name";
-
-
-
-name.innerHTML =
-collection.name;
-
-
-
-
-
-link.appendChild(img);
-
-link.appendChild(name);
-
-
-
-container.appendChild(link);
-
-
-
-});
-
-
-
-})
-
-
-
-.catch(error => {
-
-
-document.getElementById("collections").innerHTML =
-"Error loading collections.json";
-
-
-console.error(error);
-
-
-});
-
-
-
-</script>
-
-
-
+    <nav>
+        <a href="index.html">Home</a>
+        <a href="collections.html">Collections</a>
+    </nav>
+
+    <main id="page">
+        <h1>Collections</h1>
+
+        <div id="status">Loading collections...</div>
+        <div id="collectionsGrid"></div>
+    </main>
+
+    <script>
+        fetch("collections.json")
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(
+                        `Unable to load collections.json: ${response.status}`
+                    );
+                }
+
+                return response.json();
+            })
+            .then(data => {
+                const base = data.base;
+                const collections = data.collections;
+
+                if (!base || !Array.isArray(collections)) {
+                    throw new Error(
+                        "collections.json is not in the expected format"
+                    );
+                }
+
+                const grid =
+                    document.getElementById("collectionsGrid");
+
+                const status =
+                    document.getElementById("status");
+
+                grid.innerHTML = "";
+
+                if (collections.length === 0) {
+                    status.textContent = "No collections found.";
+                    return;
+                }
+
+                status.style.display = "none";
+
+                collections.forEach(collection => {
+                    const card =
+                        document.createElement("a");
+
+                    card.className = "collection-card";
+                    card.href =
+                        `gallery.html?collection=${encodeURIComponent(collection.name)}`;
+
+                    const image =
+                        document.createElement("img");
+
+                    image.src =
+                        `${base}${collection.name}/title_thumbnail/collection_thumbnail.jpg`;
+
+                    image.alt = collection.name;
+                    image.loading = "lazy";
+                    image.decoding = "async";
+
+                    const title =
+                        document.createElement("div");
+
+                    title.className = "collection-title";
+                    title.textContent =
+                        collection.name.replaceAll("_", " ");
+
+                    card.appendChild(image);
+                    card.appendChild(title);
+                    grid.appendChild(card);
+                });
+            })
+            .catch(error => {
+                document.getElementById("status").textContent =
+                    "Error loading collections.";
+
+                console.error(error);
+            });
+    </script>
 </body>
-
 </html>
