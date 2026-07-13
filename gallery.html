@@ -36,13 +36,22 @@
             gap: 8px;
         }
 
-        #controls button {
+        #controls button,
+        #expandControls {
             background: rgba(0, 0, 0, 0.5);
             color: white;
             border: 1px solid white;
             padding: 8px 12px;
             cursor: pointer;
             font-size: 16px;
+        }
+
+        #expandControls {
+            position: fixed;
+            top: 15px;
+            left: 20px;
+            z-index: 30;
+            display: none;
         }
 
         #version {
@@ -131,10 +140,13 @@
 
 <body>
     <div id="controls">
+        <button id="collapseControls">&lt;</button>
         <button id="fullscreen">Fullscreen</button>
         <button id="zoomOut">−</button>
         <button id="zoomIn">+</button>
     </div>
+
+    <button id="expandControls">&gt;</button>
 
     <div id="version"></div>
 
@@ -151,7 +163,7 @@
     <div id="thumbnails"></div>
 
     <script>
-        const version = "v1.3.3";
+        const version = "v1.3.4";
         document.getElementById("version").textContent = version;
 
         const base =
@@ -161,6 +173,10 @@
         const collection = params.get("collection");
 
         const photo = document.getElementById("photo");
+        const viewer = document.getElementById("viewer");
+        const controls = document.getElementById("controls");
+        const expandControls =
+            document.getElementById("expandControls");
 
         let images = [];
         let thumbnails = [];
@@ -238,7 +254,9 @@
 
             newImage.onerror = function () {
                 photo.style.opacity = 1;
-                console.error(`Unable to load image: ${images[current]}`);
+                console.error(
+                    `Unable to load image: ${images[current]}`
+                );
             };
 
             newImage.src = images[current];
@@ -261,11 +279,14 @@
         }
 
         function createThumbnails() {
-            const container = document.getElementById("thumbnails");
+            const container =
+                document.getElementById("thumbnails");
+
             container.innerHTML = "";
 
             thumbnails.forEach((src, index) => {
-                const thumbnail = document.createElement("img");
+                const thumbnail =
+                    document.createElement("img");
 
                 thumbnail.src = src;
                 thumbnail.loading = "lazy";
@@ -365,11 +386,59 @@
             updateZoom();
         }
 
+        function doubleClickZoom(event) {
+            const viewerRect =
+                viewer.getBoundingClientRect();
+
+            const viewerCenterX =
+                viewerRect.left + viewerRect.width / 2;
+
+            const viewerCenterY =
+                viewerRect.top + viewerRect.height / 2;
+
+            const clickOffsetX =
+                event.clientX - viewerCenterX;
+
+            const clickOffsetY =
+                event.clientY - viewerCenterY;
+
+            const newZoom = Math.min(
+                maximumZoom,
+                zoomLevel + zoomStep * 3
+            );
+
+            zoomLevel = newZoom;
+
+            panX =
+                -clickOffsetX * (zoomLevel - minimumZoom);
+
+            panY =
+                -clickOffsetY * (zoomLevel - minimumZoom);
+
+            updateZoom();
+        }
+
         document.getElementById("zoomIn")
             .addEventListener("click", zoomIn);
 
         document.getElementById("zoomOut")
             .addEventListener("click", zoomOut);
+
+        document.getElementById("collapseControls")
+            .addEventListener("click", function () {
+                controls.style.display = "none";
+                expandControls.style.display = "block";
+            });
+
+        expandControls.addEventListener("click", function () {
+            expandControls.style.display = "none";
+            controls.style.display = "flex";
+        });
+
+        photo.addEventListener("dblclick", function (event) {
+            event.preventDefault();
+            doubleClickZoom(event);
+        });
 
         photo.addEventListener("mousedown", function (event) {
             if (zoomLevel <= minimumZoom) {
