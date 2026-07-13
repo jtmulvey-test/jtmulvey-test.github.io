@@ -47,10 +47,10 @@
             width: 40px;
             height: 40px;
             padding: 0;
+            border: 1px solid white;
             border-radius: 50%;
             background: rgba(0, 0, 0, 0.5);
             color: white;
-            border: 1px solid white;
             cursor: pointer;
             font-size: 16px;
             text-align: center;
@@ -60,8 +60,8 @@
         }
 
         #toggleControls {
-            transform: translateY(0);
             z-index: 7;
+            transform: translateY(0);
             opacity: 1;
         }
 
@@ -76,28 +76,28 @@
         }
 
         #helpButton {
-            transform: translate(48px, 0);
             z-index: 6;
+            transform: translate(48px, 0);
         }
 
         #fullscreen {
-            transform: translateY(48px);
             z-index: 5;
+            transform: translateY(48px);
         }
 
         #hideUI {
-            transform: translateY(96px);
             z-index: 4;
+            transform: translateY(96px);
         }
 
         #zoomIn {
-            transform: translateY(144px);
             z-index: 3;
+            transform: translateY(144px);
         }
 
         #zoomOut {
-            transform: translateY(192px);
             z-index: 2;
+            transform: translateY(192px);
         }
 
         #controls.collapsed #helpButton,
@@ -155,25 +155,26 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            overflow: hidden;
+            contain: layout paint;
         }
 
-        .gallery-photo {
-            position: absolute;
+        #photo {
+            display: block;
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
-            opacity: 0;
+            opacity: 1;
+            transform: none;
             transform-origin: center center;
             user-select: none;
             -webkit-user-drag: none;
             pointer-events: none;
-            transition: opacity 0.35s ease-in-out;
-            will-change: opacity, transform;
-            backface-visibility: hidden;
+            transition: opacity 0.28s ease-in-out;
         }
 
-        .gallery-photo.visible {
-            opacity: 1;
+        #photo.no-fade {
+            transition: none;
         }
 
         #counter {
@@ -208,7 +209,7 @@
             flex-shrink: 0;
             cursor: pointer;
             opacity: 0.5;
-            transition: opacity 0.2s;
+            transition: opacity 0.2s ease;
         }
 
         .thumb:hover {
@@ -328,6 +329,17 @@
             transform: none;
             color: white;
         }
+
+        @media (prefers-reduced-motion: reduce) {
+            #photo,
+            .control-button,
+            #version,
+            #toggleIcon,
+            #helpOverlay,
+            #helpPanel {
+                transition-duration: 0.01ms;
+            }
+        }
     </style>
 </head>
 
@@ -383,8 +395,7 @@
 
     <div id="viewer">
         <div id="photoStage">
-            <img id="photoA" class="gallery-photo" alt="">
-            <img id="photoB" class="gallery-photo" alt="">
+            <img id="photo" alt="">
         </div>
     </div>
 
@@ -455,10 +466,7 @@
         const collection = params.get("collection");
 
         const viewer = document.getElementById("viewer");
-        const photoA = document.getElementById("photoA");
-        const photoB = document.getElementById("photoB");
-        const photos = [photoA, photoB];
-
+        const photo = document.getElementById("photo");
         const controls = document.getElementById("controls");
         const toggleControls =
             document.getElementById("toggleControls");
@@ -472,10 +480,7 @@
         let images = [];
         let thumbnails = [];
         let current = 0;
-
-        let activePhotoIndex = 0;
-        let imageChangeToken = 0;
-        let firstImageLoaded = false;
+        let displayedIndex = -1;
 
         let zoomLevel = 1;
         let panX = 0;
@@ -490,9 +495,15 @@
         let controlsCollapsed = false;
         let toggleIconTimer = null;
 
+        let transitionRunning = false;
+        let pendingImageIndex = null;
+
+        const imageCache = new Map();
+
         const minimumZoom = 1;
         const maximumZoom = 4;
         const zoomStep = 0.5;
+        const fadeDuration = 280;
 
         fetch("collections.json")
             .then(response => {
@@ -526,7 +537,7 @@
                 }
 
                 createThumbnails();
-                showImage();
+                requestImageChange();
             })
             .catch(error => {
                 document.getElementById("counter").textContent =
@@ -534,6 +545,12 @@
 
                 console.error(error);
             });
+
+        function waitForNextFrame() {
+            return new Promise(resolve => {
+                requestAnimationFrame(resolve);
+            });
+        }
 
         function waitForTwoFrames() {
             return new Promise(resolve => {
@@ -543,90 +560,100 @@
             });
         }
 
-        function prepareImage(src) {
-            return new Promise((resolve, reject) => {
-                const loader = new Image();
+        function waitForOpacityTransition() {
+            return new Promise(resolve => {
+                let completed = false;
 
-                loader.onload = async function () {
-                    try {
-                        if (loader.decode) {
-                            await loader.decode();
-                        }
-                    } catch (error) {
-                        console.warn(
-                            "Image decode completed with a warning:",
-                            error
-                        );
+                function finish() {
+                    if (completed) {
+                        return;
                     }
 
-                    resolve(src);
-                };
+                    completed = true;
 
-                loader.onerror = function () {
-                    reject(
-                        new Error(`Unable to load image: ${src}`)
+                    photo.removeEventListener(
+                        "transitionend",
+                        handleTransitionEnd
                     );
-                };
 
-                loader.src = src;
+                    resolve();
+                }
+
+                function handleTransitionEnd(event) {
+                    if (
+                        event.target === photo &&
+                        event.propertyName === "opacity"
+                    ) {
+                        finish();
+                    }
+                }
+
+                photo.addEventListener(
+                    "transitionend",
+                    handleTransitionEnd
+                );
+
+                window.setTimeout(
+                    finish,
+                    fadeDuration + 100
+                );
             });
         }
 
-        async function crossfadeToImage(src, token) {
-            try {
-                await prepareImage(src);
+        function getCachedImage(src, decodeImage) {
+            let cacheEntry = imageCache.get(src);
 
-                if (token !== imageChangeToken) {
-                    return;
-                }
+            if (!cacheEntry) {
+                const loader = new Image();
 
-                const oldPhoto = photos[activePhotoIndex];
-                const newPhoto =
-                    photos[1 - activePhotoIndex];
+                loader.decoding = "async";
 
-                newPhoto.src = src;
-                applyZoomToPhoto(newPhoto);
+                const loadPromise = new Promise(
+                    (resolve, reject) => {
+                        loader.onload = function () {
+                            resolve(loader);
+                        };
 
-                await waitForTwoFrames();
+                        loader.onerror = function () {
+                            reject(
+                                new Error(
+                                    `Unable to load image: ${src}`
+                                )
+                            );
+                        };
 
-                if (token !== imageChangeToken) {
-                    return;
-                }
+                        loader.src = src;
+                    }
+                );
 
-                if (!firstImageLoaded) {
-                    newPhoto.classList.add("visible");
-                    oldPhoto.classList.remove("visible");
+                cacheEntry = {
+                    loader: loader,
+                    loadPromise: loadPromise
+                };
 
-                    activePhotoIndex =
-                        1 - activePhotoIndex;
-
-                    firstImageLoaded = true;
-                    return;
-                }
-
-                newPhoto.classList.add("visible");
-                oldPhoto.classList.remove("visible");
-
-                activePhotoIndex =
-                    1 - activePhotoIndex;
-            } catch (error) {
-                console.error(error);
-            }
-        }
-
-        function showImage() {
-            if (images.length === 0) {
-                return;
+                imageCache.set(src, cacheEntry);
             }
 
-            const token = ++imageChangeToken;
+            return cacheEntry.loadPromise.then(
+                async loadedImage => {
+                    if (
+                        decodeImage &&
+                        typeof loadedImage.decode === "function"
+                    ) {
+                        try {
+                            await loadedImage.decode();
+                        } catch (error) {
+                            /*
+                            Some browsers may reject decode even after the
+                            image loaded successfully. The cached image can
+                            still be displayed.
+                            */
+                        }
+                    }
 
-            resetZoom();
-            updateCounter();
-            updateThumbnails();
-            preloadNearbyImages();
-
-            crossfadeToImage(images[current], token);
+                    return loadedImage;
+                }
+            );
         }
 
         function preloadNearbyImages() {
@@ -640,15 +667,97 @@
             ];
 
             indexes.forEach(index => {
-                const image = new Image();
-                image.src = images[index];
-
-                if (image.decode) {
-                    image.decode().catch(function () {
-                        // Preloading can continue even if decode rejects.
-                    });
-                }
+                getCachedImage(
+                    images[index],
+                    false
+                ).catch(function () {
+                    /*
+                    A preload failure will be reported again if the user
+                    attempts to display that photograph.
+                    */
+                });
             });
+        }
+
+        async function transitionToImage(index) {
+            const src = images[index];
+
+            try {
+                await getCachedImage(src, true);
+            } catch (error) {
+                console.error(error);
+                return;
+            }
+
+            if (displayedIndex === -1) {
+                photo.classList.add("no-fade");
+                photo.style.opacity = "0";
+                photo.src = src;
+
+                await waitForTwoFrames();
+
+                photo.style.opacity = "1";
+                displayedIndex = index;
+
+                await waitForNextFrame();
+                photo.classList.remove("no-fade");
+                return;
+            }
+
+            if (displayedIndex === index) {
+                return;
+            }
+
+            /*
+            The image has already loaded and decoded before the fade begins.
+            This prevents the animation from pausing while the browser waits
+            for the new photograph.
+            */
+            photo.style.opacity = "0";
+            await waitForOpacityTransition();
+
+            photo.classList.add("no-fade");
+            photo.src = src;
+            photo.style.opacity = "0";
+
+            await waitForTwoFrames();
+
+            photo.classList.remove("no-fade");
+            photo.style.opacity = "1";
+
+            displayedIndex = index;
+            await waitForOpacityTransition();
+        }
+
+        async function processImageQueue() {
+            if (transitionRunning) {
+                return;
+            }
+
+            transitionRunning = true;
+
+            while (pendingImageIndex !== null) {
+                const targetIndex = pendingImageIndex;
+                pendingImageIndex = null;
+
+                await transitionToImage(targetIndex);
+            }
+
+            transitionRunning = false;
+        }
+
+        function requestImageChange() {
+            if (images.length === 0) {
+                return;
+            }
+
+            resetZoom();
+            updateCounter();
+            updateThumbnails();
+            preloadNearbyImages();
+
+            pendingImageIndex = current;
+            processImageQueue();
         }
 
         function createThumbnails() {
@@ -663,12 +772,13 @@
 
                 thumbnail.src = src;
                 thumbnail.loading = "lazy";
+                thumbnail.decoding = "async";
                 thumbnail.className = "thumb";
                 thumbnail.alt = `Photo ${index + 1}`;
 
                 thumbnail.addEventListener("click", function () {
                     current = index;
-                    showImage();
+                    requestImageChange();
                 });
 
                 container.appendChild(thumbnail);
@@ -705,7 +815,7 @@
             }
 
             current = (current + 1) % images.length;
-            showImage();
+            requestImageChange();
         }
 
         function previousImage() {
@@ -714,18 +824,28 @@
             }
 
             current =
-                (current - 1 + images.length) % images.length;
+                (current - 1 + images.length) %
+                images.length;
 
-            showImage();
-        }
-
-        function applyZoomToPhoto(photo) {
-            photo.style.transform =
-                `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
+            requestImageChange();
         }
 
         function updateZoom() {
-            photos.forEach(applyZoomToPhoto);
+            if (
+                zoomLevel === minimumZoom &&
+                panX === 0 &&
+                panY === 0
+            ) {
+                /*
+                Avoiding a permanent scale(1) transform prevents Chrome from
+                tiling certain large images into visible GPU texture seams.
+                */
+                photo.style.transform = "none";
+            } else {
+                photo.style.transform =
+                    `translate(${panX}px, ${panY}px) ` +
+                    `scale(${zoomLevel})`;
+            }
 
             viewer.classList.toggle(
                 "zoomed",
@@ -776,10 +896,12 @@
                 viewer.getBoundingClientRect();
 
             const viewerCenterX =
-                viewerRect.left + viewerRect.width / 2;
+                viewerRect.left +
+                viewerRect.width / 2;
 
             const viewerCenterY =
-                viewerRect.top + viewerRect.height / 2;
+                viewerRect.top +
+                viewerRect.height / 2;
 
             const clickOffsetX =
                 event.clientX - viewerCenterX;
@@ -793,10 +915,12 @@
             );
 
             panX =
-                -clickOffsetX * (zoomLevel - minimumZoom);
+                -clickOffsetX *
+                (zoomLevel - minimumZoom);
 
             panY =
-                -clickOffsetY * (zoomLevel - minimumZoom);
+                -clickOffsetY *
+                (zoomLevel - minimumZoom);
 
             updateZoom();
         }
@@ -821,12 +945,15 @@
 
             toggleIcon.classList.add("fading");
 
-            toggleIconTimer = window.setTimeout(function () {
-                toggleIcon.textContent =
-                    controlsCollapsed ? ">" : "<";
+            toggleIconTimer = window.setTimeout(
+                function () {
+                    toggleIcon.textContent =
+                        controlsCollapsed ? ">" : "<";
 
-                toggleIcon.classList.remove("fading");
-            }, 150);
+                    toggleIcon.classList.remove("fading");
+                },
+                150
+            );
         }
 
         function toggleMediaControls() {
@@ -847,16 +974,24 @@
 
         function showHelp() {
             helpOverlay.classList.add("visible");
-            helpOverlay.setAttribute("aria-hidden", "false");
+            helpOverlay.setAttribute(
+                "aria-hidden",
+                "false"
+            );
         }
 
         function hideHelp() {
             helpOverlay.classList.remove("visible");
-            helpOverlay.setAttribute("aria-hidden", "true");
+            helpOverlay.setAttribute(
+                "aria-hidden",
+                "true"
+            );
         }
 
         function toggleHelp() {
-            if (helpOverlay.classList.contains("visible")) {
+            if (
+                helpOverlay.classList.contains("visible")
+            ) {
                 hideHelp();
             } else {
                 showHelp();
@@ -887,7 +1022,8 @@
 
             if (!document.fullscreenElement) {
                 try {
-                    await document.documentElement.requestFullscreen();
+                    await document.documentElement
+                        .requestFullscreen();
                 } catch (error) {
                     console.error(
                         "Unable to enter fullscreen:",
@@ -900,7 +1036,11 @@
         }
 
         function toggleUI() {
-            if (document.body.classList.contains("ui-hidden")) {
+            if (
+                document.body.classList.contains(
+                    "ui-hidden"
+                )
+            ) {
                 showUI();
             } else {
                 enterHideMode();
@@ -914,7 +1054,10 @@
             .addEventListener("click", zoomOut);
 
         document.getElementById("fullscreen")
-            .addEventListener("click", toggleFullscreen);
+            .addEventListener(
+                "click",
+                toggleFullscreen
+            );
 
         document.getElementById("hideUI")
             .addEventListener("click", toggleUI);
@@ -930,108 +1073,137 @@
             toggleMediaControls
         );
 
-        helpOverlay.addEventListener("click", function (event) {
-            if (event.target === helpOverlay) {
-                hideHelp();
+        helpOverlay.addEventListener(
+            "click",
+            function (event) {
+                if (event.target === helpOverlay) {
+                    hideHelp();
+                }
             }
-        });
+        );
 
-        viewer.addEventListener("dblclick", function (event) {
-            event.preventDefault();
-            doubleClickZoom(event);
-        });
-
-        viewer.addEventListener("mousedown", function (event) {
-            if (zoomLevel <= minimumZoom) {
-                return;
+        viewer.addEventListener(
+            "dblclick",
+            function (event) {
+                event.preventDefault();
+                doubleClickZoom(event);
             }
+        );
 
-            event.preventDefault();
-
-            isDragging = true;
-            dragStartX = event.clientX;
-            dragStartY = event.clientY;
-            startingPanX = panX;
-            startingPanY = panY;
-
-            viewer.classList.add("dragging");
-        });
-
-        document.addEventListener("mousemove", function (event) {
-            if (!isDragging) {
-                return;
-            }
-
-            panX =
-                startingPanX + event.clientX - dragStartX;
-
-            panY =
-                startingPanY + event.clientY - dragStartY;
-
-            updateZoom();
-        });
-
-        document.addEventListener("mouseup", function () {
-            isDragging = false;
-            viewer.classList.remove("dragging");
-        });
-
-        document.addEventListener("fullscreenchange", function () {
-            if (!document.fullscreenElement) {
-                showUI();
-            }
-        });
-
-        document.addEventListener("keydown", function (event) {
-            if (event.repeat) {
-                return;
-            }
-
-            const key = event.key.toLowerCase();
-
-            if (key === "escape") {
-                hideHelp();
-                showUI();
-
-                if (document.fullscreenElement) {
-                    document.exitFullscreen();
+        viewer.addEventListener(
+            "mousedown",
+            function (event) {
+                if (zoomLevel <= minimumZoom) {
+                    return;
                 }
 
-                return;
-            }
+                event.preventDefault();
 
-            if (helpOverlay.classList.contains("visible")) {
-                return;
-            }
+                isDragging = true;
+                dragStartX = event.clientX;
+                dragStartY = event.clientY;
+                startingPanX = panX;
+                startingPanY = panY;
 
-            if (key === "arrowright") {
-                nextImage();
+                viewer.classList.add("dragging");
             }
+        );
 
-            if (key === "arrowleft") {
-                previousImage();
-            }
+        document.addEventListener(
+            "mousemove",
+            function (event) {
+                if (!isDragging) {
+                    return;
+                }
 
-            if (key === "+" || key === "=") {
-                zoomIn();
-            }
+                panX =
+                    startingPanX +
+                    event.clientX -
+                    dragStartX;
 
-            if (key === "-" || key === "_") {
-                zoomOut();
-            }
+                panY =
+                    startingPanY +
+                    event.clientY -
+                    dragStartY;
 
-            if (key === "f") {
-                toggleFullscreen();
+                updateZoom();
             }
+        );
 
-            if (key === "h") {
-                toggleUI();
+        document.addEventListener(
+            "mouseup",
+            function () {
+                isDragging = false;
+                viewer.classList.remove("dragging");
             }
+        );
 
-            if (key === "c") {
-                toggleMediaControls();
+        document.addEventListener(
+            "fullscreenchange",
+            function () {
+                if (!document.fullscreenElement) {
+                    showUI();
+                }
             }
-        });
+        );
+
+        document.addEventListener(
+            "keydown",
+            function (event) {
+                if (event.repeat) {
+                    return;
+                }
+
+                const key = event.key.toLowerCase();
+
+                if (key === "escape") {
+                    hideHelp();
+                    showUI();
+
+                    if (document.fullscreenElement) {
+                        document.exitFullscreen();
+                    }
+
+                    return;
+                }
+
+                if (
+                    helpOverlay.classList.contains(
+                        "visible"
+                    )
+                ) {
+                    return;
+                }
+
+                if (key === "arrowright") {
+                    nextImage();
+                }
+
+                if (key === "arrowleft") {
+                    previousImage();
+                }
+
+                if (key === "+" || key === "=") {
+                    zoomIn();
+                }
+
+                if (key === "-" || key === "_") {
+                    zoomOut();
+                }
+
+                if (key === "f") {
+                    toggleFullscreen();
+                }
+
+                if (key === "h") {
+                    toggleUI();
+                }
+
+                if (key === "c") {
+                    toggleMediaControls();
+                }
+            }
+        );
     </script>
 </body>
 </html>
