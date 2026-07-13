@@ -27,14 +27,30 @@
             text-decoration: none;
         }
 
-        #controls {
+        #controlArea {
             position: fixed;
             top: 15px;
             left: 20px;
             z-index: 30;
+            width: 40px;
+        }
+
+        #controls {
             display: flex;
             flex-direction: column;
             gap: 8px;
+            opacity: 1;
+            transform: translateY(0);
+            transition:
+                opacity 0.25s ease,
+                transform 0.25s ease;
+            pointer-events: auto;
+        }
+
+        #controls.collapsed {
+            opacity: 0;
+            transform: translateY(-30px);
+            pointer-events: none;
         }
 
         #controls button,
@@ -42,6 +58,7 @@
             width: 40px;
             height: 40px;
             padding: 0;
+            border-radius: 50%;
             background: rgba(0, 0, 0, 0.5);
             color: white;
             border: 1px solid white;
@@ -51,21 +68,38 @@
         }
 
         #expandControls {
-            position: fixed;
-            top: 15px;
-            left: 20px;
-            z-index: 30;
-            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            transform: translateY(-20px);
+            pointer-events: none;
+            transition:
+                opacity 0.25s ease,
+                transform 0.25s ease;
+        }
+
+        #expandControls.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
         }
 
         #version {
-            position: fixed;
-            top: 220px;
-            left: 20px;
-            z-index: 30;
+            margin-top: 8px;
+            width: 40px;
             color: red;
             font-size: 12px;
+            text-align: center;
             opacity: 0.8;
+            transition:
+                opacity 0.25s ease,
+                transform 0.25s ease;
+        }
+
+        #version.collapsed {
+            opacity: 0;
+            transform: translateY(-30px);
         }
 
         #viewer {
@@ -140,9 +174,7 @@
             opacity: 1;
         }
 
-        body.ui-hidden #controls,
-        body.ui-hidden #expandControls,
-        body.ui-hidden #version,
+        body.ui-hidden #controlArea,
         body.ui-hidden nav,
         body.ui-hidden #counter,
         body.ui-hidden #thumbnails {
@@ -161,17 +193,19 @@
 </head>
 
 <body>
-    <div id="controls">
-        <button id="collapseControls" aria-label="Collapse controls">&lt;</button>
-        <button id="fullscreen" aria-label="Toggle fullscreen">F</button>
-        <button id="hideUI" aria-label="Hide interface">H</button>
-        <button id="zoomOut" aria-label="Zoom out">−</button>
-        <button id="zoomIn" aria-label="Zoom in">+</button>
+    <div id="controlArea">
+        <div id="controls">
+            <button id="collapseControls" aria-label="Collapse controls">&lt;</button>
+            <button id="fullscreen" aria-label="Toggle fullscreen">F</button>
+            <button id="hideUI" aria-label="Hide interface">H</button>
+            <button id="zoomIn" aria-label="Zoom in">+</button>
+            <button id="zoomOut" aria-label="Zoom out">−</button>
+        </div>
+
+        <button id="expandControls" aria-label="Expand controls">&gt;</button>
+
+        <div id="version"></div>
     </div>
-
-    <button id="expandControls" aria-label="Expand controls">&gt;</button>
-
-    <div id="version"></div>
 
     <nav>
         <a href="index.html">Home</a>
@@ -186,7 +220,7 @@
     <div id="thumbnails"></div>
 
     <script>
-        const version = "v1.3.8";
+        const version = "v1.3.9";
         document.getElementById("version").textContent = version;
 
         const base =
@@ -200,6 +234,8 @@
         const controls = document.getElementById("controls");
         const expandControls =
             document.getElementById("expandControls");
+        const versionElement =
+            document.getElementById("version");
 
         let images = [];
         let thumbnails = [];
@@ -216,7 +252,6 @@
         let startingPanY = 0;
 
         let controlsCollapsed = false;
-        let hideModeRequestedFullscreen = false;
 
         const minimumZoom = 1;
         const maximumZoom = 4;
@@ -463,34 +498,45 @@
             }
         }
 
-        function updateControlVisibility() {
-            if (document.body.classList.contains("ui-hidden")) {
-                return;
-            }
+        function collapseMediaControls() {
+            controlsCollapsed = true;
+            controls.classList.add("collapsed");
+            versionElement.classList.add("collapsed");
 
-            if (controlsCollapsed) {
-                controls.style.display = "none";
-                expandControls.style.display = "block";
-            } else {
-                controls.style.display = "flex";
-                expandControls.style.display = "none";
-            }
+            window.setTimeout(function () {
+                expandControls.classList.add("visible");
+            }, 120);
+        }
+
+        function expandMediaControls() {
+            controlsCollapsed = false;
+            expandControls.classList.remove("visible");
+
+            window.setTimeout(function () {
+                controls.classList.remove("collapsed");
+                versionElement.classList.remove("collapsed");
+            }, 120);
         }
 
         function showUI() {
             document.body.classList.remove("ui-hidden");
-            hideModeRequestedFullscreen = false;
-            updateControlVisibility();
+
+            if (controlsCollapsed) {
+                controls.classList.add("collapsed");
+                versionElement.classList.add("collapsed");
+                expandControls.classList.add("visible");
+            } else {
+                controls.classList.remove("collapsed");
+                versionElement.classList.remove("collapsed");
+                expandControls.classList.remove("visible");
+            }
         }
 
         async function enterHideMode() {
             if (!document.fullscreenElement) {
                 try {
-                    hideModeRequestedFullscreen = true;
                     await document.documentElement.requestFullscreen();
                 } catch (error) {
-                    hideModeRequestedFullscreen = false;
-
                     console.error(
                         "Unable to enter fullscreen:",
                         error
@@ -501,13 +547,9 @@
             document.body.classList.add("ui-hidden");
         }
 
-        function exitHideMode() {
-            showUI();
-        }
-
         function toggleUI() {
             if (document.body.classList.contains("ui-hidden")) {
-                exitHideMode();
+                showUI();
             } else {
                 enterHideMode();
             }
@@ -526,15 +568,12 @@
             .addEventListener("click", toggleUI);
 
         document.getElementById("collapseControls")
-            .addEventListener("click", function () {
-                controlsCollapsed = true;
-                updateControlVisibility();
-            });
+            .addEventListener("click", collapseMediaControls);
 
-        expandControls.addEventListener("click", function () {
-            controlsCollapsed = false;
-            updateControlVisibility();
-        });
+        expandControls.addEventListener(
+            "click",
+            expandMediaControls
+        );
 
         photo.addEventListener("dblclick", function (event) {
             event.preventDefault();
@@ -614,7 +653,7 @@
             }
 
             if (key === "escape") {
-                exitHideMode();
+                showUI();
 
                 if (document.fullscreenElement) {
                     document.exitFullscreen();
