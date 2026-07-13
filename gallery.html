@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <style>
-        html, body {
+        html,
+        body {
             margin: 0;
             padding: 0;
             height: 100%;
@@ -19,11 +20,14 @@
             top: 15px;
             right: 20px;
             z-index: 30;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
         }
 
         nav a {
             color: white;
-            margin-left: 20px;
             text-decoration: none;
         }
 
@@ -32,7 +36,7 @@
             top: 15px;
             left: 20px;
             z-index: 30;
-            width: 40px;
+            width: 88px;
             height: 280px;
         }
 
@@ -57,7 +61,7 @@
 
         #toggleControls {
             transform: translateY(0);
-            z-index: 6;
+            z-index: 7;
             opacity: 1;
         }
 
@@ -69,6 +73,11 @@
 
         #toggleIcon.fading {
             opacity: 0;
+        }
+
+        #helpButton {
+            transform: translate(48px, 0);
+            z-index: 6;
         }
 
         #fullscreen {
@@ -91,11 +100,12 @@
             z-index: 2;
         }
 
+        #controls.collapsed #helpButton,
         #controls.collapsed #fullscreen,
         #controls.collapsed #hideUI,
         #controls.collapsed #zoomIn,
         #controls.collapsed #zoomOut {
-            transform: translateY(0);
+            transform: translate(0, 0);
             opacity: 0;
             pointer-events: none;
         }
@@ -152,31 +162,31 @@
             position: fixed;
             bottom: 80px;
             left: 50%;
-            transform: translateX(-50%);
-            color: white;
             z-index: 25;
+            color: white;
+            transform: translateX(-50%);
         }
 
         #thumbnails {
             position: fixed;
             bottom: 0;
             left: 0;
+            z-index: 20;
             width: 100%;
             height: 80px;
-            z-index: 20;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            background: rgba(0, 0, 0, 0.75);
-            overflow-x: auto;
             padding: 5px;
             box-sizing: border-box;
+            overflow-x: auto;
+            background: rgba(0, 0, 0, 0.75);
         }
 
         .thumb {
-            height: 70px;
             width: auto;
+            height: 70px;
             flex-shrink: 0;
             cursor: pointer;
             opacity: 0.5;
@@ -191,10 +201,100 @@
             opacity: 1;
         }
 
+        #helpOverlay {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+            background: rgba(0, 0, 0, 0.8);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        #helpOverlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #helpPanel {
+            position: relative;
+            width: min(520px, 90vw);
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 28px;
+            box-sizing: border-box;
+            color: white;
+            background: rgba(20, 20, 20, 0.97);
+            border: 1px solid white;
+            border-radius: 14px;
+            transform: translateY(15px);
+            transition: transform 0.2s ease;
+        }
+
+        #helpOverlay.visible #helpPanel {
+            transform: translateY(0);
+        }
+
+        #helpPanel h2 {
+            margin: 0 0 20px;
+            font-size: 24px;
+        }
+
+        #helpPanel h3 {
+            margin: 22px 0 10px;
+            font-size: 16px;
+        }
+
+        #helpPanel p {
+            margin: 8px 0;
+            line-height: 1.45;
+        }
+
+        .help-row {
+            display: grid;
+            grid-template-columns: 50px 1fr;
+            gap: 12px;
+            align-items: start;
+            margin: 10px 0;
+        }
+
+        .help-key {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 36px;
+            min-height: 30px;
+            padding: 2px 6px;
+            box-sizing: border-box;
+            border: 1px solid white;
+            border-radius: 16px;
+            font-weight: bold;
+        }
+
+        #closeHelp {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 34px;
+            height: 34px;
+            padding: 0;
+            color: white;
+            background: transparent;
+            border: 1px solid white;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
         body.ui-hidden #controlArea,
         body.ui-hidden nav,
-        body.ui-hidden #counter,
-        body.ui-hidden #thumbnails {
+        body.ui-hidden #thumbnails,
+        body.ui-hidden #helpOverlay {
             display: none !important;
         }
 
@@ -206,6 +306,13 @@
             max-width: 100vw;
             max-height: 100vh;
         }
+
+        body.ui-hidden #counter {
+            left: 12px;
+            bottom: 10px;
+            transform: none;
+            color: white;
+        }
     </style>
 </head>
 
@@ -216,7 +323,15 @@
                 id="toggleControls"
                 class="control-button"
                 aria-label="Toggle controls"
-            ><span id="toggleIcon">&lt;</span></button>
+            >
+                <span id="toggleIcon">&lt;</span>
+            </button>
+
+            <button
+                id="helpButton"
+                class="control-button"
+                aria-label="Show help"
+            >?</button>
 
             <button
                 id="fullscreen"
@@ -258,8 +373,89 @@
     <div id="counter"></div>
     <div id="thumbnails"></div>
 
+    <div id="helpOverlay" aria-hidden="true">
+        <div id="helpPanel" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+            <button id="closeHelp" aria-label="Close help">×</button>
+
+            <h2 id="helpTitle">Gallery Controls</h2>
+
+            <div class="help-row">
+                <span class="help-key">&lt;</span>
+                <p>Collapse the media controls into the top circle.</p>
+            </div>
+
+            <div class="help-row">
+                <span class="help-key">&gt;</span>
+                <p>Expand the media controls.</p>
+            </div>
+
+            <div class="help-row">
+                <span class="help-key">?</span>
+                <p>Open or close this help panel.</p>
+            </div>
+
+            <div class="help-row">
+                <span class="help-key">F</span>
+                <p>Enter or exit fullscreen mode.</p>
+            </div>
+
+            <div class="help-row">
+                <span class="help-key">H</span>
+                <p>
+                    Enter hide mode. Hide mode starts fullscreen and removes
+                    everything except the photograph and image counter.
+                </p>
+            </div>
+
+            <div class="help-row">
+                <span class="help-key">+</span>
+                <p>Zoom farther into the current photograph.</p>
+            </div>
+
+            <div class="help-row">
+                <span class="help-key">−</span>
+                <p>Zoom out. Returning to the minimum zoom recenters the photograph.</p>
+            </div>
+
+            <h3>Keyboard and mouse</h3>
+
+            <div class="help-row">
+                <span class="help-key">←</span>
+                <p>Display the previous photograph.</p>
+            </div>
+
+            <div class="help-row">
+                <span class="help-key">→</span>
+                <p>Display the next photograph.</p>
+            </div>
+
+            <div class="help-row">
+                <span class="help-key">Esc</span>
+                <p>Exit hide mode, close help, and exit fullscreen.</p>
+            </div>
+
+            <div class="help-row">
+                <span class="help-key">2×</span>
+                <p>
+                    Double-click a photograph to zoom toward that location.
+                    Double-click again to reset the zoom.
+                </p>
+            </div>
+
+            <div class="help-row">
+                <span class="help-key">Drag</span>
+                <p>When zoomed in, click and drag to move around the photograph.</p>
+            </div>
+
+            <div class="help-row">
+                <span class="help-key">Thumb</span>
+                <p>Select a thumbnail to jump directly to that photograph.</p>
+            </div>
+        </div>
+    </div>
+
     <script>
-        const version = "v1.3.12";
+        const version = "v1.3.13";
         document.getElementById("version").textContent = version;
 
         const base =
@@ -277,6 +473,8 @@
             document.getElementById("toggleIcon");
         const versionElement =
             document.getElementById("version");
+        const helpOverlay =
+            document.getElementById("helpOverlay");
 
         let images = [];
         let thumbnails = [];
@@ -569,6 +767,24 @@
             updateToggleIcon();
         }
 
+        function showHelp() {
+            helpOverlay.classList.add("visible");
+            helpOverlay.setAttribute("aria-hidden", "false");
+        }
+
+        function hideHelp() {
+            helpOverlay.classList.remove("visible");
+            helpOverlay.setAttribute("aria-hidden", "true");
+        }
+
+        function toggleHelp() {
+            if (helpOverlay.classList.contains("visible")) {
+                hideHelp();
+            } else {
+                showHelp();
+            }
+        }
+
         function showUI() {
             document.body.classList.remove("ui-hidden");
 
@@ -589,6 +805,8 @@
         }
 
         async function enterHideMode() {
+            hideHelp();
+
             if (!document.fullscreenElement) {
                 try {
                     await document.documentElement.requestFullscreen();
@@ -623,10 +841,22 @@
         document.getElementById("hideUI")
             .addEventListener("click", toggleUI);
 
+        document.getElementById("helpButton")
+            .addEventListener("click", toggleHelp);
+
+        document.getElementById("closeHelp")
+            .addEventListener("click", hideHelp);
+
         toggleControls.addEventListener(
             "click",
             toggleMediaControls
         );
+
+        helpOverlay.addEventListener("click", function (event) {
+            if (event.target === helpOverlay) {
+                hideHelp();
+            }
+        });
 
         photo.addEventListener("dblclick", function (event) {
             event.preventDefault();
@@ -681,6 +911,25 @@
 
             const key = event.key.toLowerCase();
 
+            if (key === "escape") {
+                hideHelp();
+                showUI();
+
+                if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                }
+
+                return;
+            }
+
+            if (helpOverlay.classList.contains("visible")) {
+                if (key === "?") {
+                    hideHelp();
+                }
+
+                return;
+            }
+
             if (key === "arrowright") {
                 nextImage();
             }
@@ -705,12 +954,8 @@
                 toggleUI();
             }
 
-            if (key === "escape") {
-                showUI();
-
-                if (document.fullscreenElement) {
-                    document.exitFullscreen();
-                }
+            if (key === "?") {
+                toggleHelp();
             }
         });
     </script>
