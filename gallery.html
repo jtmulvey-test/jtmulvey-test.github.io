@@ -38,7 +38,7 @@
             left: 20px;
             z-index: 30;
             width: 106px;
-            height: 340px;
+            height: 410px;
         }
 
         .control-button {
@@ -61,7 +61,7 @@
         }
 
         #toggleControls {
-            z-index: 7;
+            z-index: 8;
             transform: translateY(0);
             opacity: 1;
         }
@@ -77,33 +77,39 @@
         }
 
         #helpButton {
-            z-index: 6;
+            z-index: 7;
             transform: translate(58px, 0);
         }
 
         #fullscreen {
-            z-index: 5;
+            z-index: 6;
             transform: translateY(58px);
         }
 
         #hideUI {
-            z-index: 4;
+            z-index: 5;
             transform: translateY(116px);
+        }
+
+        #autoplayButton {
+            z-index: 4;
+            transform: translateY(174px);
         }
 
         #zoomIn {
             z-index: 3;
-            transform: translateY(174px);
+            transform: translateY(232px);
         }
 
         #zoomOut {
             z-index: 2;
-            transform: translateY(232px);
+            transform: translateY(290px);
         }
 
         #controls.collapsed #helpButton,
         #controls.collapsed #fullscreen,
         #controls.collapsed #hideUI,
+        #controls.collapsed #autoplayButton,
         #controls.collapsed #zoomIn,
         #controls.collapsed #zoomOut {
             transform: translate(0, 0);
@@ -113,7 +119,7 @@
 
         #version {
             position: absolute;
-            top: 290px;
+            top: 348px;
             left: 0;
             width: 48px;
             color: red;
@@ -126,7 +132,7 @@
         }
 
         #version.collapsed {
-            transform: translateY(-290px);
+            transform: translateY(-348px);
             opacity: 0;
         }
 
@@ -195,6 +201,17 @@
             transform: translateX(-50%);
         }
 
+        #autoplayStatus {
+            position: fixed;
+            left: 12px;
+            bottom: 34px;
+            z-index: 25;
+            display: none;
+            color: white;
+            font-size: 14px;
+            line-height: 1;
+        }
+
         #thumbnails {
             position: fixed;
             bottom: 0;
@@ -251,7 +268,7 @@
 
         #helpPanel {
             position: relative;
-            width: min(520px, 90vw);
+            width: min(560px, 90vw);
             max-height: 85vh;
             overflow-y: auto;
             padding: 28px;
@@ -301,6 +318,25 @@
             flex-shrink: 0;
         }
 
+        .delay-setting {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0 4px 56px;
+        }
+
+        #autoplayDelay {
+            width: 65px;
+            padding: 7px;
+            box-sizing: border-box;
+            color: white;
+            background: black;
+            border: 1px solid white;
+            border-radius: 5px;
+            font: inherit;
+            text-align: center;
+        }
+
         #closeHelp {
             position: absolute;
             top: 12px;
@@ -337,6 +373,10 @@
             bottom: 10px;
             transform: none;
             color: white;
+        }
+
+        body.ui-hidden.autoplay-active #autoplayStatus {
+            display: block;
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -382,6 +422,14 @@
             >H</button>
 
             <button
+                id="autoplayButton"
+                class="control-button"
+                aria-label="Start autoplay"
+            >
+                <span id="autoplayIcon">▶</span>
+            </button>
+
+            <button
                 id="zoomIn"
                 class="control-button"
                 aria-label="Zoom in"
@@ -410,6 +458,7 @@
         <div id="fadeOverlay"></div>
     </div>
 
+    <div id="autoplayStatus"></div>
     <div id="counter"></div>
     <div id="thumbnails"></div>
 
@@ -450,6 +499,26 @@
             </div>
 
             <div class="help-row">
+                <span class="help-key">▶</span>
+                <p>Start or pause Autoplay Mode (keypress "P")</p>
+            </div>
+
+            <div class="delay-setting">
+                <label for="autoplayDelay">Autoplay delay:</label>
+
+                <input
+                    id="autoplayDelay"
+                    type="number"
+                    min="2"
+                    max="60"
+                    step="1"
+                    value="7"
+                >
+
+                <span>seconds</span>
+            </div>
+
+            <div class="help-row">
                 <span class="help-key">+</span>
                 <p>Zoom in for the current photograph (keypress "+")</p>
             </div>
@@ -467,7 +536,7 @@
     </div>
 
     <script>
-        const version = "v1.3.20";
+        const version = "v1.4.1";
         document.getElementById("version").textContent = version;
 
         const params = new URLSearchParams(window.location.search);
@@ -486,6 +555,14 @@
             document.getElementById("version");
         const helpOverlay =
             document.getElementById("helpOverlay");
+        const autoplayButton =
+            document.getElementById("autoplayButton");
+        const autoplayIcon =
+            document.getElementById("autoplayIcon");
+        const autoplayStatus =
+            document.getElementById("autoplayStatus");
+        const autoplayDelayInput =
+            document.getElementById("autoplayDelay");
 
         let images = [];
         let thumbnails = [];
@@ -508,6 +585,11 @@
         let transitionRunning = false;
         let pendingImageIndex = null;
 
+        let autoplayActive = false;
+        let autoplayPlaying = false;
+        let autoplayTimer = null;
+        let autoplayDelaySeconds = 7;
+
         const imageCache = new Map();
 
         const minimumZoom = 1;
@@ -528,13 +610,13 @@
             .then(data => {
                 const base = data.base;
                 const collections = data.collections;
-            
+
                 if (!base || !Array.isArray(collections)) {
                     throw new Error(
                         "collections.json is not in the expected format"
                     );
                 }
-            
+
                 const selected = collections.find(
                     item => item.name === collection
                 );
@@ -564,12 +646,6 @@
 
                 console.error(error);
             });
-
-        function waitForNextFrame() {
-            return new Promise(resolve => {
-                requestAnimationFrame(resolve);
-            });
-        }
 
         function waitForTwoFrames() {
             return new Promise(resolve => {
@@ -663,8 +739,8 @@
                             await loadedImage.decode();
                         } catch (error) {
                             /*
-                            The image loaded successfully, so it can still
-                            be displayed even if decode() rejects.
+                            The image loaded successfully and can still
+                            be displayed if decode() rejects.
                             */
                         }
                     }
@@ -684,6 +760,7 @@
                     }
 
                     completed = true;
+
                     photo.removeEventListener("load", handleLoad);
                     photo.removeEventListener("error", handleError);
                     resolve();
@@ -712,8 +789,7 @@
                         await photo.decode();
                     } catch (error) {
                         /*
-                        Continue if decode() rejects after the image has
-                        already loaded successfully.
+                        Continue if decode() rejects after loading.
                         */
                     }
                 }
@@ -736,7 +812,7 @@
                     false
                 ).catch(function () {
                     /*
-                    Any failure will be reported if the photograph is
+                    A failure will be reported if the photograph is
                     requested later.
                     */
                 });
@@ -770,23 +846,10 @@
                 return;
             }
 
-            /*
-            Fade the flat black overlay fully into view before altering
-            the displayed photograph.
-            */
             fadeOverlay.classList.add("visible");
             await waitForOverlayTransition();
-
-            /*
-            Ensure the fully opaque overlay has been painted before the
-            old photograph is hidden or replaced.
-            */
             await waitForTwoFrames();
 
-            /*
-            Keep the photograph hidden beneath the black overlay while
-            the browser applies and paints the new source.
-            */
             photo.style.visibility = "hidden";
             photo.src = loadedSource;
 
@@ -795,10 +858,6 @@
 
             displayedIndex = index;
 
-            /*
-            Reveal the photograph while the overlay is still completely
-            black, then allow two paint frames before fading back out.
-            */
             photo.style.visibility = "visible";
             await waitForTwoFrames();
 
@@ -813,19 +872,29 @@
 
             transitionRunning = true;
 
-            while (pendingImageIndex !== null) {
-                const targetIndex = pendingImageIndex;
-                pendingImageIndex = null;
+            try {
+                while (pendingImageIndex !== null) {
+                    const targetIndex = pendingImageIndex;
+                    pendingImageIndex = null;
 
-                await transitionToImage(targetIndex);
+                    await transitionToImage(targetIndex);
+                }
+            } finally {
+                transitionRunning = false;
+
+                if (autoplayPlaying) {
+                    scheduleAutoplay();
+                }
             }
-
-            transitionRunning = false;
         }
 
         function requestImageChange() {
             if (images.length === 0) {
                 return;
+            }
+
+            if (autoplayPlaying) {
+                clearAutoplayTimer();
             }
 
             resetZoom();
@@ -905,6 +974,187 @@
                 images.length;
 
             requestImageChange();
+        }
+
+        function clearAutoplayTimer() {
+            if (autoplayTimer !== null) {
+                window.clearTimeout(autoplayTimer);
+                autoplayTimer = null;
+            }
+        }
+
+        function scheduleAutoplay() {
+            clearAutoplayTimer();
+
+            if (
+                !autoplayPlaying ||
+                images.length < 2 ||
+                transitionRunning
+            ) {
+                return;
+            }
+
+            autoplayTimer = window.setTimeout(
+                function () {
+                    autoplayTimer = null;
+
+                    if (!autoplayPlaying) {
+                        return;
+                    }
+
+                    current = (current + 1) % images.length;
+                    requestImageChange();
+                },
+                autoplayDelaySeconds * 1000
+            );
+        }
+
+        function updateAutoplayDisplay() {
+            if (autoplayActive) {
+                document.body.classList.add(
+                    "autoplay-active"
+                );
+
+                autoplayStatus.textContent =
+                    autoplayPlaying ? "▶" : "paused";
+            } else {
+                document.body.classList.remove(
+                    "autoplay-active"
+                );
+
+                autoplayStatus.textContent = "";
+            }
+
+            autoplayIcon.textContent =
+                autoplayPlaying ? "Ⅱ" : "▶";
+
+            autoplayButton.setAttribute(
+                "aria-label",
+                autoplayPlaying
+                    ? "Pause autoplay"
+                    : "Start autoplay"
+            );
+        }
+
+        async function startAutoplay() {
+            if (images.length === 0) {
+                return;
+            }
+
+            autoplayActive = true;
+            autoplayPlaying = true;
+            updateAutoplayDisplay();
+
+            if (
+                !document.body.classList.contains(
+                    "ui-hidden"
+                )
+            ) {
+                await enterHideMode();
+            }
+
+            if (!transitionRunning) {
+                scheduleAutoplay();
+            }
+        }
+
+        function pauseAutoplay() {
+            if (!autoplayActive) {
+                return;
+            }
+
+            autoplayPlaying = false;
+            clearAutoplayTimer();
+            updateAutoplayDisplay();
+        }
+
+        async function resumeAutoplay() {
+            if (images.length === 0) {
+                return;
+            }
+
+            autoplayActive = true;
+            autoplayPlaying = true;
+            updateAutoplayDisplay();
+
+            if (
+                !document.body.classList.contains(
+                    "ui-hidden"
+                )
+            ) {
+                await enterHideMode();
+            }
+
+            if (!transitionRunning) {
+                scheduleAutoplay();
+            }
+        }
+
+        function stopAutoplay() {
+            autoplayActive = false;
+            autoplayPlaying = false;
+            clearAutoplayTimer();
+            updateAutoplayDisplay();
+        }
+
+        async function toggleAutoplay() {
+            if (!autoplayActive) {
+                await startAutoplay();
+                return;
+            }
+
+            if (autoplayPlaying) {
+                pauseAutoplay();
+            } else {
+                await resumeAutoplay();
+            }
+        }
+
+        function updateAutoplayDelay() {
+            const newDelay = Number(
+                autoplayDelayInput.value
+            );
+
+            if (
+                Number.isFinite(newDelay) &&
+                newDelay >= 2 &&
+                newDelay <= 60
+            ) {
+                autoplayDelaySeconds = newDelay;
+
+                if (
+                    autoplayPlaying &&
+                    !transitionRunning
+                ) {
+                    scheduleAutoplay();
+                }
+            }
+        }
+
+        function validateAutoplayDelay() {
+            let newDelay = Number(
+                autoplayDelayInput.value
+            );
+
+            if (!Number.isFinite(newDelay)) {
+                newDelay = 7;
+            }
+
+            newDelay = Math.min(
+                60,
+                Math.max(2, newDelay)
+            );
+
+            autoplayDelaySeconds = newDelay;
+            autoplayDelayInput.value =
+                String(newDelay);
+
+            if (
+                autoplayPlaying &&
+                !transitionRunning
+            ) {
+                scheduleAutoplay();
+            }
         }
 
         function updateZoom() {
@@ -1108,14 +1358,20 @@
             document.body.classList.add("ui-hidden");
         }
 
+        function exitHideMode() {
+            stopAutoplay();
+            showUI();
+        }
+
         function toggleUI() {
             if (
                 document.body.classList.contains(
                     "ui-hidden"
                 )
             ) {
-                showUI();
+                exitHideMode();
             } else {
+                stopAutoplay();
                 enterHideMode();
             }
         }
@@ -1134,6 +1390,21 @@
 
         document.getElementById("hideUI")
             .addEventListener("click", toggleUI);
+
+        autoplayButton.addEventListener(
+            "click",
+            toggleAutoplay
+        );
+
+        autoplayDelayInput.addEventListener(
+            "input",
+            updateAutoplayDelay
+        );
+
+        autoplayDelayInput.addEventListener(
+            "change",
+            validateAutoplayDelay
+        );
 
         document.getElementById("helpButton")
             .addEventListener("click", toggleHelp);
@@ -1215,6 +1486,7 @@
             "fullscreenchange",
             function () {
                 if (!document.fullscreenElement) {
+                    stopAutoplay();
                     showUI();
                 }
             }
@@ -1231,6 +1503,7 @@
 
                 if (key === "escape") {
                     hideHelp();
+                    stopAutoplay();
                     showUI();
 
                     if (document.fullscreenElement) {
@@ -1248,11 +1521,6 @@
                     return;
                 }
 
-                /*
-                Allow browser and operating-system shortcuts such as
-                Ctrl + Plus, Ctrl + Minus, and Command + Plus without
-                also changing the photograph zoom.
-                */
                 if (
                     event.ctrlKey ||
                     event.metaKey ||
@@ -1283,6 +1551,10 @@
 
                 if (key === "h") {
                     toggleUI();
+                }
+
+                if (key === "p") {
+                    toggleAutoplay();
                 }
 
                 if (key === "c") {
