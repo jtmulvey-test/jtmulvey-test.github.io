@@ -1,25 +1,73 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <title>Collections</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <style>
-        html,
-        body {
-            margin: 0;
-            padding: 0;
+        :root {
+            --page-background: #000000;
+            --card-background: #0b0b0b;
+            --card-background-hover: #101010;
+            --primary-text: #ffffff;
+            --secondary-text: rgba(255, 255, 255, 0.62);
+            --subtle-border: rgba(255, 255, 255, 0.12);
+            --strong-border: rgba(255, 255, 255, 0.28);
+            --card-radius: 16px;
+            --page-width: 1400px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
             min-height: 100%;
-            background: black;
-            color: white;
-            font-family: Arial, sans-serif;
+            background: var(--page-background);
+        }
+
+        body {
+            min-height: 100%;
+            margin: 0;
+            color: var(--primary-text);
+            background:
+                radial-gradient(
+                    circle at 50% -15%,
+                    rgba(255, 255, 255, 0.08),
+                    transparent 38%
+                ),
+                var(--page-background);
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+        }
+
+        a {
+            color: inherit;
+        }
+
+        #version {
+            position: fixed;
+            top: 15px;
+            left: 20px;
+            z-index: 50;
+            color: red;
+            font-size: 12px;
+            line-height: 1;
+            opacity: 0.85;
         }
 
         nav {
             position: fixed;
             top: 15px;
             right: 20px;
-            z-index: 30;
+            z-index: 50;
             display: flex;
             flex-direction: column;
             align-items: flex-end;
@@ -28,95 +76,561 @@
 
         nav a {
             color: white;
-            text-decoration: none;
             font-size: 22.4px;
+            line-height: 1.1;
+            text-decoration: none;
+            transition: opacity 0.2s ease;
+        }
+
+        nav a:hover {
+            opacity: 0.65;
+        }
+
+        nav a:focus-visible {
+            outline: 1px solid white;
+            outline-offset: 5px;
+            border-radius: 2px;
         }
 
         #page {
-            width: min(1200px, calc(100% - 40px));
+            width: min(
+                var(--page-width),
+                calc(100% - 56px)
+            );
             margin: 0 auto;
-            padding: 90px 20px 50px;
-            box-sizing: border-box;
+            padding: 115px 0 70px;
+        }
+
+        #pageHeader {
+            max-width: 720px;
+            margin: 0 auto 54px;
+            text-align: center;
+        }
+
+        #eyebrow {
+            margin: 0 0 14px;
+            color: var(--secondary-text);
+            font-size: 12px;
+            font-weight: bold;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
         }
 
         h1 {
-            margin: 0 0 35px;
-            text-align: center;
-            font-size: 36px;
-            font-weight: normal;
+            margin: 0;
+            font-size: clamp(42px, 7vw, 82px);
+            font-weight: 500;
+            line-height: 0.95;
+            letter-spacing: -0.045em;
+        }
+
+        #pageDescription {
+            max-width: 560px;
+            margin: 22px auto 0;
+            color: var(--secondary-text);
+            font-size: 16px;
+            line-height: 1.65;
+        }
+
+        #collectionSummary {
+            min-height: 20px;
+            margin: 0 0 18px;
+            color: var(--secondary-text);
+            font-size: 13px;
+            letter-spacing: 0.04em;
         }
 
         #collectionsGrid {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 24px;
-            justify-items: center;
         }
 
         .collection-card {
-            width: 100%;
-            color: white;
+            position: relative;
+            min-width: 0;
+            overflow: hidden;
+            color: var(--primary-text);
+            background: var(--card-background);
+            border: 1px solid var(--subtle-border);
+            border-radius: var(--card-radius);
             text-decoration: none;
-            text-align: center;
+            isolation: isolate;
+            transition:
+                transform 0.3s ease,
+                border-color 0.3s ease,
+                background-color 0.3s ease,
+                box-shadow 0.3s ease;
         }
 
-        .collection-card img {
+        .collection-card:hover {
+            z-index: 2;
+            background: var(--card-background-hover);
+            border-color: var(--strong-border);
+            transform: translateY(-7px);
+            box-shadow:
+                0 22px 55px rgba(0, 0, 0, 0.55),
+                0 0 0 1px rgba(255, 255, 255, 0.04);
+        }
+
+        .collection-card:focus-visible {
+            outline: 2px solid white;
+            outline-offset: 5px;
+        }
+
+        .image-container {
+            position: relative;
             width: 100%;
+            overflow: hidden;
             aspect-ratio: 1 / 1;
-            object-fit: cover;
+            background:
+                linear-gradient(
+                    115deg,
+                    #0d0d0d 25%,
+                    #191919 45%,
+                    #0d0d0d 65%
+                );
+            background-size: 220% 100%;
+        }
+
+        .collection-image {
             display: block;
-            background: #111;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transform: scale(1.01);
+            transition:
+                opacity 0.45s ease,
+                transform 0.65s ease;
+        }
+
+        .collection-image.loaded {
+            opacity: 1;
+        }
+
+        .collection-card:hover .collection-image {
+            transform: scale(1.055);
+        }
+
+        .image-shade {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background:
+                linear-gradient(
+                    to top,
+                    rgba(0, 0, 0, 0.62),
+                    transparent 42%
+                );
+            opacity: 0.85;
+            transition: opacity 0.3s ease;
+        }
+
+        .collection-card:hover .image-shade {
+            opacity: 0.55;
+        }
+
+        .image-count {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            padding: 7px 10px;
+            color: white;
+            background: rgba(0, 0, 0, 0.58);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            border-radius: 999px;
+            font-size: 12px;
+            line-height: 1;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .collection-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            min-height: 86px;
+            padding: 19px 20px 20px;
+        }
+
+        .collection-text {
+            min-width: 0;
         }
 
         .collection-title {
-            margin-top: 10px;
-            font-size: 16px;
-            word-break: break-word;
+            margin: 0;
+            overflow: hidden;
+            font-size: 18px;
+            font-weight: 500;
+            line-height: 1.25;
+            letter-spacing: -0.015em;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .collection-subtitle {
+            margin: 7px 0 0;
+            color: var(--secondary-text);
+            font-size: 12px;
+            line-height: 1.3;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .card-arrow {
+            display: flex;
+            width: 34px;
+            height: 34px;
+            flex: 0 0 auto;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--subtle-border);
+            border-radius: 50%;
+            font-size: 17px;
+            transform: translateX(0);
+            transition:
+                transform 0.3s ease,
+                border-color 0.3s ease,
+                background-color 0.3s ease;
+        }
+
+        .collection-card:hover .card-arrow {
+            background: white;
+            color: black;
+            border-color: white;
+            transform: translateX(3px);
         }
 
         #status {
+            padding: 70px 20px;
+            color: var(--secondary-text);
             text-align: center;
-            color: white;
-            opacity: 0.8;
-            font-size: 18px;
+            font-size: 16px;
         }
 
-        @media (max-width: 900px) {
+        #status.error {
+            color: #ff6b6b;
+        }
+
+        .skeleton-card {
+            overflow: hidden;
+            background: var(--card-background);
+            border: 1px solid var(--subtle-border);
+            border-radius: var(--card-radius);
+        }
+
+        .skeleton-image,
+        .skeleton-line {
+            background:
+                linear-gradient(
+                    110deg,
+                    #0d0d0d 25%,
+                    #1b1b1b 42%,
+                    #0d0d0d 60%
+                );
+            background-size: 220% 100%;
+            animation: skeletonLoading 1.5s linear infinite;
+        }
+
+        .skeleton-image {
+            aspect-ratio: 1 / 1;
+        }
+
+        .skeleton-content {
+            height: 86px;
+            padding: 22px 20px;
+        }
+
+        .skeleton-line {
+            width: 68%;
+            height: 13px;
+            border-radius: 999px;
+        }
+
+        .skeleton-line.small {
+            width: 42%;
+            height: 9px;
+            margin-top: 12px;
+        }
+
+        @keyframes skeletonLoading {
+            from {
+                background-position: 100% 0;
+            }
+
+            to {
+                background-position: -100% 0;
+            }
+        }
+
+        @media (max-width: 1120px) {
             #collectionsGrid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 18px;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
             }
+        }
 
+        @media (max-width: 820px) {
             #page {
-                width: 100%;
-                padding: 85px 16px 40px;
+                width: min(100% - 32px, 680px);
+                padding-top: 110px;
             }
 
-            h1 {
-                font-size: 30px;
+            #pageHeader {
+                margin-bottom: 42px;
+            }
+
+            #collectionsGrid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 17px;
+            }
+
+            .collection-content {
+                min-height: 78px;
+                padding: 16px;
             }
 
             .collection-title {
+                font-size: 16px;
+            }
+
+            .card-arrow {
+                width: 31px;
+                height: 31px;
+            }
+        }
+
+        @media (max-width: 520px) {
+            #version {
+                left: 14px;
+            }
+
+            nav {
+                right: 14px;
+            }
+
+            nav a {
+                font-size: 18px;
+            }
+
+            #page {
+                width: calc(100% - 24px);
+                padding-top: 100px;
+            }
+
+            #pageDescription {
                 font-size: 15px;
+            }
+
+            #collectionsGrid {
+                grid-template-columns: 1fr;
+                gap: 18px;
+            }
+
+            .collection-card {
+                border-radius: 14px;
+            }
+
+            .image-container {
+                aspect-ratio: 4 / 3;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                scroll-behavior: auto !important;
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
             }
         }
     </style>
 </head>
 
 <body>
-    <nav>
+    <div id="version">v1.1.1</div>
+
+    <nav aria-label="Main navigation">
         <a href="index.html">Home</a>
         <a href="collections.html">Collections</a>
     </nav>
 
     <main id="page">
-        <h1>Collections</h1>
+        <header id="pageHeader">
+            <p id="eyebrow">Photography Archive</p>
 
-        <div id="status">Loading collections...</div>
-        <div id="collectionsGrid"></div>
+            <h1>Collections</h1>
+
+            <p id="pageDescription">
+                A collection of places, moments, and photographs
+                gathered over time.
+            </p>
+        </header>
+
+        <div id="collectionSummary" aria-live="polite"></div>
+
+        <div
+            id="collectionsGrid"
+            aria-live="polite"
+            aria-busy="true"
+        ></div>
+
+        <div id="status" role="status">
+            Loading collections...
+        </div>
     </main>
 
     <script>
+        const grid =
+            document.getElementById("collectionsGrid");
+
+        const status =
+            document.getElementById("status");
+
+        const collectionSummary =
+            document.getElementById("collectionSummary");
+
+        function createSkeletonCards(numberOfCards = 8) {
+            grid.innerHTML = "";
+
+            for (let i = 0; i < numberOfCards; i++) {
+                const skeleton =
+                    document.createElement("div");
+
+                skeleton.className = "skeleton-card";
+                skeleton.setAttribute("aria-hidden", "true");
+
+                skeleton.innerHTML = `
+                    <div class="skeleton-image"></div>
+
+                    <div class="skeleton-content">
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line small"></div>
+                    </div>
+                `;
+
+                grid.appendChild(skeleton);
+            }
+        }
+
+        function formatCollectionName(name) {
+            return name
+                .replaceAll("_", " ")
+                .replaceAll("-", " ")
+                .replace(/\s+/g, " ")
+                .trim();
+        }
+
+        function createCollectionCard(base, collection) {
+            const card =
+                document.createElement("a");
+
+            card.className = "collection-card";
+
+            card.href =
+                `gallery.html?collection=${
+                    encodeURIComponent(collection.name)
+                }`;
+
+            const imageContainer =
+                document.createElement("div");
+
+            imageContainer.className = "image-container";
+
+            const image =
+                document.createElement("img");
+
+            image.className = "collection-image";
+            image.alt = formatCollectionName(collection.name);
+            image.loading = "lazy";
+            image.decoding = "async";
+
+            const normalizedBase =
+                base.endsWith("/") ? base : `${base}/`;
+
+            const encodedCollectionName =
+                encodeURIComponent(collection.name);
+
+            image.src =
+                `${normalizedBase}${encodedCollectionName}` +
+                `/title_thumbnail/collection_thumbnail.jpg`;
+
+            image.addEventListener("load", function () {
+                image.classList.add("loaded");
+            });
+
+            image.addEventListener("error", function () {
+                image.alt =
+                    `${formatCollectionName(collection.name)} image unavailable`;
+            });
+
+            const imageShade =
+                document.createElement("div");
+
+            imageShade.className = "image-shade";
+
+            const imageCount =
+                document.createElement("div");
+
+            imageCount.className = "image-count";
+
+            const photoCount =
+                Number(collection.images) || 0;
+
+            imageCount.textContent =
+                `${photoCount} ${photoCount === 1 ? "photo" : "photos"}`;
+
+            imageContainer.appendChild(image);
+            imageContainer.appendChild(imageShade);
+            imageContainer.appendChild(imageCount);
+
+            const content =
+                document.createElement("div");
+
+            content.className = "collection-content";
+
+            const textContainer =
+                document.createElement("div");
+
+            textContainer.className = "collection-text";
+
+            const title =
+                document.createElement("h2");
+
+            title.className = "collection-title";
+            title.textContent =
+                formatCollectionName(collection.name);
+
+            const subtitle =
+                document.createElement("p");
+
+            subtitle.className = "collection-subtitle";
+            subtitle.textContent = "View collection";
+
+            const arrow =
+                document.createElement("span");
+
+            arrow.className = "card-arrow";
+            arrow.textContent = "→";
+            arrow.setAttribute("aria-hidden", "true");
+
+            textContainer.appendChild(title);
+            textContainer.appendChild(subtitle);
+
+            content.appendChild(textContainer);
+            content.appendChild(arrow);
+
+            card.appendChild(imageContainer);
+            card.appendChild(content);
+
+            return card;
+        }
+
+        createSkeletonCards();
+
         fetch("collections.json")
             .then(response => {
                 if (!response.ok) {
@@ -137,54 +651,40 @@
                     );
                 }
 
-                const grid =
-                    document.getElementById("collectionsGrid");
-
-                const status =
-                    document.getElementById("status");
-
                 grid.innerHTML = "";
+                grid.setAttribute("aria-busy", "false");
 
                 if (collections.length === 0) {
                     status.textContent = "No collections found.";
+                    collectionSummary.textContent = "";
                     return;
                 }
 
                 status.style.display = "none";
 
+                collectionSummary.textContent =
+                    `${collections.length} ${
+                        collections.length === 1
+                            ? "collection"
+                            : "collections"
+                    }`;
+
                 collections.forEach(collection => {
-                    const card =
-                        document.createElement("a");
-
-                    card.className = "collection-card";
-                    card.href =
-                        `gallery.html?collection=${encodeURIComponent(collection.name)}`;
-
-                    const image =
-                        document.createElement("img");
-
-                    image.src =
-                        `${base}${collection.name}/title_thumbnail/collection_thumbnail.jpg`;
-
-                    image.alt = collection.name;
-                    image.loading = "lazy";
-                    image.decoding = "async";
-
-                    const title =
-                        document.createElement("div");
-
-                    title.className = "collection-title";
-                    title.textContent =
-                        collection.name.replaceAll("_", " ");
-
-                    card.appendChild(image);
-                    card.appendChild(title);
-                    grid.appendChild(card);
+                    grid.appendChild(
+                        createCollectionCard(base, collection)
+                    );
                 });
             })
             .catch(error => {
-                document.getElementById("status").textContent =
-                    "Error loading collections.";
+                grid.innerHTML = "";
+                grid.setAttribute("aria-busy", "false");
+
+                status.style.display = "block";
+                status.classList.add("error");
+                status.textContent =
+                    "Unable to load the photography collections.";
+
+                collectionSummary.textContent = "";
 
                 console.error(error);
             });
