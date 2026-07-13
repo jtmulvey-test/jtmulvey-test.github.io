@@ -95,7 +95,7 @@
 
         #counter {
             position: fixed;
-            bottom: 75px;
+            bottom: 80px;
             left: 50%;
             transform: translateX(-50%);
             color: white;
@@ -141,7 +141,7 @@
 <body>
     <div id="controls">
         <button id="collapseControls">&lt;</button>
-        <button id="fullscreen">Fullscreen</button>
+        <button id="fullscreen" aria-label="Toggle fullscreen">[ ]</button>
         <button id="zoomOut">−</button>
         <button id="zoomIn">+</button>
     </div>
@@ -163,7 +163,7 @@
     <div id="thumbnails"></div>
 
     <script>
-        const version = "v1.3.4";
+        const version = "v1.3.5";
         document.getElementById("version").textContent = version;
 
         const base =
@@ -254,6 +254,7 @@
 
             newImage.onerror = function () {
                 photo.style.opacity = 1;
+
                 console.error(
                     `Unable to load image: ${images[current]}`
                 );
@@ -387,6 +388,11 @@
         }
 
         function doubleClickZoom(event) {
+            if (zoomLevel > minimumZoom) {
+                resetZoom();
+                return;
+            }
+
             const viewerRect =
                 viewer.getBoundingClientRect();
 
@@ -402,12 +408,10 @@
             const clickOffsetY =
                 event.clientY - viewerCenterY;
 
-            const newZoom = Math.min(
+            zoomLevel = Math.min(
                 maximumZoom,
-                zoomLevel + zoomStep * 3
+                minimumZoom + zoomStep * 3
             );
-
-            zoomLevel = newZoom;
 
             panX =
                 -clickOffsetX * (zoomLevel - minimumZoom);
