@@ -142,7 +142,7 @@
         body.ui-hidden nav,
         body.ui-hidden #counter,
         body.ui-hidden #thumbnails {
-            display: none;
+            display: none !important;
         }
 
         body.ui-hidden #viewer {
@@ -182,7 +182,7 @@
     <div id="thumbnails"></div>
 
     <script>
-        const version = "v1.3.6";
+        const version = "v1.3.7";
         document.getElementById("version").textContent = version;
 
         const base =
@@ -210,6 +210,8 @@
         let dragStartY = 0;
         let startingPanX = 0;
         let startingPanY = 0;
+
+        let controlsCollapsed = false;
 
         const minimumZoom = 1;
         const maximumZoom = 4;
@@ -456,8 +458,29 @@
             }
         }
 
+        function updateControlVisibility() {
+            if (document.body.classList.contains("ui-hidden")) {
+                return;
+            }
+
+            if (controlsCollapsed) {
+                controls.style.display = "none";
+                expandControls.style.display = "block";
+            } else {
+                controls.style.display = "flex";
+                expandControls.style.display = "none";
+            }
+        }
+
         function toggleUI() {
+            const hidingUI =
+                !document.body.classList.contains("ui-hidden");
+
             document.body.classList.toggle("ui-hidden");
+
+            if (!hidingUI) {
+                updateControlVisibility();
+            }
         }
 
         document.getElementById("zoomIn")
@@ -474,13 +497,13 @@
 
         document.getElementById("collapseControls")
             .addEventListener("click", function () {
-                controls.style.display = "none";
-                expandControls.style.display = "block";
+                controlsCollapsed = true;
+                updateControlVisibility();
             });
 
         expandControls.addEventListener("click", function () {
-            expandControls.style.display = "none";
-            controls.style.display = "flex";
+            controlsCollapsed = false;
+            updateControlVisibility();
         });
 
         photo.addEventListener("dblclick", function (event) {
