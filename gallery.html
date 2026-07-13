@@ -20,7 +20,7 @@ nav {
     position: fixed;
     top: 15px;
     right: 20px;
-    z-index: 20;
+    z-index: 30;
 }
 
 
@@ -32,12 +32,11 @@ nav a {
 
 
 #fullscreen {
-
     position: fixed;
     top: 15px;
     left: 20px;
 
-    z-index: 20;
+    z-index: 30;
 
     background: rgba(0,0,0,0.5);
 
@@ -48,8 +47,8 @@ nav a {
     padding: 8px 12px;
 
     cursor: pointer;
-
 }
+
 
 
 #version {
@@ -60,13 +59,13 @@ nav a {
 
     left: 20px;
 
-    z-index: 20;
+    z-index: 30;
 
-    color: white;
+    color: red;
 
     font-size: 12px;
 
-    opacity: 0.7;
+    opacity: 0.8;
 
 }
 
@@ -135,6 +134,8 @@ nav a {
 
 
 
+
+
 #counter {
 
     position: fixed;
@@ -147,9 +148,11 @@ nav a {
 
     color: white;
 
-    z-index: 20;
+    z-index: 25;
 
 }
+
+
 
 
 
@@ -163,10 +166,11 @@ nav a {
 
     left: 0;
 
-
     width: 100%;
 
     height: 80px;
+
+    z-index: 20;
 
 
     display: flex;
@@ -192,6 +196,8 @@ nav a {
     box-sizing: border-box;
 
 }
+
+
 
 
 
@@ -243,6 +249,7 @@ Fullscreen
 </button>
 
 
+
 <div id="version"></div>
 
 
@@ -277,6 +284,7 @@ Fullscreen
 
 
 
+
 <script>
 
 
@@ -284,9 +292,10 @@ Fullscreen
 // Version
 // ==========================
 
-const version = "v1.1";
+const version = "v1.2";
 
 document.getElementById("version").innerHTML = version;
+
 
 
 
@@ -298,8 +307,10 @@ const base =
 "https://filedn.com/lbA2Vsf4s7Fj5KoVfXs5UL4/JM_Photos/";
 
 
+
 const params =
 new URLSearchParams(window.location.search);
+
 
 
 const collection =
@@ -316,6 +327,11 @@ let current = 0;
 
 
 
+
+// ==========================
+// Load collection
+// ==========================
+
 fetch("collections.json")
 
 .then(response => response.json())
@@ -329,6 +345,9 @@ data.find(x => x.name === collection);
 
 
 if(!selected){
+
+    document.getElementById("counter").innerHTML =
+    "Collection not found";
 
     return;
 
@@ -355,7 +374,6 @@ for(let i = 1; i <= selected.images; i++){
 
 createThumbnails();
 
-
 showImage();
 
 
@@ -365,6 +383,11 @@ showImage();
 
 
 
+
+
+// ==========================
+// Display image
+// ==========================
 
 function showImage(){
 
@@ -381,11 +404,11 @@ photo.style.opacity = 0;
 const newImage = new Image();
 
 
+
 newImage.onload = function(){
 
 
     photo.src = newImage.src;
-
 
     photo.style.opacity = 1;
 
@@ -403,8 +426,8 @@ updateCounter();
 
 updateThumbnails();
 
-
 preloadNext();
+
 
 
 }
@@ -417,17 +440,19 @@ function preloadNext(){
 
 
 [
-    current + 1,
-    current - 1
+current + 1,
+current - 1
 
 ].forEach(index => {
 
 
 if(index >= 0 && index < images.length){
 
+
     const img = new Image();
 
     img.src = images[index];
+
 
 }
 
@@ -440,6 +465,10 @@ if(index >= 0 && index < images.length){
 
 
 
+
+// ==========================
+// Thumbnails
+// ==========================
 
 function createThumbnails(){
 
@@ -456,24 +485,23 @@ const img =
 document.createElement("img");
 
 
-img.src = src;
 
+img.src = src;
 
 img.loading = "lazy";
 
-
-img.className =
-"thumb";
+img.className = "thumb";
 
 
 
-img.onclick = function(){
+img.onclick = function(event){
 
 
-current = index;
+    event.stopPropagation();
 
+    current = index;
 
-showImage();
+    showImage();
 
 
 };
@@ -523,6 +551,7 @@ if(index === current){
 
 
 }
+
 else{
 
 
@@ -542,6 +571,8 @@ else{
 
 
 
+
+
 function updateCounter(){
 
 
@@ -555,6 +586,10 @@ document.getElementById("counter").innerHTML =
 
 
 
+
+// ==========================
+// Navigation
+// ==========================
 
 function nextImage(){
 
@@ -586,7 +621,7 @@ current--;
 
 if(current < 0){
 
-    current = images.length-1;
+    current = images.length - 1;
 
 }
 
@@ -595,8 +630,6 @@ showImage();
 
 
 }
-
-
 
 
 
@@ -617,6 +650,7 @@ nextImage;
 
 
 
+// Keyboard
 
 document.addEventListener(
 "keydown",
@@ -645,6 +679,10 @@ if(event.key === "ArrowLeft"){
 
 
 
+// ==========================
+// Swipe
+// ==========================
+
 let touchStartX = 0;
 
 
@@ -653,8 +691,10 @@ document.addEventListener(
 "touchstart",
 function(event){
 
+
 touchStartX =
 event.changedTouches[0].screenX;
+
 
 });
 
@@ -693,6 +733,11 @@ if(touchEndX > touchStartX + 50){
 
 
 
+
+// ==========================
+// Fullscreen
+// ==========================
+
 document.getElementById("fullscreen")
 .onclick = function(){
 
@@ -702,6 +747,7 @@ if(!document.fullscreenElement){
     document.documentElement.requestFullscreen();
 
 }
+
 else{
 
     document.exitFullscreen();
