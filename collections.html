@@ -1,77 +1,261 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 <title>Collections</title>
 
 <style>
-body {
+
+html, body {
+
+    margin: 0;
+
+    padding: 0;
+
+    min-height: 100%;
+
+    background: black;
+
+    color: white;
+
     font-family: Arial, sans-serif;
-    margin: 20px;
+
 }
+
 
 nav {
-    text-align: right;
-    margin-bottom: 20px;
+
+    position: fixed;
+
+    top: 15px;
+
+    right: 20px;
+
+    z-index: 20;
+
 }
+
 
 nav a {
+
+    color: white;
+
     margin-left: 20px;
+
     text-decoration: none;
-    color: black;
+
 }
+
+
+
+#title {
+
+    text-align: center;
+
+    padding-top: 70px;
+
+    font-size: 30px;
+
+}
+
+
+
+
+#collections {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    justify-content: center;
+
+    gap: 30px;
+
+    padding: 40px;
+
+}
+
+
+
 
 .collection {
-    font-size: 20px;
-    margin-bottom: 10px;
+
+    text-align: center;
+
+    color: white;
+
+    text-decoration: none;
+
 }
 
-.collection a {
-    text-decoration: none;
-    color: black;
+
+
+.collection img {
+
+    width: 250px;
+
+    height: 250px;
+
+    object-fit: cover;
+
+    display: block;
+
+    margin-bottom: 10px;
+
 }
+
+
+
+.collection:hover img {
+
+    opacity: 0.8;
+
+}
+
+
+
+.name {
+
+    font-size: 18px;
+
+}
+
+
+
 </style>
 
 </head>
 
+
+
 <body>
 
+
 <nav>
+
 <a href="index.html">Home</a>
+
 <a href="collections.html">Collections</a>
+
 </nav>
 
-<h1>Collections</h1>
+
+
+<div id="title">
+
+Collections
+
+</div>
+
+
 
 <div id="collections"></div>
 
 
+
+
+
 <script>
 
+
+const base =
+"https://filedn.com/lbA2Vsf4s7Fj5KoVfXs5UL4/JM_Photos/";
+
+
+
 fetch("collections.json")
+
 .then(response => response.json())
-.then(data => {
 
-    const container = document.getElementById("collections");
+.then(collections => {
 
-    data.forEach(collection => {
 
-        const div = document.createElement("div");
-        div.className = "collection";
+const container =
+document.getElementById("collections");
 
-        div.innerHTML = `
-            <a href="gallery.html?collection=${collection.name}">
-                ${collection.name}
-            </a>
-        `;
 
-        container.appendChild(div);
 
-    });
+collections.forEach(collection => {
+
+
+const link =
+document.createElement("a");
+
+
+link.className =
+"collection";
+
+
+
+link.href =
+`gallery.html?collection=${collection.name}`;
+
+
+
+const img =
+document.createElement("img");
+
+
+
+img.src =
+`${base}${collection.name}/title_thumbnail/collection_thumbnail.jpg`;
+
+
+
+img.onerror = function(){
+
+    img.style.display = "none";
+
+};
+
+
+
+const name =
+document.createElement("div");
+
+
+name.className =
+"name";
+
+
+name.innerHTML =
+collection.name;
+
+
+
+link.appendChild(img);
+
+link.appendChild(name);
+
+
+
+container.appendChild(link);
+
+
 
 });
+
+
+})
+
+
+.catch(error => {
+
+
+document.getElementById("collections").innerHTML =
+"Error loading collections.json";
+
+
+console.error(error);
+
+
+});
+
+
 
 </script>
 
 
 </body>
+
 </html>
