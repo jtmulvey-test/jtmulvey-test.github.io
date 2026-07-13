@@ -69,28 +69,19 @@
             max-height: 85vh;
             object-fit: contain;
             opacity: 1;
-            transition:
-                opacity 0.35s ease,
-                transform 0.2s ease;
+            transition: opacity 0.35s ease;
             transform-origin: center center;
             user-select: none;
+            -webkit-user-drag: none;
+            cursor: default;
         }
 
-        #left,
-        #right {
-            position: fixed;
-            top: 0;
-            width: 50%;
-            height: 100%;
-            z-index: 5;
+        #photo.zoomed {
+            cursor: grab;
         }
 
-        #left {
-            left: 0;
-        }
-
-        #right {
-            right: 0;
+        #photo.dragging {
+            cursor: grabbing;
         }
 
         #counter {
@@ -156,14 +147,11 @@
         <img id="photo" alt="">
     </div>
 
-    <div id="left"></div>
-    <div id="right"></div>
-
     <div id="counter"></div>
     <div id="thumbnails"></div>
 
     <script>
-        const version = "v1.3.2";
+        const version = "v1.3.3";
         document.getElementById("version").textContent = version;
 
         const base =
@@ -179,6 +167,14 @@
         let current = 0;
 
         let zoomLevel = 1;
+        let panX = 0;
+        let panY = 0;
+
+        let isDragging = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let startingPanX = 0;
+        let startingPanY = 0;
 
         const minimumZoom = 1;
         const maximumZoom = 4;
@@ -276,8 +272,7 @@
                 thumbnail.className = "thumb";
                 thumbnail.alt = `Photo ${index + 1}`;
 
-                thumbnail.addEventListener("click", function (event) {
-                    event.stopPropagation();
+                thumbnail.addEventListener("click", function () {
                     current = index;
                     showImage();
                 });
@@ -331,7 +326,10 @@
         }
 
         function updateZoom() {
-            photo.style.transform = `scale(${zoomLevel})`;
+            photo.style.transform =
+                `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
+
+            photo.classList.toggle("zoomed", zoomLevel > 1);
         }
 
         function zoomIn() {
@@ -349,31 +347,64 @@
                 zoomLevel - zoomStep
             );
 
+            if (zoomLevel === minimumZoom) {
+                panX = 0;
+                panY = 0;
+            }
+
             updateZoom();
         }
 
         function resetZoom() {
             zoomLevel = minimumZoom;
+            panX = 0;
+            panY = 0;
+            isDragging = false;
+
+            photo.classList.remove("dragging");
             updateZoom();
         }
 
         document.getElementById("zoomIn")
-            .addEventListener("click", function (event) {
-                event.stopPropagation();
-                zoomIn();
-            });
+            .addEventListener("click", zoomIn);
 
         document.getElementById("zoomOut")
-            .addEventListener("click", function (event) {
-                event.stopPropagation();
-                zoomOut();
-            });
+            .addEventListener("click", zoomOut);
 
-        document.getElementById("left")
-            .addEventListener("click", previousImage);
+        photo.addEventListener("mousedown", function (event) {
+            if (zoomLevel <= minimumZoom) {
+                return;
+            }
 
-        document.getElementById("right")
-            .addEventListener("click", nextImage);
+            event.preventDefault();
+
+            isDragging = true;
+            dragStartX = event.clientX;
+            dragStartY = event.clientY;
+            startingPanX = panX;
+            startingPanY = panY;
+
+            photo.classList.add("dragging");
+        });
+
+        document.addEventListener("mousemove", function (event) {
+            if (!isDragging) {
+                return;
+            }
+
+            panX =
+                startingPanX + event.clientX - dragStartX;
+
+            panY =
+                startingPanY + event.clientY - dragStartY;
+
+            updateZoom();
+        });
+
+        document.addEventListener("mouseup", function () {
+            isDragging = false;
+            photo.classList.remove("dragging");
+        });
 
         document.addEventListener("keydown", function (event) {
             if (event.key === "ArrowRight") {
@@ -394,9 +425,7 @@
         });
 
         document.getElementById("fullscreen")
-            .addEventListener("click", function (event) {
-                event.stopPropagation();
-
+            .addEventListener("click", function () {
                 if (!document.fullscreenElement) {
                     document.documentElement
                         .requestFullscreen()
