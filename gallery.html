@@ -96,6 +96,11 @@
             transform: translateY(174px);
         }
 
+        #autoplayButton .play-icon {
+            display: inline-block;
+            transform: translate(4px, -3px);
+        }
+
         #zoomIn {
             z-index: 3;
             transform: translateY(232px);
@@ -318,6 +323,11 @@
             flex-shrink: 0;
         }
 
+        .help-key.play-help-icon {
+            padding-left: 3px;
+            padding-bottom: 2px;
+        }
+
         .delay-setting {
             display: flex;
             align-items: center;
@@ -424,9 +434,9 @@
             <button
                 id="autoplayButton"
                 class="control-button"
-                aria-label="Start autoplay"
+                aria-label="Play or pause autoplay"
             >
-                <span id="autoplayIcon">▶</span>
+                <span class="play-icon">▶</span>
             </button>
 
             <button
@@ -499,8 +509,8 @@
             </div>
 
             <div class="help-row">
-                <span class="help-key">▶</span>
-                <p>Start or pause Autoplay Mode (keypress "P")</p>
+                <span class="help-key play-help-icon">▶</span>
+                <p>Play or pause Autoplay Mode (keypress "P")</p>
             </div>
 
             <div class="delay-setting">
@@ -512,7 +522,7 @@
                     min="2"
                     max="60"
                     step="1"
-                    value="7"
+                    value="6"
                 >
 
                 <span>seconds</span>
@@ -536,7 +546,7 @@
     </div>
 
     <script>
-        const version = "v1.4.1";
+        const version = "v1.4.2";
         document.getElementById("version").textContent = version;
 
         const params = new URLSearchParams(window.location.search);
@@ -557,8 +567,6 @@
             document.getElementById("helpOverlay");
         const autoplayButton =
             document.getElementById("autoplayButton");
-        const autoplayIcon =
-            document.getElementById("autoplayIcon");
         const autoplayStatus =
             document.getElementById("autoplayStatus");
         const autoplayDelayInput =
@@ -588,7 +596,7 @@
         let autoplayActive = false;
         let autoplayPlaying = false;
         let autoplayTimer = null;
-        let autoplayDelaySeconds = 7;
+        let autoplayDelaySeconds = 6;
 
         const imageCache = new Map();
 
@@ -1025,14 +1033,11 @@
                 autoplayStatus.textContent = "";
             }
 
-            autoplayIcon.textContent =
-                autoplayPlaying ? "Ⅱ" : "▶";
-
             autoplayButton.setAttribute(
                 "aria-label",
                 autoplayPlaying
                     ? "Pause autoplay"
-                    : "Start autoplay"
+                    : "Play autoplay"
             );
         }
 
@@ -1137,7 +1142,7 @@
             );
 
             if (!Number.isFinite(newDelay)) {
-                newDelay = 7;
+                newDelay = 6;
             }
 
             newDelay = Math.min(
