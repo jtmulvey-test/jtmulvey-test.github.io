@@ -234,7 +234,7 @@
         >
     </a>
 
-    <div id="version">v1.0.2</div>
+    <div id="version">v1.0.3</div>
 
     <nav aria-label="Main navigation">
         <a href="index.html">Home</a>
@@ -292,7 +292,7 @@
                 aboutPhoto.src =
                     `${base}about/1.jpg`;
 
-                return fetch(`${base}about/about.txt`);
+                return fetch("about.txt");
             })
             .then(response => {
                 if (!response.ok) {
