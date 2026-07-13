@@ -1,1048 +1,363 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-<title>Gallery</title>
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<style>
-
-html, body {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    background: black;
-    overflow: hidden;
-    font-family: Arial, sans-serif;
-}
-
-
-nav {
-    position: fixed;
-    top: 15px;
-    right: 20px;
-    z-index: 40;
-}
-
-
-nav a {
-    color: white;
-    margin-left: 20px;
-    text-decoration: none;
-}
-
-
-
-#controls {
-
-    position: fixed;
-
-    top: 15px;
-
-    left: 20px;
-
-    z-index: 40;
-
-    display: flex;
-
-    gap: 8px;
-
-}
-
-
-
-button {
-
-    background: rgba(0,0,0,0.5);
-
-    color: white;
-
-    border: 1px solid white;
-
-    padding: 8px 12px;
-
-    cursor: pointer;
-
-    font-size: 16px;
-
-}
-
-
-
-
-#version {
-
-    position: fixed;
-
-    top: 55px;
-
-    left: 20px;
-
-    z-index: 40;
-
-    color: red;
-
-    font-size: 12px;
-
-    opacity: 0.8;
-
-}
-
-
-
-
-
-#viewer {
-
-    width: 100vw;
-
-    height: calc(100vh - 100px);
-
-    display: flex;
-
-    justify-content: center;
-
-    align-items: center;
-
-    overflow: hidden;
-
-}
-
-
-
-
-#photo {
-
-    max-width: 95vw;
-
-    max-height: 85vh;
-
-    object-fit: contain;
-
-    opacity: 1;
-
-    transition: opacity 0.35s ease;
-
-    cursor: default;
-
-    user-select: none;
-
-    transform-origin: center center;
-
-}
-
-
-
-
-.zoomed #photo {
-
-    cursor: grab;
-
-}
-
-
-
-.zoomed #photo:active {
-
-    cursor: grabbing;
-
-}
-
-
-
-
-
-
-#counter {
-
-    position: fixed;
-
-    bottom: 75px;
-
-    left: 50%;
-
-    transform: translateX(-50%);
-
-    color: white;
-
-    z-index: 30;
-
-}
-
-
-
-
-
-
-#thumbnails {
-
-    position: fixed;
-
-    bottom: 0;
-
-    left: 0;
-
-    width: 100%;
-
-    height: 80px;
-
-    z-index: 40;
-
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    gap: 8px;
-
-
-    background: rgba(0,0,0,0.75);
-
-
-    overflow-x: auto;
-
-    padding: 5px;
-
-    box-sizing: border-box;
-
-}
-
-
-
-
-
-.thumb {
-
-    height: 70px;
-
-    width: auto;
-
-    flex-shrink: 0;
-
-    cursor: pointer;
-
-    opacity: 0.5;
-
-    transition: opacity 0.2s;
-
-}
-
-
-
-
-.thumb:hover {
-
-    opacity: 0.8;
-
-}
-
-
-
-.thumb.active {
-
-    opacity: 1;
-
-}
-
-
-
-
-</style>
-
+    <title>Gallery</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background: black;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+
+        nav {
+            position: fixed;
+            top: 15px;
+            right: 20px;
+            z-index: 30;
+        }
+
+        nav a {
+            color: white;
+            margin-left: 20px;
+            text-decoration: none;
+        }
+
+        #fullscreen {
+            position: fixed;
+            top: 15px;
+            left: 20px;
+            z-index: 30;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: 1px solid white;
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+
+        #version {
+            position: fixed;
+            top: 55px;
+            left: 20px;
+            z-index: 30;
+            color: red;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        #viewer {
+            width: 100vw;
+            height: calc(100vh - 100px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #photo {
+            max-width: 95vw;
+            max-height: 85vh;
+            object-fit: contain;
+            opacity: 1;
+            transition: opacity 0.35s ease;
+        }
+
+        #left,
+        #right {
+            position: fixed;
+            top: 0;
+            width: 50%;
+            height: 100%;
+            z-index: 5;
+        }
+
+        #left {
+            left: 0;
+        }
+
+        #right {
+            right: 0;
+        }
+
+        #counter {
+            position: fixed;
+            bottom: 75px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            z-index: 25;
+        }
+
+        #thumbnails {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 80px;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.75);
+            overflow-x: auto;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+
+        .thumb {
+            height: 70px;
+            width: auto;
+            flex-shrink: 0;
+            cursor: pointer;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+        }
+
+        .thumb:hover {
+            opacity: 0.8;
+        }
+
+        .thumb.active {
+            opacity: 1;
+        }
+    </style>
 </head>
 
-
 <body>
-
-
-<div id="controls">
-
-<button id="fullscreen">
-Fullscreen
-</button>
-
-<button id="zoomOut">
-−
-</button>
-
-<button id="zoomIn">
-+
-</button>
-
-</div>
-
-
-<div id="version"></div>
-
-
-<nav>
-
-<a href="index.html">Home</a>
-
-<a href="collections.html">Collections</a>
-
-</nav>
-
-
-<div id="viewer">
-
-<img id="photo">
-
-</div>
-
-
-<div id="counter"></div>
-
-
-<div id="thumbnails"></div>
-
-// ==========================
-// Version
-// ==========================
-
-const version = "v1.5";
-
-document.getElementById("version").innerHTML = version;
-
-
-
-// ==========================
-// Settings
-// ==========================
-
-const base =
-"https://filedn.com/lbA2Vsf4s7Fj5KoVfXs5UL4/JM_Photos/";
-
-
-const params =
-new URLSearchParams(window.location.search);
-
-
-const collection =
-params.get("collection");
-
-
-let images = [];
-
-let thumbnails = [];
-
-let current = 0;
-
-
-
-// ==========================
-// Zoom settings
-// ==========================
-
-let zoomLevel = 1;
-
-const zoomStep = 0.5;
-
-const maxZoom = 4;
-
-const minZoom = 1;
-
-
-let panX = 0;
-
-let panY = 0;
-
-
-let dragging = false;
-
-let startX = 0;
-
-let startY = 0;
-
-let startPanX = 0;
-
-let startPanY = 0;
-
-
-
-const photo =
-document.getElementById("photo");
-
-
-
-// ==========================
-// Load collection
-// ==========================
-
-fetch("collections.json")
-
-.then(response => response.json())
-
-.then(data => {
-
-
-const selected =
-data.find(x => x.name === collection);
-
-
-
-if(!selected){
-
-    document.getElementById("counter").innerHTML =
-    "Collection not found";
-
-    return;
-
-}
-
-
-
-for(let i = 1; i <= selected.images; i++){
-
-
-    images.push(
-        `${base}${selected.name}/originals/${i}.jpg`
-    );
-
-
-    thumbnails.push(
-        `${base}${selected.name}/thumbnails/${i}.jpg`
-    );
-
-
-}
-
-
-
-createThumbnails();
-
-showImage();
-
-
-
-});
-
-
-
-
-
-// ==========================
-// Display image
-// ==========================
-
-function showImage(){
-
-
-photo.style.opacity = 0;
-
-
-const img = new Image();
-
-
-img.onload = function(){
-
-
-    photo.src = img.src;
-
-    photo.style.opacity = 1;
-
-
-    resetZoom();
-
-
-};
-
-
-
-img.src =
-images[current];
-
-
-updateCounter();
-
-updateThumbnails();
-
-preloadNext();
-
-
-
-}
-
-
-
-function preloadNext(){
-
-
-[
-current + 1,
-current - 1
-
-].forEach(index => {
-
-
-if(index >= 0 && index < images.length){
-
-
-    const img = new Image();
-
-    img.src = images[index];
-
-
-}
-
-
-});
-
-
-}
-
-
-
-
-// ==========================
-// Thumbnails
-// ==========================
-
-function createThumbnails(){
-
-
-const container =
-document.getElementById("thumbnails");
-
-
-
-thumbnails.forEach((src,index)=>{
-
-
-const img =
-document.createElement("img");
-
-
-
-img.src = src;
-
-img.loading = "lazy";
-
-img.className = "thumb";
-
-
-
-img.onclick = function(event){
-
-
-    event.stopPropagation();
-
-    current = index;
-
-    showImage();
-
-
-};
-
-
-
-container.appendChild(img);
-
-
-
-});
-
-
-}
-
-
-
-
-function updateThumbnails(){
-
-
-const thumbs =
-document.querySelectorAll(".thumb");
-
-
-
-thumbs.forEach((thumb,index)=>{
-
-
-if(index === current){
-
-
-    thumb.classList.add("active");
-
-
-    thumb.scrollIntoView({
-
-        behavior:"smooth",
-
-        inline:"center",
-
-        block:"nearest"
-
-    });
-
-
-}
-
-else{
-
-    thumb.classList.remove("active");
-
-}
-
-
-});
-
-
-}
-
-
-
-
-
-function updateCounter(){
-
-
-document.getElementById("counter").innerHTML =
-`${current + 1} / ${images.length}`;
-
-
-}
-
-
-
-
-// ==========================
-// Image navigation
-// ==========================
-
-function nextImage(){
-
-
-current++;
-
-
-if(current >= images.length){
-
-    current = 0;
-
-}
-
-
-showImage();
-
-
-}
-
-
-
-
-function previousImage(){
-
-
-current--;
-
-
-if(current < 0){
-
-    current = images.length - 1;
-
-}
-
-
-showImage();
-
-
-}
-
-
-
-
-
-document.addEventListener(
-"keydown",
-function(event){
-
-
-if(event.key === "ArrowRight"){
-
-    nextImage();
-
-}
-
-
-if(event.key === "ArrowLeft"){
-
-    previousImage();
-
-}
-
-
-});
-
-
-
-
-
-
-// ==========================
-// Swipe navigation
-// ==========================
-
-let touchStartX = 0;
-
-
-document.addEventListener(
-"touchstart",
-function(event){
-
-
-if(zoomLevel > 1){
-
-    return;
-
-}
-
-
-touchStartX =
-event.changedTouches[0].screenX;
-
-
-});
-
-
-
-document.addEventListener(
-"touchend",
-function(event){
-
-
-if(zoomLevel > 1){
-
-    return;
-
-}
-
-
-let touchEndX =
-event.changedTouches[0].screenX;
-
-
-
-if(touchEndX < touchStartX - 50){
-
-    nextImage();
-
-}
-
-
-if(touchEndX > touchStartX + 50){
-
-    previousImage();
-
-}
-
-
-});
-
-
-
-
-
-
-
-// ==========================
-// Zoom
-// ==========================
-
-function updateZoom(){
-
-
-photo.style.transform =
-`translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
-
-
-
-if(zoomLevel > 1){
-
-    document.body.classList.add("zoomed");
-
-}
-else{
-
-    document.body.classList.remove("zoomed");
-
-}
-
-
-}
-
-
-
-
-function zoomIn(){
-
-
-if(zoomLevel < maxZoom){
-
-    zoomLevel += zoomStep;
-
-}
-
-
-updateZoom();
-
-
-}
-
-
-
-
-function zoomOut(){
-
-
-if(zoomLevel > minZoom){
-
-    zoomLevel -= zoomStep;
-
-
-    if(zoomLevel < minZoom){
-
-        zoomLevel = minZoom;
-
-    }
-
-
-}
-
-
-
-if(zoomLevel === 1){
-
-    panX = 0;
-
-    panY = 0;
-
-}
-
-
-
-updateZoom();
-
-
-}
-
-
-
-
-function resetZoom(){
-
-
-zoomLevel = 1;
-
-panX = 0;
-
-panY = 0;
-
-updateZoom();
-
-
-}
-
-
-
-
-
-document.getElementById("zoomIn")
-.onclick = zoomIn;
-
-
-document.getElementById("zoomOut")
-.onclick = zoomOut;
-
-
-
-
-
-
-// ==========================
-// Mouse pan
-// ==========================
-
-photo.addEventListener(
-"mousedown",
-function(event){
-
-
-if(zoomLevel <= 1){
-
-    return;
-
-}
-
-
-dragging = true;
-
-
-startX = event.clientX;
-
-startY = event.clientY;
-
-
-startPanX = panX;
-
-startPanY = panY;
-
-
-
-});
-
-
-
-
-document.addEventListener(
-"mousemove",
-function(event){
-
-
-if(!dragging){
-
-    return;
-
-}
-
-
-panX =
-startPanX + (event.clientX - startX);
-
-
-panY =
-startPanY + (event.clientY - startY);
-
-
-
-updateZoom();
-
-
-
-});
-
-
-
-
-document.addEventListener(
-"mouseup",
-function(){
-
-
-dragging = false;
-
-
-});
-
-
-
-
-
-
-
-// ==========================
-// Touch pan while zoomed
-// ==========================
-
-photo.addEventListener(
-"touchstart",
-function(event){
-
-
-if(zoomLevel <= 1){
-
-    return;
-
-}
-
-
-dragging = true;
-
-
-startX =
-event.touches[0].clientX;
-
-
-startY =
-event.touches[0].clientY;
-
-
-startPanX = panX;
-
-startPanY = panY;
-
-
-
-});
-
-
-
-photo.addEventListener(
-"touchmove",
-function(event){
-
-
-if(!dragging){
-
-    return;
-
-}
-
-
-panX =
-startPanX +
-(event.touches[0].clientX - startX);
-
-
-
-panY =
-startPanY +
-(event.touches[0].clientY - startY);
-
-
-
-updateZoom();
-
-
-
-});
-
-
-
-photo.addEventListener(
-"touchend",
-function(){
-
-dragging = false;
-
-});
-
-
-
-
-
-
-// ==========================
-// Fullscreen
-// ==========================
-
-document.getElementById("fullscreen")
-.onclick = function(){
-
-
-if(!document.fullscreenElement){
-
-    document.documentElement.requestFullscreen();
-
-}
-else{
-
-    document.exitFullscreen();
-
-}
-
-
-};
+    <button id="fullscreen">Fullscreen</button>
+
+    <div id="version"></div>
+
+    <nav>
+        <a href="index.html">Home</a>
+        <a href="collections.html">Collections</a>
+    </nav>
+
+    <div id="viewer">
+        <img id="photo" alt="">
+    </div>
+
+    <div id="left"></div>
+    <div id="right"></div>
+
+    <div id="counter"></div>
+    <div id="thumbnails"></div>
+
+    <script>
+        const version = "v1.3.1";
+        document.getElementById("version").textContent = version;
+
+        const base =
+            "https://filedn.com/lbA2Vsf4s7Fj5KoVfXs5UL4/JM_Photos/";
+
+        const params = new URLSearchParams(window.location.search);
+        const collection = params.get("collection");
+
+        let images = [];
+        let thumbnails = [];
+        let current = 0;
+
+        fetch("collections.json")
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(
+                        `Unable to load collections.json: ${response.status}`
+                    );
+                }
+
+                return response.json();
+            })
+            .then(data => {
+                const selected = data.find(
+                    item => item.name === collection
+                );
+
+                if (!selected) {
+                    document.getElementById("counter").textContent =
+                        "Collection not found";
+                    return;
+                }
+
+                for (let i = 1; i <= selected.images; i++) {
+                    images.push(
+                        `${base}${selected.name}/originals/${i}.jpg`
+                    );
+
+                    thumbnails.push(
+                        `${base}${selected.name}/thumbnails/${i}.jpg`
+                    );
+                }
+
+                createThumbnails();
+                showImage();
+            })
+            .catch(error => {
+                document.getElementById("counter").textContent =
+                    "Error loading collection";
+
+                console.error(error);
+            });
+
+        function showImage() {
+            if (images.length === 0) {
+                return;
+            }
+
+            const photo = document.getElementById("photo");
+            const newImage = new Image();
+
+            photo.style.opacity = 0;
+
+            newImage.onload = function () {
+                photo.src = newImage.src;
+                photo.style.opacity = 1;
+            };
+
+            newImage.onerror = function () {
+                photo.style.opacity = 1;
+                console.error(`Unable to load image: ${images[current]}`);
+            };
+
+            newImage.src = images[current];
+
+            updateCounter();
+            updateThumbnails();
+            preloadNearbyImages();
+        }
+
+        function preloadNearbyImages() {
+            const indexes = [
+                (current - 1 + images.length) % images.length,
+                (current + 1) % images.length
+            ];
+
+            indexes.forEach(index => {
+                const image = new Image();
+                image.src = images[index];
+            });
+        }
+
+        function createThumbnails() {
+            const container = document.getElementById("thumbnails");
+            container.innerHTML = "";
+
+            thumbnails.forEach((src, index) => {
+                const thumbnail = document.createElement("img");
+
+                thumbnail.src = src;
+                thumbnail.loading = "lazy";
+                thumbnail.className = "thumb";
+                thumbnail.alt = `Photo ${index + 1}`;
+
+                thumbnail.addEventListener("click", function (event) {
+                    event.stopPropagation();
+                    current = index;
+                    showImage();
+                });
+
+                container.appendChild(thumbnail);
+            });
+        }
+
+        function updateThumbnails() {
+            const thumbnailElements =
+                document.querySelectorAll(".thumb");
+
+            thumbnailElements.forEach((thumbnail, index) => {
+                if (index === current) {
+                    thumbnail.classList.add("active");
+
+                    thumbnail.scrollIntoView({
+                        behavior: "smooth",
+                        inline: "center",
+                        block: "nearest"
+                    });
+                } else {
+                    thumbnail.classList.remove("active");
+                }
+            });
+        }
+
+        function updateCounter() {
+            document.getElementById("counter").textContent =
+                `${current + 1} / ${images.length}`;
+        }
+
+        function nextImage() {
+            if (images.length === 0) {
+                return;
+            }
+
+            current = (current + 1) % images.length;
+            showImage();
+        }
+
+        function previousImage() {
+            if (images.length === 0) {
+                return;
+            }
+
+            current =
+                (current - 1 + images.length) % images.length;
+
+            showImage();
+        }
+
+        document.getElementById("left")
+            .addEventListener("click", previousImage);
+
+        document.getElementById("right")
+            .addEventListener("click", nextImage);
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "ArrowRight") {
+                nextImage();
+            }
+
+            if (event.key === "ArrowLeft") {
+                previousImage();
+            }
+        });
+
+        let touchStartX = 0;
+
+        document.addEventListener("touchstart", function (event) {
+            touchStartX =
+                event.changedTouches[0].screenX;
+        });
+
+        document.addEventListener("touchend", function (event) {
+            const touchEndX =
+                event.changedTouches[0].screenX;
+
+            if (touchEndX < touchStartX - 50) {
+                nextImage();
+            }
+
+            if (touchEndX > touchStartX + 50) {
+                previousImage();
+            }
+        });
+
+        document.getElementById("fullscreen")
+            .addEventListener("click", function () {
+                if (!document.fullscreenElement) {
+                    document.documentElement
+                        .requestFullscreen()
+                        .catch(error => {
+                            console.error(
+                                "Unable to enter fullscreen:",
+                                error
+                            );
+                        });
+                } else {
+                    document.exitFullscreen();
+                }
+            });
+    </script>
+</body>
+</html>
