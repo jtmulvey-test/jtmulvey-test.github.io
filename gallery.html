@@ -135,13 +135,32 @@
         .thumb.active {
             opacity: 1;
         }
+
+        body.ui-hidden #controls,
+        body.ui-hidden #expandControls,
+        body.ui-hidden #version,
+        body.ui-hidden nav,
+        body.ui-hidden #counter,
+        body.ui-hidden #thumbnails {
+            display: none;
+        }
+
+        body.ui-hidden #viewer {
+            height: 100vh;
+        }
+
+        body.ui-hidden #photo {
+            max-width: 100vw;
+            max-height: 100vh;
+        }
     </style>
 </head>
 
 <body>
     <div id="controls">
         <button id="collapseControls">&lt;</button>
-        <button id="fullscreen" aria-label="Toggle fullscreen">[ ]</button>
+        <button id="fullscreen" aria-label="Toggle fullscreen">[F]</button>
+        <button id="hideUI" aria-label="Hide interface">[H]</button>
         <button id="zoomOut">−</button>
         <button id="zoomIn">+</button>
     </div>
@@ -163,7 +182,7 @@
     <div id="thumbnails"></div>
 
     <script>
-        const version = "v1.3.5";
+        const version = "v1.3.6";
         document.getElementById("version").textContent = version;
 
         const base =
@@ -422,11 +441,36 @@
             updateZoom();
         }
 
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement
+                    .requestFullscreen()
+                    .catch(error => {
+                        console.error(
+                            "Unable to enter fullscreen:",
+                            error
+                        );
+                    });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function toggleUI() {
+            document.body.classList.toggle("ui-hidden");
+        }
+
         document.getElementById("zoomIn")
             .addEventListener("click", zoomIn);
 
         document.getElementById("zoomOut")
             .addEventListener("click", zoomOut);
+
+        document.getElementById("fullscreen")
+            .addEventListener("click", toggleFullscreen);
+
+        document.getElementById("hideUI")
+            .addEventListener("click", toggleUI);
 
         document.getElementById("collapseControls")
             .addEventListener("click", function () {
@@ -480,38 +524,36 @@
         });
 
         document.addEventListener("keydown", function (event) {
-            if (event.key === "ArrowRight") {
+            if (event.repeat) {
+                return;
+            }
+
+            const key = event.key.toLowerCase();
+
+            if (key === "arrowright") {
                 nextImage();
             }
 
-            if (event.key === "ArrowLeft") {
+            if (key === "arrowleft") {
                 previousImage();
             }
 
-            if (event.key === "+" || event.key === "=") {
+            if (key === "+" || key === "=") {
                 zoomIn();
             }
 
-            if (event.key === "-") {
+            if (key === "-") {
                 zoomOut();
             }
-        });
 
-        document.getElementById("fullscreen")
-            .addEventListener("click", function () {
-                if (!document.fullscreenElement) {
-                    document.documentElement
-                        .requestFullscreen()
-                        .catch(error => {
-                            console.error(
-                                "Unable to enter fullscreen:",
-                                error
-                            );
-                        });
-                } else {
-                    document.exitFullscreen();
-                }
-            });
+            if (key === "f") {
+                toggleFullscreen();
+            }
+
+            if (key === "h") {
+                toggleUI();
+            }
+        });
     </script>
 </body>
 </html>
