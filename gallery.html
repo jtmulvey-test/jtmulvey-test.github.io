@@ -156,7 +156,6 @@
             justify-content: center;
             align-items: center;
             overflow: hidden;
-            contain: layout paint;
         }
 
         #photo {
@@ -164,17 +163,25 @@
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
-            opacity: 1;
             transform: none;
             transform-origin: center center;
             user-select: none;
             -webkit-user-drag: none;
             pointer-events: none;
-            transition: opacity 0.28s ease-in-out;
         }
 
-        #photo.no-fade {
-            transition: none;
+        #fadeOverlay {
+            position: absolute;
+            inset: 0;
+            z-index: 10;
+            background: black;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.34s ease-in-out;
+        }
+
+        #fadeOverlay.visible {
+            opacity: 1;
         }
 
         #counter {
@@ -331,7 +338,7 @@
         }
 
         @media (prefers-reduced-motion: reduce) {
-            #photo,
+            #fadeOverlay,
             .control-button,
             #version,
             #toggleIcon,
@@ -397,6 +404,8 @@
         <div id="photoStage">
             <img id="photo" alt="">
         </div>
+
+        <div id="fadeOverlay"></div>
     </div>
 
     <div id="counter"></div>
@@ -456,7 +465,7 @@
     </div>
 
     <script>
-        const version = "v1.3.17";
+        const version = "v1.3.18";
         document.getElementById("version").textContent = version;
 
         const base =
@@ -467,6 +476,8 @@
 
         const viewer = document.getElementById("viewer");
         const photo = document.getElementById("photo");
+        const fadeOverlay =
+            document.getElementById("fadeOverlay");
         const controls = document.getElementById("controls");
         const toggleControls =
             document.getElementById("toggleControls");
@@ -503,7 +514,7 @@
         const minimumZoom = 1;
         const maximumZoom = 4;
         const zoomStep = 0.5;
-        const fadeDuration = 280;
+        const fadeDuration = 340;
 
         fetch("collections.json")
             .then(response => {
@@ -560,7 +571,7 @@
             });
         }
 
-        function waitForOpacityTransition() {
+        function waitForOverlayTransition() {
             return new Promise(resolve => {
                 let completed = false;
 
@@ -571,7 +582,7 @@
 
                     completed = true;
 
-                    photo.removeEventListener(
+                    fadeOverlay.removeEventListener(
                         "transitionend",
                         handleTransitionEnd
                     );
@@ -581,14 +592,14 @@
 
                 function handleTransitionEnd(event) {
                     if (
-                        event.target === photo &&
+                        event.target === fadeOverlay &&
                         event.propertyName === "opacity"
                     ) {
                         finish();
                     }
                 }
 
-                photo.addEventListener(
+                fadeOverlay.addEventListener(
                     "transitionend",
                     handleTransitionEnd
                 );
@@ -644,9 +655,8 @@
                             await loadedImage.decode();
                         } catch (error) {
                             /*
-                            Some browsers may reject decode even after the
-                            image loaded successfully. The cached image can
-                            still be displayed.
+                            The image loaded successfully, so it can still
+                            be displayed even if decode() rejects.
                             */
                         }
                     }
@@ -672,8 +682,8 @@
                     false
                 ).catch(function () {
                     /*
-                    A preload failure will be reported again if the user
-                    attempts to display that photograph.
+                    Any failure will be reported if the photograph is
+                    actually requested later.
                     */
                 });
             });
@@ -690,17 +700,8 @@
             }
 
             if (displayedIndex === -1) {
-                photo.classList.add("no-fade");
-                photo.style.opacity = "0";
                 photo.src = src;
-
-                await waitForTwoFrames();
-
-                photo.style.opacity = "1";
                 displayedIndex = index;
-
-                await waitForNextFrame();
-                photo.classList.remove("no-fade");
                 return;
             }
 
@@ -709,24 +710,23 @@
             }
 
             /*
-            The image has already loaded and decoded before the fade begins.
-            This prevents the animation from pausing while the browser waits
-            for the new photograph.
+            Only the flat black overlay is animated. The full-resolution
+            photograph remains opaque and is replaced while covered.
             */
-            photo.style.opacity = "0";
-            await waitForOpacityTransition();
+            fadeOverlay.classList.add("visible");
+            await waitForOverlayTransition();
 
-            photo.classList.add("no-fade");
             photo.src = src;
-            photo.style.opacity = "0";
+            displayedIndex = index;
 
+            /*
+            Give the browser time to paint the decoded photograph beneath
+            the black overlay before revealing it.
+            */
             await waitForTwoFrames();
 
-            photo.classList.remove("no-fade");
-            photo.style.opacity = "1";
-
-            displayedIndex = index;
-            await waitForOpacityTransition();
+            fadeOverlay.classList.remove("visible");
+            await waitForOverlayTransition();
         }
 
         async function processImageQueue() {
@@ -836,10 +836,6 @@
                 panX === 0 &&
                 panY === 0
             ) {
-                /*
-                Avoiding a permanent scale(1) transform prevents Chrome from
-                tiling certain large images into visible GPU texture seams.
-                */
                 photo.style.transform = "none";
             } else {
                 photo.style.transform =
