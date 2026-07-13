@@ -143,11 +143,12 @@
             max-height: 85vh;
             object-fit: contain;
             opacity: 1;
-            transition: opacity 0.35s ease;
+            transition: opacity 0.3s ease;
             transform-origin: center center;
             user-select: none;
             -webkit-user-drag: none;
             cursor: default;
+            will-change: opacity, transform;
         }
 
         #photo.zoomed {
@@ -392,6 +393,11 @@
             </div>
 
             <div class="help-row">
+                <span class="help-key">C</span>
+                <p>Expand or collapse the media controls (keypress "C")</p>
+            </div>
+
+            <div class="help-row">
                 <span class="help-key">F</span>
                 <p>Enter or exit Full Screen Mode (keypress "F")</p>
             </div>
@@ -410,11 +416,16 @@
                 <span class="help-key">−</span>
                 <p>Zoom out for the current photograph (keypress "-")</p>
             </div>
+
+            <div class="help-row">
+                <span class="help-key">!</span>
+                <p>Double clicking image will zoom in or out</p>
+            </div>
         </div>
     </div>
 
     <script>
-        const version = "v1.3.15";
+        const version = "v1.3.16";
         document.getElementById("version").textContent = version;
 
         const base =
@@ -451,6 +462,7 @@
 
         let controlsCollapsed = false;
         let toggleIconTimer = null;
+        let imageTransitionToken = 0;
 
         const minimumZoom = 1;
         const maximumZoom = 4;
@@ -497,34 +509,120 @@
                 console.error(error);
             });
 
+        function waitForAnimationFrame() {
+            return new Promise(resolve => {
+                requestAnimationFrame(function () {
+                    requestAnimationFrame(resolve);
+                });
+            });
+        }
+
+        function waitForPhotoFade() {
+            return new Promise(resolve => {
+                let finished = false;
+
+                function finish() {
+                    if (finished) {
+                        return;
+                    }
+
+                    finished = true;
+                    photo.removeEventListener(
+                        "transitionend",
+                        handleTransitionEnd
+                    );
+
+                    resolve();
+                }
+
+                function handleTransitionEnd(event) {
+                    if (
+                        event.target === photo &&
+                        event.propertyName === "opacity"
+                    ) {
+                        finish();
+                    }
+                }
+
+                photo.addEventListener(
+                    "transitionend",
+                    handleTransitionEnd
+                );
+
+                window.setTimeout(finish, 350);
+            });
+        }
+
+        function loadImage(src) {
+            return new Promise((resolve, reject) => {
+                const image = new Image();
+
+                image.onload = function () {
+                    resolve(src);
+                };
+
+                image.onerror = function () {
+                    reject(new Error(`Unable to load image: ${src}`));
+                };
+
+                image.src = src;
+            });
+        }
+
+        async function fadeToImage(src, token) {
+            try {
+                await loadImage(src);
+
+                if (token !== imageTransitionToken) {
+                    return;
+                }
+
+                if (!photo.src) {
+                    photo.src = src;
+                    photo.style.opacity = 1;
+                    return;
+                }
+
+                photo.style.opacity = 1;
+                await waitForAnimationFrame();
+
+                if (token !== imageTransitionToken) {
+                    return;
+                }
+
+                photo.style.opacity = 0;
+                await waitForPhotoFade();
+
+                if (token !== imageTransitionToken) {
+                    return;
+                }
+
+                photo.src = src;
+                await waitForAnimationFrame();
+
+                if (token !== imageTransitionToken) {
+                    return;
+                }
+
+                photo.style.opacity = 1;
+            } catch (error) {
+                photo.style.opacity = 1;
+                console.error(error);
+            }
+        }
+
         function showImage() {
             if (images.length === 0) {
                 return;
             }
 
-            const newImage = new Image();
+            const token = ++imageTransitionToken;
 
             resetZoom();
-            photo.style.opacity = 0;
-
-            newImage.onload = function () {
-                photo.src = newImage.src;
-                photo.style.opacity = 1;
-            };
-
-            newImage.onerror = function () {
-                photo.style.opacity = 1;
-
-                console.error(
-                    `Unable to load image: ${images[current]}`
-                );
-            };
-
-            newImage.src = images[current];
-
             updateCounter();
             updateThumbnails();
             preloadNearbyImages();
+            fadeToImage(images[current], token);
         }
 
         function preloadNearbyImages() {
@@ -907,6 +1005,10 @@
 
             if (key === "h") {
                 toggleUI();
+            }
+
+            if (key === "c") {
+                toggleMediaControls();
             }
         });
     </script>
