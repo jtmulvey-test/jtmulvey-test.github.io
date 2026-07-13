@@ -470,9 +470,6 @@
         const version = "v1.3.19";
         document.getElementById("version").textContent = version;
 
-        const base =
-            "https://filedn.com/lbA2Vsf4s7Fj5KoVfXs5UL4/JM_Photos/";
-
         const params = new URLSearchParams(window.location.search);
         const collection = params.get("collection");
 
@@ -529,7 +526,16 @@
                 return response.json();
             })
             .then(data => {
-                const selected = data.find(
+                const base = data.base;
+                const collections = data.collections;
+            
+                if (!base || !Array.isArray(collections)) {
+                    throw new Error(
+                        "collections.json is not in the expected format"
+                    );
+                }
+            
+                const selected = collections.find(
                     item => item.name === collection
                 );
 
