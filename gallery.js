@@ -1,4 +1,4 @@
-const version = "v1.5.34";
+const version = "v1.5.35";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -2994,13 +2994,19 @@ async function selectMosaicImage(
 
     mosaicSelectionRunning = true;
 
-    const selectedImageAlreadyDisplayed =
-        displayedIndex === imageIndex;
-
     /*
-    Immediately hide the currently displayed full-size
-    photograph so the background becomes black.
+    Cover the entire browser window before any mosaic
+    elements begin disappearing. This prevents the mosaic
+    panel from appearing as a dark rectangle over the
+    full-size photograph during the final reveal.
     */
+    document.body.classList.add(
+        "mosaic-transition-cover-active"
+    );
+
+    void document.body.offsetHeight;
+    await waitForTwoFrames();
+
     viewer.classList.add(
         "mosaic-photo-blackout"
     );
@@ -3017,10 +3023,6 @@ async function selectMosaicImage(
         "mosaic-selected"
     );
 
-    /*
-    Force the browser to paint the selected state before
-    the quick and slow fades begin together.
-    */
     void selectedTile.getBoundingClientRect();
 
     mosaicOverlay.classList.add(
@@ -3037,48 +3039,18 @@ async function selectMosaicImage(
         imageIndex
     );
 
-    if (selectedImageAlreadyDisplayed) {
-        /*
-        The image was already loaded, so keep the main
-        viewer black long enough for the blackout to be
-        visibly painted before fading the same image back in.
-        */
-        await wait(220);
-        await waitForTwoFrames();
-
-        viewer.classList.add(
-            "mosaic-photo-refade"
-        );
-
-        viewer.classList.remove(
-            "mosaic-photo-blackout"
-        );
-
-        await wait(580);
-
-        viewer.classList.remove(
-            "mosaic-photo-refade"
-        );
-    } else {
-        /*
-        Reveal the newly loaded full-size photograph while
-        the selected mosaic thumbnail is still fading.
-        */
-        viewer.classList.remove(
-            "mosaic-photo-blackout"
-        );
-    }
-
     await minimumMosaicFade;
 
-    mosaicSelectionRunning = false;
-
+    /*
+    Close and fully clear the mosaic while the full-window
+    cover is still opaque.
+    */
     setFilmstripExpanded(
         false,
         true
     );
 
-    await wait(260);
+    await wait(300);
 
     mosaicOverlay.classList.remove(
         "selecting"
@@ -3097,6 +3069,33 @@ async function selectMosaicImage(
     );
 
     mosaicGrid.innerHTML = "";
+
+    await waitForTwoFrames();
+
+    /*
+    The new photograph is ready and the mosaic is gone.
+    Fade the full-window cover away to reveal only the
+    clean full-size image.
+    */
+    viewer.classList.remove(
+        "mosaic-photo-blackout"
+    );
+
+    document.body.classList.add(
+        "mosaic-transition-cover-fading"
+    );
+
+    await wait(620);
+
+    document.body.classList.remove(
+        "mosaic-transition-cover-fading"
+    );
+
+    document.body.classList.remove(
+        "mosaic-transition-cover-active"
+    );
+
+    mosaicSelectionRunning = false;
 }
 
 function renderMosaicLayout(layout) {

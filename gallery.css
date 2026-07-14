@@ -1473,9 +1473,27 @@ No visual padding workaround is required.
 }
 
 
-/* Gallery experience updates: v1.5.34 */
 
-#viewer.mosaic-photo-refade #photo {
+
+/* Gallery experience updates: v1.5.35 */
+
+body.mosaic-transition-cover-active::after {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    content: "";
+    background: #000000;
     opacity: 1;
+    pointer-events: none;
+    transition: none;
+}
+
+body.mosaic-transition-cover-active
+.mosaic-transition-cover-fading::after {
+    opacity: 0;
+}
+
+body.mosaic-transition-cover-active.mosaic-transition-cover-fading::after {
+    opacity: 0;
     transition: opacity 0.58s ease;
 }
