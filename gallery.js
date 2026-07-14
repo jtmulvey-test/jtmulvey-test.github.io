@@ -1,4 +1,4 @@
-const version = "v1.5.32";
+const version = "v1.5.34";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -955,15 +955,18 @@ function updateThumbnails(
         );
     }
 
-    document
-        .querySelectorAll(".mosaic-item")
-        .forEach(tile => {
-            tile.classList.toggle(
-                "active",
-                Number(tile.dataset.imageIndex) ===
-                    activeIndex
-            );
-        });
+    if (!mosaicSelectionRunning) {
+        document
+            .querySelectorAll(".mosaic-item")
+            .forEach(tile => {
+                tile.classList.toggle(
+                    "active",
+                    Number(
+                        tile.dataset.imageIndex
+                    ) === activeIndex
+                );
+            });
+    }
 }
 
 function updateCounter() {
@@ -2991,6 +2994,9 @@ async function selectMosaicImage(
 
     mosaicSelectionRunning = true;
 
+    const selectedImageAlreadyDisplayed =
+        displayedIndex === imageIndex;
+
     /*
     Immediately hide the currently displayed full-size
     photograph so the background becomes black.
@@ -3001,6 +3007,10 @@ async function selectMosaicImage(
 
     setMosaicCenterShift(
         selectedTile
+    );
+
+    selectedTile.classList.remove(
+        "active"
     );
 
     selectedTile.classList.add(
@@ -3027,13 +3037,37 @@ async function selectMosaicImage(
         imageIndex
     );
 
-    /*
-    Reveal the newly loaded full-size photograph while
-    the selected mosaic thumbnail is still fading.
-    */
-    viewer.classList.remove(
-        "mosaic-photo-blackout"
-    );
+    if (selectedImageAlreadyDisplayed) {
+        /*
+        The image was already loaded, so keep the main
+        viewer black long enough for the blackout to be
+        visibly painted before fading the same image back in.
+        */
+        await wait(220);
+        await waitForTwoFrames();
+
+        viewer.classList.add(
+            "mosaic-photo-refade"
+        );
+
+        viewer.classList.remove(
+            "mosaic-photo-blackout"
+        );
+
+        await wait(580);
+
+        viewer.classList.remove(
+            "mosaic-photo-refade"
+        );
+    } else {
+        /*
+        Reveal the newly loaded full-size photograph while
+        the selected mosaic thumbnail is still fading.
+        */
+        viewer.classList.remove(
+            "mosaic-photo-blackout"
+        );
+    }
 
     await minimumMosaicFade;
 

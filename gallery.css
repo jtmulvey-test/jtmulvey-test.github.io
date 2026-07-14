@@ -1459,3 +1459,23 @@ body.ui-idle:not(.ui-hidden):not(.mosaic-open)
 Mosaic spacing is enforced by the layout generator.
 No visual padding workaround is required.
 */
+
+
+/* Gallery experience updates: v1.5.33 */
+
+#mosaicOverlay.selecting
+.mosaic-item.active::after,
+#mosaicOverlay.selecting
+.mosaic-item.mosaic-selected::after {
+    opacity: 0;
+    border-color: transparent;
+    transition: none;
+}
+
+
+/* Gallery experience updates: v1.5.34 */
+
+#viewer.mosaic-photo-refade #photo {
+    opacity: 1;
+    transition: opacity 0.58s ease;
+}
