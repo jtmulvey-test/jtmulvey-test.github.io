@@ -1542,3 +1542,23 @@ but initial mosaic mode intentionally hides those controls.
 body.initial-mosaic-mode.mosaic-open #controlArea {
     opacity: 0 !important;
 }
+
+
+/* Gallery experience updates: v1.5.40 */
+
+/*
+Use a slower transition only for the first reveal after
+the startup mosaic. Later gallery transitions are unchanged.
+*/
+body.initial-gallery-reveal #photo,
+body.initial-gallery-reveal #backLink,
+body.initial-gallery-reveal #controlArea,
+body.initial-gallery-reveal #counter,
+body.initial-gallery-reveal #thumbnailBar,
+body.initial-gallery-reveal .photo-nav-indicator,
+body.initial-gallery-reveal #autoplayStatus,
+body.initial-gallery-reveal #autoplayProgress,
+body.initial-gallery-reveal #bottomZoomControls {
+    transition-duration: 1.16s !important;
+    transition-timing-function: ease !important;
+}

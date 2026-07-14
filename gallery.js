@@ -1,4 +1,4 @@
-const version = "v1.5.39";
+const version = "v1.5.40";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -3166,11 +3166,19 @@ async function selectMosaicImage(
         "mosaic-photo-transition"
     );
 
+    document.body.classList.add(
+        "initial-gallery-reveal"
+    );
+
     document.body.classList.remove(
         "initial-mosaic-mode"
     );
 
-    await wait(580);
+    await wait(1160);
+
+    document.body.classList.remove(
+        "initial-gallery-reveal"
+    );
 
     mosaicSelectionRunning = false;
 }
