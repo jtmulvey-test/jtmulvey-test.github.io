@@ -474,7 +474,7 @@ body.ui-hidden #bottomZoomControls {
     border: 1px solid white;
     border-radius: 50%;
     cursor: pointer;
-    font-size: 72px;
+    font-size: 24px;
     line-height: 1;
     text-align: center;
     transition:
@@ -1181,7 +1181,7 @@ body.ui-hidden #loadingIndicator {
     align-items: center;
     justify-content: center;
     color: rgba(255, 255, 255, 0.42);
-    font-size: 24px;
+    font-size: 72px;
     font-weight: 300;
     line-height: 1;
     opacity: 1;

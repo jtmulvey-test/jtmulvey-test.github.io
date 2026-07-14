@@ -1,4 +1,4 @@
-const version = "v1.5.14";
+const version = "v1.5.15";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
