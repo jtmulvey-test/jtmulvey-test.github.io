@@ -1,4 +1,4 @@
-const version = "v1.5.8";
+const version = "v1.5.9";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -34,8 +34,6 @@ const bottomZoomOut =
     document.getElementById("bottomZoomOut");
 const zoomSlider =
     document.getElementById("zoomSlider");
-const fitImageButton =
-    document.getElementById("fitImageButton");
 const previousImageButton =
     document.getElementById("previousImageButton");
 const nextImageButton =
@@ -1067,11 +1065,6 @@ function doubleClickZoom(event) {
 
     updateZoom();
     showModeToast("Zoom Mode");
-}
-
-function fitImageToViewer() {
-    resetZoom();
-    showModeToast("Fit Image");
 }
 
 function clamp(value, minimum, maximum) {
@@ -2266,13 +2259,21 @@ async function selectMosaicImage(
 
     mosaicSelectionRunning = true;
 
+    /*
+    Immediately hide the currently displayed full-size
+    photograph so the background becomes black.
+    */
+    viewer.classList.add(
+        "mosaic-photo-blackout"
+    );
+
     selectedTile.classList.add(
         "mosaic-selected"
     );
 
     /*
     Force the browser to paint the selected state before
-    both fade transitions begin.
+    the quick and slow fades begin together.
     */
     void selectedTile.getBoundingClientRect();
 
@@ -2280,15 +2281,25 @@ async function selectMosaicImage(
         "selecting"
     );
 
+    const minimumMosaicFade =
+        wait(900);
+
     current = imageIndex;
     requestImageChange();
 
-    await Promise.all([
-        waitForDisplayedIndex(
-            imageIndex
-        ),
-        wait(1050)
-    ]);
+    await waitForDisplayedIndex(
+        imageIndex
+    );
+
+    /*
+    Reveal the newly loaded full-size photograph while
+    the selected mosaic thumbnail is still fading.
+    */
+    viewer.classList.remove(
+        "mosaic-photo-blackout"
+    );
+
+    await minimumMosaicFade;
 
     mosaicSelectionRunning = false;
 
@@ -2711,11 +2722,6 @@ function toggleUI() {
     }
 }
 
-fitImageButton.addEventListener(
-    "click",
-    fitImageToViewer
-);
-
 previousImageButton.addEventListener(
     "click",
     previousImage
@@ -3068,9 +3074,6 @@ document.addEventListener(
             toggleFilmstrip();
         }
 
-        if (key === "0") {
-            fitImageToViewer();
-        }
     }
 );
 

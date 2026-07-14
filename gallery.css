@@ -259,12 +259,19 @@ body {
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
+    opacity: 1;
     transform: none;
     transform-origin: center;
     user-select: none;
     -webkit-user-drag: none;
     pointer-events: none;
     visibility: visible;
+    transition: opacity 0.58s ease;
+}
+
+#viewer.mosaic-photo-blackout #photo {
+    opacity: 0;
+    transition: none;
 }
 
 #fadeOverlay {
