@@ -1,4 +1,4 @@
-const version = "v1.5.3";
+const version = "v1.5.4";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -1092,6 +1092,117 @@ function shuffleIndexes(length) {
     return indexes;
 }
 
+function centerMosaicMass() {
+    if (!filmstripExpanded) {
+        return;
+    }
+
+    window.requestAnimationFrame(function () {
+        window.requestAnimationFrame(function () {
+            const tiles =
+                Array.from(
+                    mosaicGrid.querySelectorAll(
+                        ".mosaic-item"
+                    )
+                );
+
+            if (tiles.length === 0) {
+                return;
+            }
+
+            mosaicGrid.style.setProperty(
+                "--mosaic-center-x",
+                "0px"
+            );
+
+            mosaicGrid.style.setProperty(
+                "--mosaic-center-y",
+                "0px"
+            );
+
+            const panelRect =
+                mosaicPanel.getBoundingClientRect();
+
+            let weightedX = 0;
+            let weightedY = 0;
+            let totalArea = 0;
+
+            tiles.forEach(tile => {
+                const rect =
+                    tile.getBoundingClientRect();
+
+                const area =
+                    Math.max(
+                        1,
+                        rect.width * rect.height
+                    );
+
+                weightedX +=
+                    (rect.left + rect.width / 2) *
+                    area;
+
+                weightedY +=
+                    (rect.top + rect.height / 2) *
+                    area;
+
+                totalArea += area;
+            });
+
+            if (totalArea === 0) {
+                return;
+            }
+
+            const massCenterX =
+                weightedX / totalArea;
+
+            const massCenterY =
+                weightedY / totalArea;
+
+            const targetX =
+                panelRect.left +
+                panelRect.width / 2;
+
+            const targetY =
+                panelRect.top +
+                panelRect.height / 2;
+
+            const maximumShiftX =
+                panelRect.width * 0.09;
+
+            const maximumShiftY =
+                panelRect.height * 0.09;
+
+            const shiftX =
+                Math.max(
+                    -maximumShiftX,
+                    Math.min(
+                        maximumShiftX,
+                        targetX - massCenterX
+                    )
+                );
+
+            const shiftY =
+                Math.max(
+                    -maximumShiftY,
+                    Math.min(
+                        maximumShiftY,
+                        targetY - massCenterY
+                    )
+                );
+
+            mosaicGrid.style.setProperty(
+                "--mosaic-center-x",
+                `${shiftX.toFixed(1)}px`
+            );
+
+            mosaicGrid.style.setProperty(
+                "--mosaic-center-y",
+                `${shiftY.toFixed(1)}px`
+            );
+        });
+    });
+}
+
 function buildRandomMosaic() {
     mosaicGrid.innerHTML = "";
 
@@ -1099,10 +1210,21 @@ function buildRandomMosaic() {
         return;
     }
 
+    mosaicGrid.style.setProperty(
+        "--mosaic-center-x",
+        "0px"
+    );
+
+    mosaicGrid.style.setProperty(
+        "--mosaic-center-y",
+        "0px"
+    );
+
     const panelWidth =
         mosaicPanel.getBoundingClientRect().width;
 
-    const preferredColumnWidth = 190;
+    const preferredColumnWidth =
+        205 + Math.random() * 45;
 
     const columns = Math.min(
         6,
@@ -1135,10 +1257,10 @@ function buildRandomMosaic() {
         );
 
         const randomTilt =
-            (Math.random() * 0.8) - 0.4;
+            (Math.random() * 5.2) - 2.6;
 
         const randomWidth =
-            92 + Math.random() * 8;
+            72 + Math.random() * 28;
 
         const availableOffset =
             100 - randomWidth;
@@ -1146,9 +1268,33 @@ function buildRandomMosaic() {
         const randomOffset =
             Math.random() * availableOffset;
 
+        const randomShift =
+            (Math.random() * 20) - 10;
+
+        const randomTopGap =
+            Math.random() * 15;
+
+        const randomBottomGap =
+            8 + Math.random() * 22;
+
         tile.style.setProperty(
             "--mosaic-tilt",
             `${randomTilt.toFixed(2)}deg`
+        );
+
+        tile.style.setProperty(
+            "--mosaic-x-shift",
+            `${randomShift.toFixed(1)}px`
+        );
+
+        tile.style.setProperty(
+            "--mosaic-top-gap",
+            `${randomTopGap.toFixed(1)}px`
+        );
+
+        tile.style.setProperty(
+            "--mosaic-bottom-gap",
+            `${randomBottomGap.toFixed(1)}px`
         );
 
         tile.style.width =
@@ -1169,6 +1315,12 @@ function buildRandomMosaic() {
         image.decoding = "async";
         image.alt = "";
 
+        image.addEventListener(
+            "load",
+            centerMosaicMass,
+            { once: true }
+        );
+
         tile.appendChild(image);
 
         tile.addEventListener(
@@ -1183,7 +1335,12 @@ function buildRandomMosaic() {
         mosaicGrid.appendChild(tile);
     });
 
-    mosaicPanel.scrollTop = 0;
+    mosaicGrid.scrollTop = 0;
+
+    window.setTimeout(
+        centerMosaicMass,
+        100
+    );
 }
 
 function setFilmstripExpanded(expanded) {
@@ -1470,6 +1627,15 @@ mosaicOverlay.addEventListener(
     function (event) {
         if (event.target === mosaicOverlay) {
             setFilmstripExpanded(false);
+        }
+    }
+);
+
+window.addEventListener(
+    "resize",
+    function () {
+        if (filmstripExpanded) {
+            centerMosaicMass();
         }
     }
 );
