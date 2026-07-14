@@ -284,7 +284,7 @@ body {
 #bottomZoomControls {
     position: absolute;
     left: 50%;
-    bottom: 22px;
+    bottom: 29px;
     z-index: 15;
     display: flex;
     align-items: center;
@@ -350,7 +350,7 @@ body {
 }
 
 body.ui-hidden #bottomZoomControls {
-    bottom: 26px;
+    bottom: 34px;
 }
 
 #modeToast {
@@ -650,7 +650,7 @@ body.ui-hidden.autoplay-active #autoplayProgress {
 
 @media (max-width: 520px) {
     #bottomZoomControls {
-        bottom: 17px;
+        bottom: 22px;
         gap: 8px;
         padding: 7px 9px;
     }
