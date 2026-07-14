@@ -1789,3 +1789,110 @@ overshoot. Only opacity and transform are animated.
         animation: none !important;
     }
 }
+
+
+/* Gallery experience updates: v1.5.47 */
+
+#photoMotionLayer {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translate3d(0, 0, 0) scale(1);
+    transform-origin: center center;
+    will-change: transform;
+    transition: transform 0.45s ease;
+}
+
+#photoMotionLayer.autoplay-pan-active {
+    animation-duration:
+        var(--autoplay-pan-duration, 6s);
+    animation-timing-function: ease-in-out;
+    animation-fill-mode: both;
+    animation-iteration-count: 1;
+}
+
+#photoMotionLayer.autoplay-pan-active.autoplay-pan-0 {
+    animation-name: autoplay-pan-0;
+}
+
+#photoMotionLayer.autoplay-pan-active.autoplay-pan-1 {
+    animation-name: autoplay-pan-1;
+}
+
+#photoMotionLayer.autoplay-pan-active.autoplay-pan-2 {
+    animation-name: autoplay-pan-2;
+}
+
+#photoMotionLayer.autoplay-pan-active.autoplay-pan-3 {
+    animation-name: autoplay-pan-3;
+}
+
+body.autoplay-active:not(.autoplay-playing)
+#photoMotionLayer.autoplay-pan-active {
+    animation-play-state: paused;
+}
+
+@keyframes autoplay-pan-0 {
+    from {
+        transform:
+            translate3d(-8px, -4px, 0)
+            scale(1.018);
+    }
+
+    to {
+        transform:
+            translate3d(8px, 4px, 0)
+            scale(1.032);
+    }
+}
+
+@keyframes autoplay-pan-1 {
+    from {
+        transform:
+            translate3d(8px, -5px, 0)
+            scale(1.020);
+    }
+
+    to {
+        transform:
+            translate3d(-8px, 5px, 0)
+            scale(1.034);
+    }
+}
+
+@keyframes autoplay-pan-2 {
+    from {
+        transform:
+            translate3d(-7px, 5px, 0)
+            scale(1.019);
+    }
+
+    to {
+        transform:
+            translate3d(7px, -5px, 0)
+            scale(1.033);
+    }
+}
+
+@keyframes autoplay-pan-3 {
+    from {
+        transform:
+            translate3d(7px, 4px, 0)
+            scale(1.018);
+    }
+
+    to {
+        transform:
+            translate3d(-7px, -4px, 0)
+            scale(1.032);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #photoMotionLayer.autoplay-pan-active {
+        animation: none !important;
+        transform: none !important;
+    }
+}

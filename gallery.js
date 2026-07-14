@@ -1,4 +1,4 @@
-const version = "v1.5.46";
+const version = "v1.5.47";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -6,6 +6,8 @@ const collection = params.get("collection");
 
 const viewer = document.getElementById("viewer");
 const photo = document.getElementById("photo");
+const photoMotionLayer =
+    document.getElementById("photoMotionLayer");
 const fadeOverlay =
     document.getElementById("fadeOverlay");
 const controls =
@@ -85,7 +87,7 @@ let pendingImageIndex = null;
 let autoplayActive = false;
 let autoplayPlaying = false;
 let autoplayTimer = null;
-let autoplayDelaySeconds = 7;
+let autoplayDelaySeconds = 6;
 let autoplayProgressFrame = null;
 let autoplayProgressStart = null;
 
@@ -100,6 +102,7 @@ let wheelZoomAnchorY = 0;
 let wheelZoomEasing = 0.22;
 let lastWheelEventTime = 0;
 let mediaControlsPopTimer = null;
+let autoplayPanDirection = 0;
 let loadingIndicatorTimer = null;
 let idleInterfaceTimer = null;
 let filmstripExpanded = false;
@@ -164,6 +167,7 @@ function saveAutoplayDelay() {
 }
 
 loadStoredAutoplayDelay();
+updateAutoplayPanDuration();
 
 fetch("data/collections.json")
     .then(response => {
@@ -532,6 +536,8 @@ async function transitionToImage(index) {
             "photo-navigation-ready"
         );
 
+        restartAutoplayPan(displayedIndex);
+
         hideLoadingIndicator();
         expandMediaControlsAfterFirstImageLoad();
 
@@ -540,6 +546,7 @@ async function transitionToImage(index) {
 
     if (displayedIndex === index) {
         updateThumbnails(displayedIndex, null);
+        restartAutoplayPan(displayedIndex);
         hideLoadingIndicator();
         return;
     }
@@ -566,6 +573,7 @@ async function transitionToImage(index) {
 
         updateThumbnails(displayedIndex, null);
         positionPhotoNavigationIndicators();
+        restartAutoplayPan(displayedIndex);
 
         previousPhotoIndicator.classList.remove(
             "clicked"
@@ -598,6 +606,7 @@ async function transitionToImage(index) {
     updateThumbnails(displayedIndex, null);
 
     positionPhotoNavigationIndicators();
+    restartAutoplayPan(displayedIndex);
 
     fadeOverlay.classList.remove("visible");
     await waitForOverlayTransition();
@@ -1056,6 +1065,58 @@ function previousImage() {
     requestImageChange();
 }
 
+function updateAutoplayPanDuration() {
+    photoMotionLayer.style.setProperty(
+        "--autoplay-pan-duration",
+        `${autoplayDelaySeconds}s`
+    );
+}
+
+function restartAutoplayPan(
+    imageIndex = displayedIndex
+) {
+    updateAutoplayPanDuration();
+
+    photoMotionLayer.classList.remove(
+        "autoplay-pan-active",
+        "autoplay-pan-0",
+        "autoplay-pan-1",
+        "autoplay-pan-2",
+        "autoplay-pan-3"
+    );
+
+    if (
+        !autoplayActive ||
+        !autoplayPlaying ||
+        imageIndex < 0
+    ) {
+        return;
+    }
+
+    autoplayPanDirection =
+        imageIndex % 4;
+
+    photoMotionLayer.classList.add(
+        `autoplay-pan-${autoplayPanDirection}`
+    );
+
+    void photoMotionLayer.offsetWidth;
+
+    photoMotionLayer.classList.add(
+        "autoplay-pan-active"
+    );
+}
+
+function stopAutoplayPan() {
+    photoMotionLayer.classList.remove(
+        "autoplay-pan-active",
+        "autoplay-pan-0",
+        "autoplay-pan-1",
+        "autoplay-pan-2",
+        "autoplay-pan-3"
+    );
+}
+
 function clearAutoplayTimer() {
     if (autoplayTimer !== null) {
         window.clearTimeout(autoplayTimer);
@@ -1151,22 +1212,24 @@ function scheduleAutoplay() {
 }
 
 function updateAutoplayDisplay() {
-    if (autoplayActive) {
-        document.body.classList.add(
-            "autoplay-active"
-        );
+    document.body.classList.toggle(
+        "autoplay-active",
+        autoplayActive
+    );
 
-        autoplayStatus.textContent =
-            autoplayPlaying
-                ? "playing"
-                : "paused";
-    } else {
-        document.body.classList.remove(
-            "autoplay-active"
-        );
+    document.body.classList.toggle(
+        "autoplay-playing",
+        autoplayPlaying
+    );
 
-        autoplayStatus.textContent = "";
-    }
+    autoplayStatus.textContent =
+        autoplayActive
+            ? (
+                autoplayPlaying
+                    ? "playing"
+                    : "paused"
+            )
+            : "";
 
     autoplayButton.setAttribute(
         "aria-label",
@@ -1195,6 +1258,8 @@ async function startAutoplay() {
     } else {
         showModeToast("Autoplay Mode");
     }
+
+    restartAutoplayPan();
 
     if (!transitionRunning) {
         scheduleAutoplay();
@@ -1234,6 +1299,8 @@ async function resumeAutoplay() {
         showModeToast("Autoplay Mode");
     }
 
+    restartAutoplayPan();
+
     if (!transitionRunning) {
         scheduleAutoplay();
     }
@@ -1246,6 +1313,7 @@ function stopAutoplay() {
     clearAutoplayTimer();
     resetProgressBar();
     updateAutoplayDisplay();
+    stopAutoplayPan();
 }
 
 async function toggleAutoplay() {
@@ -1272,6 +1340,7 @@ function updateAutoplayDelay() {
     ) {
         autoplayDelaySeconds = newDelay;
         saveAutoplayDelay();
+        updateAutoplayPanDuration();
 
         if (
             autoplayPlaying &&
@@ -1287,7 +1356,7 @@ function validateAutoplayDelay() {
         Number(autoplayDelayInput.value);
 
     if (!Number.isFinite(newDelay)) {
-        newDelay = 7;
+        newDelay = 6;
     }
 
     newDelay =
@@ -1297,6 +1366,7 @@ function validateAutoplayDelay() {
     autoplayDelayInput.value =
         String(newDelay);
     saveAutoplayDelay();
+    updateAutoplayPanDuration();
 
     if (
         autoplayPlaying &&
