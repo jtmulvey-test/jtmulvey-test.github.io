@@ -1107,3 +1107,113 @@ body.ui-hidden #loadingIndicator {
         transition-duration: 0.01ms;
     }
 }
+
+
+/* Gallery experience updates: v1.5.13 */
+
+/* Place Help directly below the hamburger as the first media option. */
+#controlArea {
+    height: 468px;
+}
+
+#helpButton {
+    transform: translateY(58px);
+}
+
+#helpButton:hover {
+    transform: translateY(58px) scale(0.94);
+}
+
+#fullscreen {
+    transform: translateY(116px);
+}
+
+#fullscreen:hover {
+    transform: translateY(116px) scale(0.94);
+}
+
+#hideUI {
+    transform: translateY(174px);
+}
+
+#hideUI:hover {
+    transform: translateY(174px) scale(0.94);
+}
+
+#autoplayButton {
+    transform: translateY(232px);
+}
+
+#autoplayButton:hover {
+    transform: translateY(232px) scale(0.94);
+}
+
+#zoomIn {
+    transform: translateY(290px);
+}
+
+#zoomIn:hover {
+    transform: translateY(290px) scale(0.94);
+}
+
+#zoomOut {
+    transform: translateY(348px);
+}
+
+#zoomOut:hover {
+    transform: translateY(348px) scale(0.94);
+}
+
+#version {
+    top: 406px;
+}
+
+#version.collapsed {
+    transform: translateY(-406px);
+}
+
+.photo-nav-indicator {
+    position: fixed;
+    z-index: 18;
+    width: 24px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.42);
+    font-size: 24px;
+    font-weight: 300;
+    line-height: 1;
+    opacity: 1;
+    transform: translateY(-50%);
+    pointer-events: none;
+    user-select: none;
+    transition:
+        color 0.18s ease,
+        opacity 0.25s ease,
+        transform 0.18s ease;
+}
+
+.photo-nav-indicator-left {
+    transform: translateY(-50%) translateX(0);
+}
+
+.photo-nav-indicator-right {
+    transform: translateY(-50%) translateX(0);
+}
+
+.photo-nav-indicator-left.active {
+    color: white;
+    transform: translateY(-50%) translateX(-4px);
+}
+
+.photo-nav-indicator-right.active {
+    color: white;
+    transform: translateY(-50%) translateX(4px);
+}
+
+body.ui-idle:not(.ui-hidden) .photo-nav-indicator,
+body.ui-hidden .photo-nav-indicator,
+body.mosaic-open .photo-nav-indicator {
+    opacity: 0;
+}

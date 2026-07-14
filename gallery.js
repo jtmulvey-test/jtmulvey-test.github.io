@@ -1,4 +1,4 @@
-const version = "v1.5.12";
+const version = "v1.5.13";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -34,6 +34,10 @@ const bottomZoomOut =
     document.getElementById("bottomZoomOut");
 const zoomSlider =
     document.getElementById("zoomSlider");
+const previousPhotoIndicator =
+    document.getElementById("previousPhotoIndicator");
+const nextPhotoIndicator =
+    document.getElementById("nextPhotoIndicator");
 const loadingIndicator =
     document.getElementById("loadingIndicator");
 const filmstripButton =
@@ -556,6 +560,10 @@ function requestImageChange() {
     updateCounter();
     updateThumbnails();
     preloadNearbyImages();
+
+    window.requestAnimationFrame(
+        positionPhotoNavigationIndicators
+    );
 
     pendingImageIndex = current;
     processImageQueue();
@@ -2793,6 +2801,8 @@ mosaicOverlay.addEventListener(
 window.addEventListener(
     "resize",
     function () {
+        positionPhotoNavigationIndicators();
+
         if (!filmstripExpanded) {
             return;
         }
@@ -2918,14 +2928,29 @@ function clearPhotoNavigationClickTimer() {
     }
 }
 
-function handlePhotoNavigationClick(event) {
-    if (event.detail > 1) {
-        clearPhotoNavigationClickTimer();
-        return;
-    }
+function isNearMediaControls(clientX, clientY) {
+    const controlRect =
+        controlArea.getBoundingClientRect();
 
+    const safetyMargin = 22;
+
+    return (
+        clientX >=
+            controlRect.left - safetyMargin &&
+        clientX <=
+            controlRect.right + safetyMargin &&
+        clientY >=
+            controlRect.top - safetyMargin &&
+        clientY <=
+            controlRect.bottom + safetyMargin
+    );
+}
+
+function getPhotoNavigationDirection(
+    clientX,
+    clientY
+) {
     if (
-        event.button !== 0 ||
         zoomLevel !== minimumZoom ||
         isDragging ||
         transitionRunning ||
@@ -2934,14 +2959,34 @@ function handlePhotoNavigationClick(event) {
         !photo.complete ||
         photo.naturalWidth === 0
     ) {
-        return;
+        return null;
     }
 
+    const photoRect =
+        photo.getBoundingClientRect();
+
+    /*
+    The navigation zones span the left and right halves
+    of the screen, but stop at the bottom edge of the
+    displayed photograph.
+    */
     if (
-        event.target.closest(
-            "button, input, a, #bottomZoomControls, " +
-            "#controlArea, #loadingIndicator"
-        )
+        clientY < 0 ||
+        clientY > photoRect.bottom ||
+        isNearMediaControls(clientX, clientY)
+    ) {
+        return null;
+    }
+
+    return clientX < window.innerWidth / 2
+        ? "previous"
+        : "next";
+}
+
+function positionPhotoNavigationIndicators() {
+    if (
+        !photo.complete ||
+        photo.naturalWidth === 0
     ) {
         return;
     }
@@ -2949,19 +2994,84 @@ function handlePhotoNavigationClick(event) {
     const photoRect =
         photo.getBoundingClientRect();
 
-    const isInsidePhoto =
-        event.clientX >= photoRect.left &&
-        event.clientX <= photoRect.right &&
-        event.clientY >= photoRect.top &&
-        event.clientY <= photoRect.bottom;
+    const verticalPosition =
+        Math.max(
+            photoRect.top + 22,
+            photoRect.bottom - 24
+        );
 
-    if (!isInsidePhoto) {
+    previousPhotoIndicator.style.left =
+        `${Math.max(4, photoRect.left + 8)}px`;
+
+    previousPhotoIndicator.style.top =
+        `${verticalPosition}px`;
+
+    nextPhotoIndicator.style.left =
+        `${Math.min(
+            window.innerWidth - 28,
+            photoRect.right - 32
+        )}px`;
+
+    nextPhotoIndicator.style.top =
+        `${verticalPosition}px`;
+}
+
+function updatePhotoNavigationIndicators(event) {
+    positionPhotoNavigationIndicators();
+
+    const direction =
+        getPhotoNavigationDirection(
+            event.clientX,
+            event.clientY
+        );
+
+    previousPhotoIndicator.classList.toggle(
+        "active",
+        direction === "previous"
+    );
+
+    nextPhotoIndicator.classList.toggle(
+        "active",
+        direction === "next"
+    );
+}
+
+function clearPhotoNavigationIndicators() {
+    previousPhotoIndicator.classList.remove(
+        "active"
+    );
+
+    nextPhotoIndicator.classList.remove(
+        "active"
+    );
+}
+
+function handlePhotoNavigationClick(event) {
+    if (event.detail > 1) {
+        clearPhotoNavigationClickTimer();
         return;
     }
 
-    const clickedLeftHalf =
-        event.clientX <
-        photoRect.left + photoRect.width / 2;
+    if (
+        event.button !== 0 ||
+        event.target.closest(
+            "button, input, a, #bottomZoomControls, " +
+            "#controlArea, #loadingIndicator, " +
+            "#thumbnailBar"
+        )
+    ) {
+        return;
+    }
+
+    const direction =
+        getPhotoNavigationDirection(
+            event.clientX,
+            event.clientY
+        );
+
+    if (direction === null) {
+        return;
+    }
 
     clearPhotoNavigationClickTimer();
 
@@ -2970,17 +3080,21 @@ function handlePhotoNavigationClick(event) {
             function () {
                 photoNavigationClickTimer = null;
 
-                if (
-                    zoomLevel !== minimumZoom ||
-                    transitionRunning ||
-                    filmstripExpanded
-                ) {
-                    return;
-                }
+                const currentDirection =
+                    getPhotoNavigationDirection(
+                        event.clientX,
+                        event.clientY
+                    );
 
-                if (clickedLeftHalf) {
+                if (
+                    currentDirection ===
+                    "previous"
+                ) {
                     previousImage();
-                } else {
+                } else if (
+                    currentDirection ===
+                    "next"
+                ) {
                     nextImage();
                 }
             },
@@ -3023,6 +3137,16 @@ viewer.addEventListener(
         }
     },
     { passive: false }
+);
+
+viewer.addEventListener(
+    "pointermove",
+    updatePhotoNavigationIndicators
+);
+
+viewer.addEventListener(
+    "pointerleave",
+    clearPhotoNavigationIndicators
 );
 
 viewer.addEventListener(
