@@ -1,4 +1,4 @@
-const version = "v1.5.41";
+const version = "v1.5.42";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -98,6 +98,8 @@ let idleInterfaceTimer = null;
 let filmstripExpanded = false;
 let mosaicBuildToken = 0;
 let mosaicResizeTimer = null;
+let mosaicBaseWidth = 0;
+let mosaicBaseHeight = 0;
 let thumbnailAspectPromise = null;
 let mosaicSelectionRunning = false;
 let photoNavigationClickTimer = null;
@@ -3198,7 +3200,7 @@ async function selectMosaicImage(
     );
 
     if (wasInitialMosaic) {
-        await wait(100);
+        await wait(200);
         expandMediaControlsAfterFirstImageLoad();
     }
 
@@ -3268,6 +3270,46 @@ function renderMosaicLayout(layout) {
     });
 }
 
+function scaleExistingMosaicToPanel() {
+    if (
+        !filmstripExpanded ||
+        mosaicBaseWidth <= 0 ||
+        mosaicBaseHeight <= 0 ||
+        mosaicGrid.children.length === 0
+    ) {
+        return;
+    }
+
+    const panelRect =
+        mosaicPanel.getBoundingClientRect();
+
+    const horizontalPadding = 24;
+    const verticalPadding = 24;
+
+    const availableWidth =
+        Math.max(
+            1,
+            panelRect.width -
+            horizontalPadding * 2
+        );
+
+    const availableHeight =
+        Math.max(
+            1,
+            panelRect.height -
+            verticalPadding * 2
+        );
+
+    const scale =
+        Math.min(
+            availableWidth / mosaicBaseWidth,
+            availableHeight / mosaicBaseHeight
+        );
+
+    mosaicGrid.style.transform =
+        `scale(${scale})`;
+}
+
 async function buildSeededMosaic() {
     const buildToken =
         ++mosaicBuildToken;
@@ -3304,11 +3346,17 @@ async function buildSeededMosaic() {
             verticalPadding * 2
         );
 
+    mosaicBaseWidth = canvasWidth;
+    mosaicBaseHeight = canvasHeight;
+
     mosaicGrid.style.width =
         `${canvasWidth}px`;
 
     mosaicGrid.style.height =
         `${canvasHeight}px`;
+
+    mosaicGrid.style.transform =
+        "scale(1)";
 
     const layout =
         generateBestMosaicLayout(
@@ -3417,6 +3465,10 @@ function setFilmstripExpanded(
 
         if (!preserveContent) {
             mosaicGrid.innerHTML = "";
+            mosaicGrid.style.transform =
+                "scale(1)";
+            mosaicBaseWidth = 0;
+            mosaicBaseHeight = 0;
         }
     }
 
@@ -3708,8 +3760,8 @@ window.addEventListener(
 
         mosaicResizeTimer =
             window.setTimeout(
-                buildSeededMosaic,
-                180
+                scaleExistingMosaicToPanel,
+                80
             );
     }
 );
@@ -4125,6 +4177,13 @@ document.addEventListener(
         if (!document.fullscreenElement) {
             stopAutoplay();
             showUI();
+        }
+
+        if (filmstripExpanded) {
+            window.setTimeout(
+                scaleExistingMosaicToPanel,
+                120
+            );
         }
     }
 );
