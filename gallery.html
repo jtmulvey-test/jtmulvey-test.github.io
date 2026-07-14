@@ -728,7 +728,7 @@
     </div>
 
     <script>
-        const version = "v1.4.11";
+        const version = "v1.4.12";
         document.getElementById("version").textContent = version;
 
         const params = new URLSearchParams(window.location.search);
@@ -848,6 +848,9 @@
 
         function showModeToast(message) {
             window.clearTimeout(modeToastTimer);
+
+            modeToast.classList.remove("visible");
+            modeToast.offsetHeight;
 
             modeToast.textContent =
                 `${message} (esc to exit)`;
