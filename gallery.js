@@ -1,4 +1,4 @@
-const version = "v1.4.20";
+const version = "v1.4.21";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -26,6 +26,14 @@ const autoplayProgressBar =
     document.getElementById("autoplayProgressBar");
 const autoplayDelayInput =
     document.getElementById("autoplayDelay");
+const bottomZoomControls =
+    document.getElementById("bottomZoomControls");
+const bottomZoomIn =
+    document.getElementById("bottomZoomIn");
+const bottomZoomOut =
+    document.getElementById("bottomZoomOut");
+const zoomSlider =
+    document.getElementById("zoomSlider");
 
 let images = [];
 let thumbnails = [];
@@ -799,10 +807,27 @@ function updateZoom() {
             `scale(${zoomLevel})`;
     }
 
+    const isZoomed =
+        zoomLevel > minimumZoom;
+
     viewer.classList.toggle(
         "zoomed",
-        zoomLevel > minimumZoom
+        isZoomed
     );
+
+    bottomZoomControls.classList.toggle(
+        "visible",
+        isZoomed
+    );
+
+    zoomSlider.value =
+        String(zoomLevel);
+
+    bottomZoomOut.disabled =
+        zoomLevel <= minimumZoom;
+
+    bottomZoomIn.disabled =
+        zoomLevel >= maximumZoom;
 }
 
 function zoomIn() {
@@ -1018,6 +1043,45 @@ function toggleUI() {
         enterHideMode("Hide Mode");
     }
 }
+
+bottomZoomIn.addEventListener(
+    "click",
+    zoomIn
+);
+
+bottomZoomOut.addEventListener(
+    "click",
+    zoomOut
+);
+
+zoomSlider.addEventListener(
+    "input",
+    function () {
+        zoomLevel = Number(zoomSlider.value);
+
+        if (zoomLevel <= minimumZoom) {
+            zoomLevel = minimumZoom;
+            panX = 0;
+            panY = 0;
+        }
+
+        updateZoom();
+    }
+);
+
+bottomZoomControls.addEventListener(
+    "mousedown",
+    function (event) {
+        event.stopPropagation();
+    }
+);
+
+bottomZoomControls.addEventListener(
+    "dblclick",
+    function (event) {
+        event.stopPropagation();
+    }
+);
 
 document
     .getElementById("zoomIn")

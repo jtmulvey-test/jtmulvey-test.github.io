@@ -281,6 +281,78 @@ body {
     opacity: 1;
 }
 
+#bottomZoomControls {
+    position: absolute;
+    left: 50%;
+    bottom: 18px;
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    color: white;
+    background: rgba(15, 15, 15, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 999px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    transform: translate(-50%, 12px);
+    pointer-events: none;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition:
+        opacity 0.22s ease,
+        transform 0.22s ease;
+}
+
+#bottomZoomControls.visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
+    pointer-events: auto;
+}
+
+.bottom-zoom-button {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    flex: 0 0 auto;
+    color: white;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+    transition:
+        color 0.2s ease,
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.bottom-zoom-button:hover {
+    color: black;
+    background: white;
+    border-color: white;
+    transform: scale(0.94);
+}
+
+.bottom-zoom-button:focus-visible,
+#zoomSlider:focus-visible {
+    outline: 1px solid white;
+    outline-offset: 4px;
+}
+
+#zoomSlider {
+    width: min(180px, 34vw);
+    accent-color: white;
+    cursor: pointer;
+}
+
+body.ui-hidden #bottomZoomControls {
+    bottom: 22px;
+}
+
 #modeToast {
     position: fixed;
     top: 12vh;
@@ -577,6 +649,16 @@ body.ui-hidden.autoplay-active #autoplayProgress {
 }
 
 @media (max-width: 520px) {
+    #bottomZoomControls {
+        bottom: 14px;
+        gap: 8px;
+        padding: 7px 9px;
+    }
+
+    #zoomSlider {
+        width: min(140px, 38vw);
+    }
+
     #modeToast {
         max-width: calc(100vw - 28px);
         padding: 10px 16px 11px;
