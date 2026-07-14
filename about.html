@@ -1,194 +1,310 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>About</title>
+    <title>About | JM Photography</title>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <link rel="icon" type="image/png" href="data/favicon.png">
 
     <style>
+        :root {
+            --page-background: #000000;
+            --primary-text: #ffffff;
+            --secondary-text: rgba(255, 255, 255, 0.72);
+            --page-width: 820px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         html,
         body {
-            margin: 0;
-            padding: 0;
             min-height: 100%;
-            background: black;
-            color: white;
-            font-family: Arial, sans-serif;
+            margin: 0;
+            background: var(--page-background);
+            color: var(--primary-text);
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
         }
 
-        #header {
+        a {
+            color: inherit;
+        }
+
+        #topLeftLogo {
             position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 20;
-            width: 100%;
-            height: 86px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 18px 28px;
-            box-sizing: border-box;
-            background: rgba(0, 0, 0, 0.82);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-        }
-
-        #logoLink {
-            display: inline-flex;
-            align-items: center;
+            top: 15px;
+            left: 20px;
+            z-index: 50;
+            display: block;
+            height: 87px;
             text-decoration: none;
         }
 
-        #logo {
+        #topLeftLogo img {
             display: block;
-            height: 50px;
             width: auto;
+            height: 100%;
+            object-fit: contain;
+            user-select: none;
+            -webkit-user-drag: none;
+            transition:
+                opacity 0.2s ease,
+                transform 0.25s ease;
         }
 
-        #navLinks {
-            display: flex;
-            align-items: center;
-            gap: 26px;
+        #topLeftLogo:hover img {
+            opacity: 0.75;
+            transform: scale(1.025);
         }
 
-        #navLinks a {
-            color: white;
-            font-size: 16px;
-            line-height: 1;
-            text-decoration: none;
-            letter-spacing: 0.02em;
-            opacity: 0.82;
-            transition: opacity 0.2s ease;
-        }
-
-        #navLinks a:hover,
-        #navLinks a.active {
-            opacity: 1;
-        }
-
-        #page {
-            width: min(900px, calc(100% - 40px));
-            margin: 0 auto;
-            padding: 132px 0 70px;
-            box-sizing: border-box;
-            text-align: center;
-        }
-
-        h1 {
-            margin: 0 0 34px;
-            font-size: clamp(38px, 7vw, 72px);
-            font-weight: 400;
-            line-height: 0.95;
-            letter-spacing: -0.05em;
-        }
-
-        #aboutImage {
-            display: block;
-            width: min(520px, 100%);
-            height: auto;
-            margin: 0 auto 36px;
-            object-fit: cover;
-        }
-
-        #aboutText {
-            width: min(720px, 100%);
-            margin: 0 auto;
-            font-size: 18px;
-            line-height: 1.65;
-            text-align: left;
-            white-space: pre-wrap;
-        }
-
-        #aboutText.error {
-            color: rgba(255, 255, 255, 0.68);
-            font-style: italic;
-            text-align: center;
+        #topLeftLogo:focus-visible {
+            outline: 1px solid white;
+            outline-offset: 5px;
         }
 
         #version {
             position: fixed;
+            top: 107px;
             left: 20px;
-            bottom: 16px;
-            z-index: 30;
+            z-index: 50;
             color: red;
             font-size: 12px;
-            opacity: 0.8;
-            pointer-events: none;
+            line-height: 1;
+            opacity: 0.85;
         }
 
-        @media (max-width: 640px) {
-            #header {
-                height: 74px;
-                padding: 15px 18px;
+        nav {
+            position: fixed;
+            top: 15px;
+            right: 20px;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        nav a {
+            color: white;
+            font-size: 22.4px;
+            line-height: 1.1;
+            text-decoration: none;
+            transition:
+                opacity 0.2s ease,
+                transform 0.2s ease;
+        }
+
+        nav a:hover {
+            opacity: 0.65;
+            transform: translateX(-3px);
+        }
+
+        nav a:focus-visible {
+            outline: 1px solid white;
+            outline-offset: 5px;
+            border-radius: 2px;
+        }
+
+        #page {
+            width: min(
+                var(--page-width),
+                calc(100% - 48px)
+            );
+            min-height: 100vh;
+            margin: 0 auto;
+            padding: 135px 0 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0 0 42px;
+            font-size: clamp(42px, 7vw, 82px);
+            font-weight: 500;
+            line-height: 0.95;
+            letter-spacing: -0.045em;
+        }
+
+        #aboutPhoto {
+            display: block;
+            width: min(520px, 100%);
+            height: auto;
+            max-height: 68vh;
+            object-fit: contain;
+            margin: 0 auto;
+            border-radius: 2px;
+        }
+
+        #aboutText {
+            width: min(680px, 100%);
+            margin: 34px auto 0;
+            color: var(--secondary-text);
+            font-size: 18px;
+            line-height: 1.75;
+            white-space: pre-line;
+        }
+
+        #status {
+            margin-top: 34px;
+            color: var(--secondary-text);
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        #status.error {
+            color: #ff6b6b;
+        }
+
+        @media (max-width: 820px) {
+            #topLeftLogo {
+                height: 70px;
             }
 
-            #logo {
-                height: 42px;
-            }
-
-            #navLinks {
-                gap: 16px;
-            }
-
-            #navLinks a {
-                font-size: 14px;
+            #version {
+                top: 90px;
             }
 
             #page {
-                width: min(620px, calc(100% - 34px));
-                padding-top: 112px;
+                padding-top: 150px;
+            }
+        }
+
+        @media (max-width: 520px) {
+            #topLeftLogo {
+                top: 14px;
+                left: 14px;
+                height: 56px;
+            }
+
+            #version {
+                top: 75px;
+                left: 14px;
+            }
+
+            nav {
+                right: 14px;
+            }
+
+            nav a {
+                font-size: 18px;
+            }
+
+            #page {
+                width: calc(100% - 28px);
+                padding-top: 150px;
             }
 
             h1 {
-                margin-bottom: 28px;
-            }
-
-            #aboutImage {
-                margin-bottom: 30px;
+                margin-bottom: 32px;
+                font-size: 42px;
             }
 
             #aboutText {
+                margin-top: 28px;
                 font-size: 16px;
-                line-height: 1.6;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                scroll-behavior: auto !important;
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
             }
         }
     </style>
 </head>
 
 <body>
-    <header id="header">
-        <a id="logoLink" href="index.html" aria-label="Home">
-            <img id="logo" src="data/logo.png" alt="JM Photography logo">
-        </a>
+    <a
+        id="topLeftLogo"
+        href="index.html"
+        aria-label="JM Photography home"
+    >
+        <img
+            src="data/logo.png"
+            alt="JM Photography"
+        >
+    </a>
 
-        <nav id="navLinks" aria-label="Main navigation">
-            <a href="index.html">Home</a>
-            <a href="collections.html">Collections</a>
-            <a class="active" href="about.html">About</a>
-        </nav>
-    </header>
+    <div id="version">v1.0.8</div>
+
+    <nav aria-label="Main navigation">
+        <a href="index.html">Home</a>
+        <a href="collections.html">Collections</a>
+        <a href="about.html">About</a>
+    </nav>
 
     <main id="page">
         <h1>About</h1>
 
         <img
-            id="aboutImage"
-            src="data/about.jpg"
-            alt="About photograph"
+            id="aboutPhoto"
+            src=""
+            alt="About Justin"
         >
 
-        <div id="aboutText">Loading...</div>
+        <div id="status">Loading about page...</div>
+
+        <div id="aboutText"></div>
     </main>
 
-    <div id="version">v1.0.7</div>
-
     <script>
-        const version = "v1.0.7";
-        document.getElementById("version").textContent = version;
+        const aboutPhoto =
+            document.getElementById("aboutPhoto");
 
-        fetch("data/about.txt")
+        const aboutText =
+            document.getElementById("aboutText");
+
+        const status =
+            document.getElementById("status");
+
+        function normalizeBase(base) {
+            return base.endsWith("/")
+                ? base
+                : `${base}/`;
+        }
+
+        function cleanAboutText(text) {
+            return text
+                .replace(/\r\n/g, "\n")
+                .replace(/\n{3,}/g, "\n\n")
+                .trim();
+        }
+
+        fetch("data/collections.json")
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(
+                        `Unable to load collections.json: ${response.status}`
+                    );
+                }
+
+                return response.json();
+            })
+            .then(data => {
+                const base = normalizeBase(data.base);
+
+                aboutPhoto.src =
+                    "data/about.jpg";
+
+                return fetch("data/about.txt");
+            })
             .then(response => {
                 if (!response.ok) {
                     throw new Error(
@@ -199,19 +315,16 @@
                 return response.text();
             })
             .then(text => {
-                const aboutText =
-                    document.getElementById("aboutText");
-
-                aboutText.textContent = text.trim();
-            })
-            .catch(error => {
-                const aboutText =
-                    document.getElementById("aboutText");
+                status.style.display = "none";
 
                 aboutText.textContent =
-                    "Unable to load about text.";
+                    cleanAboutText(text);
+            })
+            .catch(error => {
+                status.classList.add("error");
 
-                aboutText.classList.add("error");
+                status.textContent =
+                    "Unable to load the about text.";
 
                 console.error(error);
             });
