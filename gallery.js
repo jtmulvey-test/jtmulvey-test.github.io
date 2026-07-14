@@ -1,4 +1,4 @@
-const version = "v1.5.26";
+const version = "v1.5.27";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -500,7 +500,7 @@ async function transitionToImage(index) {
 
         photo.style.visibility = "visible";
         displayedIndex = index;
-        updateThumbnails(displayedIndex);
+        updateThumbnails(displayedIndex, null);
 
         positionPhotoNavigationIndicators();
 
@@ -515,7 +515,7 @@ async function transitionToImage(index) {
     }
 
     if (displayedIndex === index) {
-        updateThumbnails(displayedIndex);
+        updateThumbnails(displayedIndex, null);
         hideLoadingIndicator();
         return;
     }
@@ -536,7 +536,7 @@ async function transitionToImage(index) {
 
     await waitForTwoFrames();
 
-    updateThumbnails(displayedIndex);
+    updateThumbnails(displayedIndex, null);
 
     positionPhotoNavigationIndicators();
 
@@ -593,7 +593,15 @@ function requestImageChange(
     updateCounter();
 
     if (updateThumbnailImmediately) {
-        updateThumbnails(current);
+        updateThumbnails(
+            current,
+            "smooth"
+        );
+    } else {
+        centerThumbnailByIndex(
+            current,
+            "smooth"
+        );
     }
 
     preloadNearbyImages();
@@ -872,10 +880,12 @@ async function createThumbnails() {
     );
 }
 
-function centerActiveThumbnail(
-    thumbnail
+function centerThumbnailByElement(
+    thumbnail,
+    behavior = "smooth"
 ) {
     if (
+        !thumbnail ||
         !thumbnailsContainer.classList.contains(
             "has-overflow"
         )
@@ -892,41 +902,66 @@ function centerActiveThumbnail(
         thumbnailsContainer.scrollWidth -
         thumbnailsContainer.clientWidth;
 
-    thumbnailsContainer.scrollTo({
-        left: Math.max(
+    const clampedScrollLeft =
+        Math.max(
             0,
             Math.min(
                 maximumScroll,
                 targetScrollLeft
             )
-        ),
-        behavior: "smooth"
+        );
+
+    thumbnailsContainer.scrollTo({
+        left: clampedScrollLeft,
+        behavior: behavior
     });
 }
 
+function centerThumbnailByIndex(
+    index,
+    behavior = "smooth"
+) {
+    const thumbnail =
+        thumbnailsContainer.querySelector(
+            `.thumb[data-index="${index}"]`
+        );
+
+    centerThumbnailByElement(
+        thumbnail,
+        behavior
+    );
+}
+
 function updateThumbnails(
-    activeIndex = current
+    activeIndex = current,
+    centerBehavior = null
 ) {
     const thumbnailElements =
         document.querySelectorAll(".thumb");
 
     thumbnailElements.forEach(
         (thumbnail, index) => {
-            if (index === activeIndex) {
-                thumbnail.classList.add("active");
-                centerActiveThumbnail(thumbnail);
-            } else {
-                thumbnail.classList.remove("active");
-            }
+            thumbnail.classList.toggle(
+                "active",
+                index === activeIndex
+            );
         }
     );
+
+    if (centerBehavior !== null) {
+        centerThumbnailByIndex(
+            activeIndex,
+            centerBehavior
+        );
+    }
 
     document
         .querySelectorAll(".mosaic-item")
         .forEach(tile => {
             tile.classList.toggle(
                 "active",
-                Number(tile.dataset.imageIndex) === activeIndex
+                Number(tile.dataset.imageIndex) ===
+                    activeIndex
             );
         });
 }
@@ -1687,15 +1722,14 @@ function createMosaicTileSizes(
                 width: width,
                 height: height,
                 area: area,
-                rotation:
-                    (random() - 0.5) * 1.2
+                rotation: 0
             };
         }
     );
 }
 
-const mosaicPreferredGap = 10;
-const mosaicMinimumGap = 5;
+const mosaicPreferredGap = 7;
+const mosaicMinimumGap = 3;
 
 function scoreMosaicPlacement(
     candidate,
@@ -1732,27 +1766,12 @@ function scoreMosaicPlacement(
 
     let nearestGap = Infinity;
 
-    placedTiles.forEach(tile => {
+    for (const tile of placedTiles) {
         const overlapArea =
             rectangleOverlapArea(
                 candidate,
                 tile
             );
-
-        if (overlapArea > 0) {
-            const smallerArea =
-                Math.min(
-                    candidate.width *
-                    candidate.height,
-                    tile.width *
-                    tile.height
-                );
-
-            score +=
-                overlapArea /
-                Math.max(1, smallerArea) *
-                24000;
-        }
 
         const gap =
             rectangleGap(
@@ -1833,7 +1852,7 @@ function scoreMosaicPlacement(
                 }
             }
         );
-    });
+    }
 
     if (
         placedTiles.length > 0 &&
@@ -2890,11 +2909,6 @@ function renderMosaicLayout(layout) {
 
         tile.style.height =
             `${tileData.height.toFixed(1)}px`;
-
-        tile.style.setProperty(
-            "--mosaic-tilt",
-            `${tileData.rotation.toFixed(2)}deg`
-        );
 
         if (
             tileData.imageIndex === current

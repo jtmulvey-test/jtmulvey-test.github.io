@@ -966,8 +966,7 @@ body.ui-hidden.autoplay-active #autoplayProgress {
     clip-path: inset(0 round 7px);
     cursor: pointer;
     opacity: 0.88;
-    transform:
-        rotate(var(--mosaic-tilt, 0deg));
+    transform: none;
     transform-origin: center;
     transition:
         opacity 0.2s ease,
@@ -978,9 +977,7 @@ body.ui-hidden.autoplay-active #autoplayProgress {
 .mosaic-item:hover {
     z-index: 2;
     opacity: 1;
-    transform:
-        rotate(var(--mosaic-tilt, 0deg))
-        scale(1.025);
+    transform: scale(1.025);
 }
 
 .mosaic-item:focus-visible {
@@ -1027,9 +1024,7 @@ body.ui-hidden.autoplay-active #autoplayProgress {
 
 #mosaicOverlay.selecting .mosaic-item {
     opacity: 0;
-    transform:
-        rotate(var(--mosaic-tilt, 0deg))
-        scale(0.965);
+    transform: scale(0.965);
     pointer-events: none;
     transition:
         opacity 0.14s ease,
@@ -1044,7 +1039,6 @@ body.ui-hidden.autoplay-active #autoplayProgress {
             var(--mosaic-center-shift-x, 0px),
             var(--mosaic-center-shift-y, 0px)
         )
-        rotate(var(--mosaic-tilt, 0deg))
         scale(0.94);
     transition:
         opacity 1.05s ease,
