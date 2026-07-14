@@ -1,4 +1,4 @@
-const version = "v1.5.38";
+const version = "v1.5.39";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -203,7 +203,11 @@ fetch("data/collections.json")
         }
 
         createThumbnails();
-        requestImageChange();
+
+        current = 0;
+        updateCounter();
+
+        setFilmstripExpanded(true);
     })
     .catch(error => {
         document.getElementById("counter").textContent =
@@ -3160,6 +3164,10 @@ async function selectMosaicImage(
 
     document.body.classList.remove(
         "mosaic-photo-transition"
+    );
+
+    document.body.classList.remove(
+        "initial-mosaic-mode"
     );
 
     await wait(580);

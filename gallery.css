@@ -1500,3 +1500,45 @@ body.mosaic-photo-transition
 .photo-nav-indicator {
     opacity: 0 !important;
 }
+
+
+/* Gallery experience updates: v1.5.39 */
+
+/*
+On the first page view, show only the mosaic. The initial
+body class is removed when a mosaic photograph is selected,
+allowing the photo and UI to fade in together.
+*/
+body.initial-mosaic-mode #photo,
+body.initial-mosaic-mode #backLink,
+body.initial-mosaic-mode #controlArea,
+body.initial-mosaic-mode #counter,
+body.initial-mosaic-mode #thumbnailBar,
+body.initial-mosaic-mode .photo-nav-indicator,
+body.initial-mosaic-mode #autoplayStatus,
+body.initial-mosaic-mode #autoplayProgress,
+body.initial-mosaic-mode #bottomZoomControls,
+body.initial-mosaic-mode #loadingIndicator {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+body.initial-mosaic-mode #photo {
+    transition: opacity 0.58s ease;
+}
+
+body.initial-mosaic-mode #backLink,
+body.initial-mosaic-mode #controlArea,
+body.initial-mosaic-mode #counter,
+body.initial-mosaic-mode #thumbnailBar,
+body.initial-mosaic-mode .photo-nav-indicator {
+    transition: opacity 0.58s ease;
+}
+
+/*
+The v1.5.37 control-layer rule remains useful after startup,
+but initial mosaic mode intentionally hides those controls.
+*/
+body.initial-mosaic-mode.mosaic-open #controlArea {
+    opacity: 0 !important;
+}
