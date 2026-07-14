@@ -1,4 +1,4 @@
-const version = "v1.4.29";
+const version = "v1.5.0";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -34,6 +34,22 @@ const bottomZoomOut =
     document.getElementById("bottomZoomOut");
 const zoomSlider =
     document.getElementById("zoomSlider");
+const fitImageButton =
+    document.getElementById("fitImageButton");
+const previousImageButton =
+    document.getElementById("previousImageButton");
+const nextImageButton =
+    document.getElementById("nextImageButton");
+const loadingIndicator =
+    document.getElementById("loadingIndicator");
+const filmstripButton =
+    document.getElementById("filmstripButton");
+const thumbnailsContainer =
+    document.getElementById("thumbnails");
+const controlArea =
+    document.getElementById("controlArea");
+const helpPanel =
+    document.getElementById("helpPanel");
 
 let images = [];
 let thumbnails = [];
@@ -66,6 +82,10 @@ let autoplayProgressStart = null;
 let modeToastTimer = null;
 let modeToastFadeTimer = null;
 let modeToastAnimationFrame = null;
+let zoomControlsHideTimer = null;
+let loadingIndicatorTimer = null;
+let idleInterfaceTimer = null;
+let filmstripExpanded = false;
 
 const imageCache = new Map();
 
@@ -73,6 +93,46 @@ const minimumZoom = 1;
 const maximumZoom = 5;
 const zoomStep = 0.5;
 const fadeDuration = 340;
+const zoomControlsHideDelay = 650;
+const loadingIndicatorDelay = 140;
+const interfaceIdleDelay = 3600;
+const autoplayDelayStorageKey =
+    "jmPhotographyAutoplayDelay";
+
+function loadStoredAutoplayDelay() {
+    try {
+        const storedDelay = Number(
+            window.localStorage.getItem(
+                autoplayDelayStorageKey
+            )
+        );
+
+        if (
+            Number.isFinite(storedDelay) &&
+            storedDelay >= 2 &&
+            storedDelay <= 60
+        ) {
+            autoplayDelaySeconds = storedDelay;
+            autoplayDelayInput.value =
+                String(storedDelay);
+        }
+    } catch (error) {
+        /* Continue with the default delay. */
+    }
+}
+
+function saveAutoplayDelay() {
+    try {
+        window.localStorage.setItem(
+            autoplayDelayStorageKey,
+            String(autoplayDelaySeconds)
+        );
+    } catch (error) {
+        /* The gallery still works without storage. */
+    }
+}
+
+loadStoredAutoplayDelay();
 
 fetch("collections.json")
     .then(response => {
@@ -372,14 +432,36 @@ function preloadNearbyImages() {
     });
 }
 
+function showLoadingIndicator() {
+    window.clearTimeout(loadingIndicatorTimer);
+
+    viewer.classList.add("loading");
+
+    loadingIndicatorTimer = window.setTimeout(
+        function () {
+            loadingIndicator.classList.add("visible");
+        },
+        loadingIndicatorDelay
+    );
+}
+
+function hideLoadingIndicator() {
+    window.clearTimeout(loadingIndicatorTimer);
+    loadingIndicator.classList.remove("visible");
+    viewer.classList.remove("loading");
+}
+
 async function transitionToImage(index) {
     const src = images[index];
     let loadedImage;
+
+    showLoadingIndicator();
 
     try {
         loadedImage =
             await getCachedImage(src, true);
     } catch (error) {
+        hideLoadingIndicator();
         console.error(error);
         return;
     }
@@ -398,12 +480,14 @@ async function transitionToImage(index) {
         photo.style.visibility = "visible";
         displayedIndex = index;
 
+        hideLoadingIndicator();
         expandMediaControlsAfterFirstImageLoad();
 
         return;
     }
 
     if (displayedIndex === index) {
+        hideLoadingIndicator();
         return;
     }
 
@@ -425,6 +509,7 @@ async function transitionToImage(index) {
 
     fadeOverlay.classList.remove("visible");
     await waitForOverlayTransition();
+    hideLoadingIndicator();
 }
 
 async function processImageQueue() {
@@ -761,6 +846,7 @@ function updateAutoplayDelay() {
         newDelay <= 60
     ) {
         autoplayDelaySeconds = newDelay;
+        saveAutoplayDelay();
 
         if (
             autoplayPlaying &&
@@ -785,6 +871,7 @@ function validateAutoplayDelay() {
     autoplayDelaySeconds = newDelay;
     autoplayDelayInput.value =
         String(newDelay);
+    saveAutoplayDelay();
 
     if (
         autoplayPlaying &&
@@ -792,6 +879,22 @@ function validateAutoplayDelay() {
     ) {
         scheduleAutoplay();
     }
+}
+
+function updateBottomZoomControls(isZoomed) {
+    window.clearTimeout(zoomControlsHideTimer);
+
+    if (isZoomed) {
+        bottomZoomControls.classList.add("visible");
+        return;
+    }
+
+    zoomControlsHideTimer = window.setTimeout(
+        function () {
+            bottomZoomControls.classList.remove("visible");
+        },
+        zoomControlsHideDelay
+    );
 }
 
 function updateZoom() {
@@ -815,10 +918,7 @@ function updateZoom() {
         isZoomed
     );
 
-    bottomZoomControls.classList.toggle(
-        "visible",
-        isZoomed
-    );
+    updateBottomZoomControls(isZoomed);
 
     zoomSlider.value =
         String(zoomLevel);
@@ -904,6 +1004,103 @@ function doubleClickZoom(event) {
     showModeToast("Zoom Mode");
 }
 
+function fitImageToViewer() {
+    resetZoom();
+    showModeToast("Fit Image");
+}
+
+function setFilmstripExpanded(expanded) {
+    filmstripExpanded = expanded;
+
+    document.body.classList.toggle(
+        "filmstrip-expanded",
+        filmstripExpanded
+    );
+
+    filmstripButton.classList.toggle(
+        "active",
+        filmstripExpanded
+    );
+
+    filmstripButton.setAttribute(
+        "aria-pressed",
+        String(filmstripExpanded)
+    );
+
+    filmstripButton.setAttribute(
+        "aria-label",
+        filmstripExpanded
+            ? "Collapse filmstrip"
+            : "Expand filmstrip"
+    );
+
+    window.setTimeout(updateThumbnails, 340);
+    wakeInterface();
+}
+
+function toggleFilmstrip() {
+    setFilmstripExpanded(!filmstripExpanded);
+
+    showModeToast(
+        filmstripExpanded
+            ? "Filmstrip Expanded"
+            : "Filmstrip Collapsed"
+    );
+}
+
+function clearInterfaceIdleTimer() {
+    if (idleInterfaceTimer !== null) {
+        window.clearTimeout(idleInterfaceTimer);
+        idleInterfaceTimer = null;
+    }
+}
+
+function shouldKeepInterfaceVisible() {
+    return (
+        document.body.classList.contains("ui-hidden") ||
+        helpOverlay.classList.contains("visible") ||
+        isDragging ||
+        filmstripExpanded
+    );
+}
+
+function scheduleInterfaceIdle() {
+    clearInterfaceIdleTimer();
+
+    if (shouldKeepInterfaceVisible()) {
+        return;
+    }
+
+    idleInterfaceTimer = window.setTimeout(
+        function () {
+            if (!shouldKeepInterfaceVisible()) {
+                document.body.classList.add("ui-idle");
+            }
+        },
+        interfaceIdleDelay
+    );
+}
+
+function wakeInterface() {
+    document.body.classList.remove("ui-idle");
+    scheduleInterfaceIdle();
+}
+
+function keepInterfaceVisibleWhileHovered(element) {
+    element.addEventListener(
+        "mouseenter",
+        function () {
+            clearInterfaceIdleTimer();
+            document.body.classList.remove("ui-idle");
+        }
+    );
+
+    element.addEventListener(
+        "mouseleave",
+        scheduleInterfaceIdle
+    );
+}
+
 function toggleFullscreen() {
     if (!document.fullscreenElement) {
         document.documentElement
@@ -954,6 +1151,8 @@ function toggleMediaControls() {
 }
 
 function showHelp() {
+    clearInterfaceIdleTimer();
+    document.body.classList.remove("ui-idle");
     helpOverlay.classList.add("visible");
 
     helpOverlay.setAttribute(
@@ -969,6 +1168,8 @@ function hideHelp() {
         "aria-hidden",
         "true"
     );
+
+    scheduleInterfaceIdle();
 }
 
 function toggleHelp() {
@@ -988,6 +1189,8 @@ function showUI() {
     document.body.classList.remove(
         "ui-hidden"
     );
+
+    wakeInterface();
 
     controls.classList.toggle(
         "collapsed",
@@ -1019,6 +1222,9 @@ async function enterHideMode(
         }
     }
 
+    clearInterfaceIdleTimer();
+    document.body.classList.remove("ui-idle");
+
     document.body.classList.add(
         "ui-hidden"
     );
@@ -1043,6 +1249,26 @@ function toggleUI() {
         enterHideMode("Hide Mode");
     }
 }
+
+fitImageButton.addEventListener(
+    "click",
+    fitImageToViewer
+);
+
+previousImageButton.addEventListener(
+    "click",
+    previousImage
+);
+
+nextImageButton.addEventListener(
+    "click",
+    nextImage
+);
+
+filmstripButton.addEventListener(
+    "click",
+    toggleFilmstrip
+);
 
 bottomZoomIn.addEventListener(
     "click",
@@ -1082,6 +1308,25 @@ bottomZoomControls.addEventListener(
         event.stopPropagation();
     }
 );
+
+[
+    previousImageButton,
+    nextImageButton
+].forEach(button => {
+    button.addEventListener(
+        "mousedown",
+        function (event) {
+            event.stopPropagation();
+        }
+    );
+
+    button.addEventListener(
+        "dblclick",
+        function (event) {
+            event.stopPropagation();
+        }
+    );
+});
 
 document
     .getElementById("zoomIn")
@@ -1146,6 +1391,29 @@ helpOverlay.addEventListener(
 );
 
 viewer.addEventListener(
+    "wheel",
+    function (event) {
+        if (
+            event.target.closest(
+                "#bottomZoomControls, .edge-nav"
+            )
+        ) {
+            return;
+        }
+
+        event.preventDefault();
+        wakeInterface();
+
+        if (event.deltaY < 0) {
+            zoomIn();
+        } else if (event.deltaY > 0) {
+            zoomOut();
+        }
+    },
+    { passive: false }
+);
+
+viewer.addEventListener(
     "dblclick",
     function (event) {
         event.preventDefault();
@@ -1175,6 +1443,8 @@ viewer.addEventListener(
 document.addEventListener(
     "mousemove",
     function (event) {
+        wakeInterface();
+
         if (!isDragging) {
             return;
         }
@@ -1198,6 +1468,7 @@ document.addEventListener(
     function () {
         isDragging = false;
         viewer.classList.remove("dragging");
+        scheduleInterfaceIdle();
     }
 );
 
@@ -1214,6 +1485,8 @@ document.addEventListener(
 document.addEventListener(
     "keydown",
     function (event) {
+        wakeInterface();
+
         if (event.repeat) {
             return;
         }
@@ -1286,7 +1559,30 @@ document.addEventListener(
         if (key === "c") {
             toggleMediaControls();
         }
+
+        if (key === "t") {
+            toggleFilmstrip();
+        }
+
+        if (key === "0") {
+            fitImageToViewer();
+        }
     }
 );
 
+[
+    controlArea,
+    thumbnailsContainer,
+    bottomZoomControls,
+    helpPanel,
+    previousImageButton,
+    nextImageButton
+].forEach(keepInterfaceVisibleWhileHovered);
+
+document.addEventListener(
+    "pointerdown",
+    wakeInterface
+);
+
 updateToggleButtonState();
+scheduleInterfaceIdle();

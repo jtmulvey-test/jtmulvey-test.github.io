@@ -63,6 +63,14 @@
             </button>
 
             <button
+                id="filmstripButton"
+                class="control-button"
+                type="button"
+                aria-label="Expand filmstrip"
+                aria-pressed="false"
+            >▤</button>
+
+            <button
                 id="zoomIn"
                 class="control-button"
                 aria-label="Zoom in"
@@ -86,6 +94,28 @@
         <div id="fadeOverlay"></div>
 
         <div
+            id="loadingIndicator"
+            role="status"
+            aria-label="Loading photograph"
+        >
+            <span aria-hidden="true"></span>
+        </div>
+
+        <button
+            id="previousImageButton"
+            class="edge-nav edge-nav-left"
+            type="button"
+            aria-label="Previous photograph"
+        >‹</button>
+
+        <button
+            id="nextImageButton"
+            class="edge-nav edge-nav-right"
+            type="button"
+            aria-label="Next photograph"
+        >›</button>
+
+        <div
             id="bottomZoomControls"
             aria-label="Image zoom controls"
         >
@@ -95,6 +125,14 @@
                 type="button"
                 aria-label="Zoom out"
             >−</button>
+
+            <button
+                id="fitImageButton"
+                class="bottom-zoom-button"
+                type="button"
+                aria-label="Fit image to viewer"
+                title="Fit image"
+            >↺</button>
 
             <input
                 id="zoomSlider"
@@ -182,6 +220,14 @@
                 </p>
             </div>
 
+            <div class="help-row">
+                <span class="help-key">▤</span>
+                <p>
+                    Expand or collapse the thumbnail filmstrip
+                    (keypress "T")
+                </p>
+            </div>
+
             <div class="delay-setting">
                 <label for="autoplayDelay">
                     Autoplay delay:
@@ -212,6 +258,22 @@
                 <p>
                     Zoom out for the current photograph
                     (keypress "-")
+                </p>
+            </div>
+
+            <div class="help-row">
+                <span class="help-key">↺</span>
+                <p>
+                    Fit the photograph back inside the viewer
+                    (keypress "0")
+                </p>
+            </div>
+
+            <div class="help-row">
+                <span class="help-key">↕</span>
+                <p>
+                    Use the mouse wheel over the photograph
+                    to zoom in or out
                 </p>
             </div>
 

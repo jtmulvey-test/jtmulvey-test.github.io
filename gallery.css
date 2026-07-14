@@ -689,3 +689,297 @@ body.ui-hidden.autoplay-active #autoplayProgress {
         transition: opacity 0.2s ease;
     }
 }
+
+
+/* Gallery experience updates: v1.5.0 */
+
+#controlArea {
+    height: 468px;
+    transition: opacity 0.25s ease;
+}
+
+#toggleControls {
+    z-index: 9;
+}
+
+#helpButton {
+    z-index: 8;
+}
+
+#fullscreen {
+    z-index: 7;
+}
+
+#hideUI {
+    z-index: 6;
+}
+
+#autoplayButton {
+    z-index: 5;
+}
+
+#filmstripButton {
+    z-index: 4;
+    transform: translateY(232px);
+}
+
+#filmstripButton:hover {
+    transform: translateY(232px) scale(0.94);
+}
+
+#filmstripButton.active {
+    color: black;
+    background: white;
+    border-color: white;
+}
+
+#zoomIn {
+    z-index: 3;
+    transform: translateY(290px);
+}
+
+#zoomIn:hover {
+    transform: translateY(290px) scale(0.94);
+}
+
+#zoomOut {
+    z-index: 2;
+    transform: translateY(348px);
+}
+
+#zoomOut:hover {
+    transform: translateY(348px) scale(0.94);
+}
+
+#controls.collapsed #filmstripButton {
+    transform: translate(0, 0);
+    opacity: 0;
+    pointer-events: none;
+}
+
+#version {
+    top: 406px;
+}
+
+#version.collapsed {
+    transform: translateY(-406px);
+}
+
+#viewer,
+#photoStage,
+#thumbnails,
+#counter {
+    transition:
+        height 0.32s ease,
+        bottom 0.32s ease,
+        opacity 0.25s ease,
+        transform 0.32s ease;
+}
+
+#photo {
+    transition:
+        opacity 0.2s ease,
+        filter 0.2s ease;
+}
+
+#viewer.loading #photo {
+    opacity: 0.62;
+    filter: blur(3px);
+}
+
+#loadingIndicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 14;
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.92);
+    pointer-events: none;
+    transition:
+        opacity 0.18s ease,
+        transform 0.18s ease;
+}
+
+#loadingIndicator.visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+#loadingIndicator span {
+    width: 26px;
+    height: 26px;
+    border: 2px solid rgba(255, 255, 255, 0.28);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: gallerySpinner 0.8s linear infinite;
+}
+
+@keyframes gallerySpinner {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.edge-nav {
+    position: absolute;
+    top: 50%;
+    z-index: 16;
+    width: 52px;
+    height: 52px;
+    padding: 0 0 4px;
+    color: white;
+    background: rgba(0, 0, 0, 0.48);
+    border: 1px solid rgba(255, 255, 255, 0.56);
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 40px;
+    line-height: 1;
+    opacity: 0;
+    transform: translateY(-50%) scale(0.92);
+    pointer-events: none;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition:
+        opacity 0.22s ease,
+        transform 0.22s ease,
+        color 0.2s ease,
+        background-color 0.2s ease;
+}
+
+.edge-nav-left {
+    left: 26px;
+}
+
+.edge-nav-right {
+    right: 26px;
+}
+
+body:not(.ui-hidden):not(.ui-idle) #viewer:hover .edge-nav,
+.edge-nav:focus-visible {
+    opacity: 0.78;
+    transform: translateY(-50%) scale(1);
+    pointer-events: auto;
+}
+
+.edge-nav:hover {
+    color: black;
+    background: white;
+    opacity: 1 !important;
+}
+
+.edge-nav:focus-visible {
+    outline: 1px solid white;
+    outline-offset: 5px;
+}
+
+.bottom-zoom-button:disabled {
+    opacity: 0.34;
+    cursor: default;
+}
+
+.bottom-zoom-button:disabled:hover {
+    color: white;
+    background: transparent;
+    border-color: rgba(255, 255, 255, 0.72);
+    transform: none;
+}
+
+.thumb {
+    border-radius: 3px;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    transform: scale(1);
+    transition:
+        opacity 0.2s ease,
+        transform 0.22s ease,
+        outline-color 0.22s ease;
+}
+
+.thumb.active {
+    opacity: 1;
+    outline-color: white;
+    transform: scale(1.045);
+}
+
+body.filmstrip-expanded #viewer {
+    height: calc(100vh - 240px);
+}
+
+body.filmstrip-expanded #photoStage {
+    height: calc(100vh - 250px);
+}
+
+body.filmstrip-expanded #thumbnails {
+    height: 220px;
+    justify-content: flex-start;
+    gap: 14px;
+    padding: 14px 22px;
+    background: rgba(0, 0, 0, 0.92);
+}
+
+body.filmstrip-expanded .thumb {
+    height: 190px;
+}
+
+body.filmstrip-expanded #counter {
+    bottom: 224px;
+}
+
+body.ui-idle:not(.ui-hidden) #backLink,
+body.ui-idle:not(.ui-hidden) #controlArea,
+body.ui-idle:not(.ui-hidden) #counter {
+    opacity: 0;
+    pointer-events: none;
+}
+
+body.ui-idle:not(.ui-hidden) #thumbnails {
+    opacity: 0;
+    transform: translateY(100%);
+    pointer-events: none;
+}
+
+body.ui-idle:not(.ui-hidden) #bottomZoomControls.visible {
+    opacity: 0;
+    transform: translate(-50%, 12px) scale(1.2);
+    pointer-events: none;
+}
+
+body.ui-hidden .edge-nav,
+body.ui-hidden #loadingIndicator {
+    display: none !important;
+}
+
+@media (max-width: 520px) {
+    .edge-nav {
+        width: 44px;
+        height: 44px;
+        font-size: 34px;
+    }
+
+    .edge-nav-left {
+        left: 12px;
+    }
+
+    .edge-nav-right {
+        right: 12px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #loadingIndicator span {
+        animation-duration: 1.6s;
+    }
+
+    .edge-nav,
+    #thumbnails,
+    #counter,
+    #controlArea,
+    #photo {
+        transition-duration: 0.01ms;
+    }
+}
