@@ -808,13 +808,18 @@ body.ui-hidden.autoplay-active #autoplayProgress {
 
 #viewer,
 #photoStage,
-#thumbnailBar,
 #counter {
     transition:
         height 0.32s ease,
         bottom 0.32s ease,
         opacity 0.25s ease,
         transform 0.32s ease;
+}
+
+#thumbnailBar {
+    transition:
+        opacity 0.25s ease,
+        transform 0.25s ease;
 }
 
 #photo {
@@ -1035,6 +1040,10 @@ body.ui-hidden.autoplay-active #autoplayProgress {
     z-index: 10;
     opacity: 0;
     transform:
+        translate(
+            var(--mosaic-center-shift-x, 0px),
+            var(--mosaic-center-shift-y, 0px)
+        )
         rotate(var(--mosaic-tilt, 0deg))
         scale(0.94);
     transition:

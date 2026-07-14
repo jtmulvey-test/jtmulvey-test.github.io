@@ -1,4 +1,4 @@
-const version = "v1.5.11";
+const version = "v1.5.12";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -92,6 +92,7 @@ let mosaicBuildToken = 0;
 let mosaicResizeTimer = null;
 let thumbnailAspectPromise = null;
 let mosaicSelectionRunning = false;
+let photoNavigationClickTimer = null;
 
 const imageCache = new Map();
 const mosaicLayoutCache = new Map();
@@ -2245,6 +2246,51 @@ function waitForDisplayedIndex(
     });
 }
 
+function setMosaicCenterShift(selectedTile) {
+    const tileRect =
+        selectedTile.getBoundingClientRect();
+
+    const tileCenterX =
+        tileRect.left + tileRect.width / 2;
+
+    const tileCenterY =
+        tileRect.top + tileRect.height / 2;
+
+    const shiftX =
+        Math.max(
+            -42,
+            Math.min(
+                42,
+                (
+                    window.innerWidth / 2 -
+                    tileCenterX
+                ) * 0.12
+            )
+        );
+
+    const shiftY =
+        Math.max(
+            -42,
+            Math.min(
+                42,
+                (
+                    window.innerHeight / 2 -
+                    tileCenterY
+                ) * 0.12
+            )
+        );
+
+    selectedTile.style.setProperty(
+        "--mosaic-center-shift-x",
+        `${shiftX.toFixed(1)}px`
+    );
+
+    selectedTile.style.setProperty(
+        "--mosaic-center-shift-y",
+        `${shiftY.toFixed(1)}px`
+    );
+}
+
 async function selectMosaicImage(
     imageIndex,
     selectedTile
@@ -2261,6 +2307,10 @@ async function selectMosaicImage(
     */
     viewer.classList.add(
         "mosaic-photo-blackout"
+    );
+
+    setMosaicCenterShift(
+        selectedTile
     );
 
     selectedTile.classList.add(
@@ -2312,6 +2362,14 @@ async function selectMosaicImage(
 
     selectedTile.classList.remove(
         "mosaic-selected"
+    );
+
+    selectedTile.style.removeProperty(
+        "--mosaic-center-shift-x"
+    );
+
+    selectedTile.style.removeProperty(
+        "--mosaic-center-shift-y"
     );
 
     mosaicGrid.innerHTML = "";
@@ -2850,11 +2908,25 @@ helpOverlay.addEventListener(
 );
 
 
-function handleBlackSpaceNavigation(event) {
+function clearPhotoNavigationClickTimer() {
+    if (photoNavigationClickTimer !== null) {
+        window.clearTimeout(
+            photoNavigationClickTimer
+        );
+
+        photoNavigationClickTimer = null;
+    }
+}
+
+function handlePhotoNavigationClick(event) {
+    if (event.detail > 1) {
+        clearPhotoNavigationClickTimer();
+        return;
+    }
+
     if (
         event.button !== 0 ||
-        event.detail > 1 ||
-        zoomLevel > minimumZoom ||
+        zoomLevel !== minimumZoom ||
         isDragging ||
         transitionRunning ||
         filmstripExpanded ||
@@ -2877,22 +2949,43 @@ function handleBlackSpaceNavigation(event) {
     const photoRect =
         photo.getBoundingClientRect();
 
-    const isBesidePhotoVertically =
+    const isInsidePhoto =
+        event.clientX >= photoRect.left &&
+        event.clientX <= photoRect.right &&
         event.clientY >= photoRect.top &&
         event.clientY <= photoRect.bottom;
 
-    if (!isBesidePhotoVertically) {
+    if (!isInsidePhoto) {
         return;
     }
 
-    if (event.clientX < photoRect.left) {
-        previousImage();
-        return;
-    }
+    const clickedLeftHalf =
+        event.clientX <
+        photoRect.left + photoRect.width / 2;
 
-    if (event.clientX > photoRect.right) {
-        nextImage();
-    }
+    clearPhotoNavigationClickTimer();
+
+    photoNavigationClickTimer =
+        window.setTimeout(
+            function () {
+                photoNavigationClickTimer = null;
+
+                if (
+                    zoomLevel !== minimumZoom ||
+                    transitionRunning ||
+                    filmstripExpanded
+                ) {
+                    return;
+                }
+
+                if (clickedLeftHalf) {
+                    previousImage();
+                } else {
+                    nextImage();
+                }
+            },
+            300
+        );
 }
 
 viewer.addEventListener(
@@ -2934,12 +3027,13 @@ viewer.addEventListener(
 
 viewer.addEventListener(
     "click",
-    handleBlackSpaceNavigation
+    handlePhotoNavigationClick
 );
 
 viewer.addEventListener(
     "dblclick",
     function (event) {
+        clearPhotoNavigationClickTimer();
         event.preventDefault();
         doubleClickZoom(event);
     }
