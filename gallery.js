@@ -1,4 +1,4 @@
-const version = "v1.5.48";
+const version = "v1.5.49";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -303,7 +303,7 @@ function triggerFirstMosaicButtonCue() {
                     "first-load-attention"
                 );
             },
-            1800
+            2300
         );
 }
 

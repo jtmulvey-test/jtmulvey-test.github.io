@@ -1907,80 +1907,81 @@ its inverted white state twice. This runs only once.
 */
 #filmstripButton.first-load-attention {
     animation:
-        first-load-mosaic-attention
-        1.7s
+        first-load-mosaic-jump
+        1.05s
         ease-out
+        both,
+        first-load-mosaic-blink
+        0.92s
+        linear
+        1.15s
         both;
 }
 
-@keyframes first-load-mosaic-attention {
+@keyframes first-load-mosaic-jump {
     0% {
-        color: white;
-        background: rgba(0, 0, 0, 0.5);
-        border-color: white;
         transform: translateY(0) scale(1);
     }
 
+    18% {
+        transform: translateY(-72px) scale(1.055);
+    }
+
+    42% {
+        transform: translateY(0) scale(0.99);
+    }
+
+    58% {
+        transform: translateY(-24px) scale(1.022);
+    }
+
+    72% {
+        transform: translateY(0) scale(0.996);
+    }
+
+    84% {
+        transform: translateY(-8px) scale(1.008);
+    }
+
+    100% {
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes first-load-mosaic-blink {
+    0%,
     12% {
         color: white;
         background: rgba(0, 0, 0, 0.5);
         border-color: white;
-        transform: translateY(-18px) scale(1.03);
     }
 
-    24% {
-        transform: translateY(0) scale(1);
-    }
-
-    31% {
-        transform: translateY(-6px) scale(1.01);
-    }
-
-    39% {
-        transform: translateY(0) scale(1);
-    }
-
-    44% {
-        transform: translateY(-2px) scale(1.004);
-    }
-
-    50% {
-        color: white;
-        background: rgba(0, 0, 0, 0.5);
-        border-color: white;
-        transform: translateY(0) scale(1);
-    }
-
-    58%,
-    67% {
+    13%,
+    34% {
         color: black;
         background: white;
         border-color: white;
-        transform: translateY(0) scale(1);
     }
 
-    68%,
-    75% {
+    35%,
+    55% {
         color: white;
         background: rgba(0, 0, 0, 0.5);
         border-color: white;
-        transform: translateY(0) scale(1);
     }
 
-    76%,
-    85% {
+    56%,
+    77% {
         color: black;
         background: white;
         border-color: white;
-        transform: translateY(0) scale(1);
     }
 
-    86%,
+    78%,
     100% {
         color: white;
         background: rgba(0, 0, 0, 0.5);
         border-color: white;
-        transform: translateY(0) scale(1);
     }
 }
 
@@ -1989,3 +1990,13 @@ its inverted white state twice. This runs only once.
         animation: none !important;
     }
 }
+
+
+/* Gallery experience updates: v1.5.49 */
+
+/*
+The initial mosaic-button cue now jumps four times higher.
+Its two recovery bounces scale with that larger jump. The
+two inverted-color blinks begin 0.1 seconds after all motion
+has stopped.
+*/
