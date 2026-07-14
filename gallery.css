@@ -1301,3 +1301,62 @@ body.photo-navigation-ready.mosaic-open .photo-nav-indicator {
 body.ui-hidden #thumbnailBar {
     display: none !important;
 }
+
+
+/* Gallery experience updates: v1.5.20 */
+
+#thumbnails {
+    justify-content: center;
+}
+
+#thumbnails.has-overflow {
+    justify-content: flex-start;
+}
+
+.thumbnail-scroll-button {
+    width: 34px;
+    height: 34px;
+    color: white;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid white;
+    border-radius: 50%;
+    font-size: 24px;
+    line-height: 1;
+    transition:
+        color 0.2s ease,
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        opacity 0.18s ease,
+        transform 0.2s ease;
+}
+
+.thumbnail-scroll-button:hover:not(:disabled) {
+    color: black;
+    background: white;
+    border-color: white;
+    transform: scale(0.94);
+}
+
+.thumbnail-scroll-button:disabled {
+    color: rgba(255, 255, 255, 0.22);
+    background: transparent;
+    border-color: rgba(255, 255, 255, 0.22);
+    opacity: 1;
+    cursor: default;
+}
+
+#thumbnailBar.no-thumbnail-overflow
+.thumbnail-scroll-button {
+    color: black;
+    background: black;
+    border-color: black;
+    opacity: 1;
+}
+
+.photo-nav-indicator {
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+    font-weight: 300;
+}

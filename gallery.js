@@ -1,4 +1,4 @@
-const version = "v1.5.19";
+const version = "v1.5.20";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -635,12 +635,27 @@ function updateThumbnailScrollButtons() {
         thumbnailsContainer.scrollWidth -
         thumbnailsContainer.clientWidth;
 
+    const hasOverflow =
+        maximumScroll > 2;
+
+    thumbnailBar.classList.toggle(
+        "no-thumbnail-overflow",
+        !hasOverflow
+    );
+
+    thumbnailsContainer.classList.toggle(
+        "has-overflow",
+        hasOverflow
+    );
+
     thumbnailScrollLeft.disabled =
+        !hasOverflow ||
         thumbnailsContainer.scrollLeft <= 2;
 
     thumbnailScrollRight.disabled =
+        !hasOverflow ||
         thumbnailsContainer.scrollLeft >=
-        maximumScroll - 2;
+            maximumScroll - 2;
 }
 
 function scrollThumbnails(direction) {
