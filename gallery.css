@@ -1453,9 +1453,9 @@ body.ui-idle:not(.ui-hidden):not(.mosaic-open)
 }
 
 
-/* Gallery experience updates: v1.5.31 */
+/* Gallery experience updates: v1.5.32 */
 
-.mosaic-item {
-    box-sizing: border-box;
-    padding: 1px;
-}
+/*
+Mosaic spacing is enforced by the layout generator.
+No visual padding workaround is required.
+*/
