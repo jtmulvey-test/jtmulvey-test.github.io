@@ -1180,7 +1180,7 @@ body.ui-hidden #loadingIndicator {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(185, 185, 185, 0.52);
+    color: rgb(77, 77, 77);
     font-size: 40px;
     font-weight: 300;
     line-height: 1;
@@ -1197,10 +1197,10 @@ body.ui-hidden #loadingIndicator {
 }
 
 .photo-nav-indicator.active {
-    color: rgba(235, 235, 235, 0.96);
+    color: rgb(179, 179, 179);
     text-shadow:
-        0 0 6px rgba(255, 255, 255, 0.48),
-        0 0 12px rgba(255, 255, 255, 0.22);
+        0 0 6px rgba(179, 179, 179, 0.48),
+        0 0 12px rgba(179, 179, 179, 0.22);
 }
 
 .photo-nav-indicator-left.clicked {
