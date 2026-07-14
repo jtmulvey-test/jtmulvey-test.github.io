@@ -441,7 +441,7 @@ body.ui-hidden #bottomZoomControls {
     border-radius: 999px;
 }
 
-#thumbnails {
+#thumbnailBar {
     position: fixed;
     bottom: 0;
     left: 0;
@@ -450,12 +450,65 @@ body.ui-hidden #bottomZoomControls {
     height: 80px;
     display: flex;
     align-items: center;
-    justify-content: center;
     gap: 8px;
     padding: 5px;
     box-sizing: border-box;
-    overflow-x: auto;
+    overflow: hidden;
     background: rgba(0, 0, 0, 0.75);
+}
+
+#filmstripButton {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    flex: 0 0 auto;
+    color: white;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.65);
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 24px;
+    line-height: 1;
+    transition:
+        color 0.2s ease,
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+#filmstripButton:hover {
+    color: black;
+    background: white;
+    border-color: white;
+    transform: scale(0.94);
+}
+
+#filmstripButton:focus-visible {
+    outline: 1px solid white;
+    outline-offset: 4px;
+}
+
+#filmstripArrow {
+    display: inline-block;
+    transform: translateY(-1px);
+    transition: transform 0.25s ease;
+}
+
+#filmstripButton.active #filmstripArrow {
+    transform: translateY(1px) rotate(180deg);
+}
+
+#thumbnails {
+    min-width: 0;
+    height: 100%;
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior: contain;
 }
 
 .thumb {
@@ -464,6 +517,7 @@ body.ui-hidden #bottomZoomControls {
     flex-shrink: 0;
     cursor: pointer;
     opacity: 0.5;
+    border-radius: 7px;
     transition: opacity 0.2s ease;
 }
 
@@ -623,7 +677,7 @@ body.ui-hidden #bottomZoomControls {
 
 body.ui-hidden #backLink,
 body.ui-hidden #controlArea,
-body.ui-hidden #thumbnails,
+body.ui-hidden #thumbnailBar,
 body.ui-hidden #helpOverlay {
     display: none !important;
 }
@@ -694,80 +748,59 @@ body.ui-hidden.autoplay-active #autoplayProgress {
 /* Gallery experience updates: v1.5.0 */
 
 #controlArea {
-    height: 468px;
+    height: 410px;
     transition: opacity 0.25s ease;
 }
 
 #toggleControls {
-    z-index: 9;
-}
-
-#helpButton {
     z-index: 8;
 }
 
-#fullscreen {
+#helpButton {
     z-index: 7;
 }
 
-#hideUI {
+#fullscreen {
     z-index: 6;
 }
 
-#autoplayButton {
+#hideUI {
     z-index: 5;
 }
 
-#filmstripButton {
+#autoplayButton {
     z-index: 4;
-    transform: translateY(232px);
-}
-
-#filmstripButton:hover {
-    transform: translateY(232px) scale(0.94);
-}
-
-#filmstripButton.active {
-    color: black;
-    background: white;
-    border-color: white;
 }
 
 #zoomIn {
     z-index: 3;
-    transform: translateY(290px);
+    transform: translateY(232px);
 }
 
 #zoomIn:hover {
-    transform: translateY(290px) scale(0.94);
+    transform: translateY(232px) scale(0.94);
 }
 
 #zoomOut {
     z-index: 2;
-    transform: translateY(348px);
+    transform: translateY(290px);
 }
 
 #zoomOut:hover {
-    transform: translateY(348px) scale(0.94);
-}
-
-#controls.collapsed #filmstripButton {
-    transform: translate(0, 0);
-    opacity: 0;
-    pointer-events: none;
+    transform: translateY(290px) scale(0.94);
 }
 
 #version {
-    top: 406px;
+    top: 348px;
 }
 
 #version.collapsed {
-    transform: translateY(-406px);
+    transform: translateY(-348px);
 }
 
 #viewer,
 #photoStage,
-#thumbnails,
+#thumbnailBar,
 #counter {
     transition:
         height 0.32s ease,
@@ -890,20 +923,19 @@ body:not(.ui-hidden):not(.ui-idle) #viewer:hover .edge-nav,
 }
 
 .thumb {
-    border-radius: 3px;
+    border-radius: 7px;
     outline: 2px solid transparent;
-    outline-offset: 2px;
-    transform: scale(1);
+    outline-offset: -2px;
+    transform: none;
     transition:
         opacity 0.2s ease,
-        transform 0.22s ease,
         outline-color 0.22s ease;
 }
 
 .thumb.active {
     opacity: 1;
     outline-color: white;
-    transform: scale(1.045);
+    transform: none;
 }
 
 body.filmstrip-expanded #viewer {
@@ -914,12 +946,19 @@ body.filmstrip-expanded #photoStage {
     height: calc(100vh - 250px);
 }
 
-body.filmstrip-expanded #thumbnails {
+body.filmstrip-expanded #thumbnailBar {
     height: 220px;
+    gap: 14px;
+    padding: 14px;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.92);
+}
+
+body.filmstrip-expanded #thumbnails {
     justify-content: flex-start;
     gap: 14px;
-    padding: 14px 22px;
-    background: rgba(0, 0, 0, 0.92);
+    overflow-x: auto;
+    overflow-y: hidden;
 }
 
 body.filmstrip-expanded .thumb {
@@ -937,7 +976,7 @@ body.ui-idle:not(.ui-hidden) #counter {
     pointer-events: none;
 }
 
-body.ui-idle:not(.ui-hidden) #thumbnails {
+body.ui-idle:not(.ui-hidden) #thumbnailBar {
     opacity: 0;
     transform: translateY(100%);
     pointer-events: none;
@@ -976,7 +1015,7 @@ body.ui-hidden #loadingIndicator {
     }
 
     .edge-nav,
-    #thumbnails,
+    #thumbnailBar,
     #counter,
     #controlArea,
     #photo {

@@ -63,14 +63,6 @@
             </button>
 
             <button
-                id="filmstripButton"
-                class="control-button"
-                type="button"
-                aria-label="Expand filmstrip"
-                aria-pressed="false"
-            >▤</button>
-
-            <button
                 id="zoomIn"
                 class="control-button"
                 aria-label="Zoom in"
@@ -167,7 +159,19 @@
     </div>
 
     <div id="counter"></div>
-    <div id="thumbnails"></div>
+
+    <div id="thumbnailBar">
+        <button
+            id="filmstripButton"
+            type="button"
+            aria-label="Expand filmstrip"
+            aria-pressed="false"
+        >
+            <span id="filmstripArrow" aria-hidden="true">↑</span>
+        </button>
+
+        <div id="thumbnails"></div>
+    </div>
 
     <div id="helpOverlay" aria-hidden="true">
         <div
@@ -221,7 +225,7 @@
             </div>
 
             <div class="help-row">
-                <span class="help-key">▤</span>
+                <span class="help-key">↑</span>
                 <p>
                     Expand or collapse the thumbnail filmstrip
                     (keypress "T")

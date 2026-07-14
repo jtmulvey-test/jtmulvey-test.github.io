@@ -1,4 +1,4 @@
-const version = "v1.5.0";
+const version = "v1.5.1";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -46,6 +46,8 @@ const filmstripButton =
     document.getElementById("filmstripButton");
 const thumbnailsContainer =
     document.getElementById("thumbnails");
+const thumbnailBar =
+    document.getElementById("thumbnailBar");
 const controlArea =
     document.getElementById("controlArea");
 const helpPanel =
@@ -94,7 +96,7 @@ const maximumZoom = 5;
 const zoomStep = 0.5;
 const fadeDuration = 340;
 const zoomControlsHideDelay = 650;
-const loadingIndicatorDelay = 140;
+const loadingIndicatorDelay = 2000;
 const interfaceIdleDelay = 3600;
 const autoplayDelayStorageKey =
     "jmPhotographyAutoplayDelay";
@@ -435,10 +437,9 @@ function preloadNearbyImages() {
 function showLoadingIndicator() {
     window.clearTimeout(loadingIndicatorTimer);
 
-    viewer.classList.add("loading");
-
     loadingIndicatorTimer = window.setTimeout(
         function () {
+            viewer.classList.add("loading");
             loadingIndicator.classList.add("visible");
         },
         loadingIndicatorDelay
@@ -930,20 +931,32 @@ function updateZoom() {
         zoomLevel >= maximumZoom;
 }
 
-function zoomIn() {
-    zoomLevel = Math.min(
+function setZoomAroundPoint(
+    requestedZoom,
+    anchorX = 0,
+    anchorY = 0
+) {
+    const newZoom = Math.min(
         maximumZoom,
-        zoomLevel + zoomStep
+        Math.max(minimumZoom, requestedZoom)
     );
 
-    updateZoom();
-}
+    if (newZoom === zoomLevel) {
+        return;
+    }
 
-function zoomOut() {
-    zoomLevel = Math.max(
-        minimumZoom,
-        zoomLevel - zoomStep
-    );
+    const zoomRatio =
+        newZoom / zoomLevel;
+
+    panX =
+        anchorX -
+        (anchorX - panX) * zoomRatio;
+
+    panY =
+        anchorY -
+        (anchorY - panY) * zoomRatio;
+
+    zoomLevel = newZoom;
 
     if (zoomLevel === minimumZoom) {
         panX = 0;
@@ -951,6 +964,38 @@ function zoomOut() {
     }
 
     updateZoom();
+}
+
+function getZoomAnchor(clientX, clientY) {
+    const stageRect =
+        document
+            .getElementById("photoStage")
+            .getBoundingClientRect();
+
+    return {
+        x:
+            clientX -
+            (stageRect.left + stageRect.width / 2),
+        y:
+            clientY -
+            (stageRect.top + stageRect.height / 2)
+    };
+}
+
+function zoomIn() {
+    setZoomAroundPoint(
+        zoomLevel + zoomStep,
+        0,
+        0
+    );
+}
+
+function zoomOut() {
+    setZoomAroundPoint(
+        zoomLevel - zoomStep,
+        0,
+        0
+    );
 }
 
 function resetZoom() {
@@ -1283,15 +1328,11 @@ bottomZoomOut.addEventListener(
 zoomSlider.addEventListener(
     "input",
     function () {
-        zoomLevel = Number(zoomSlider.value);
-
-        if (zoomLevel <= minimumZoom) {
-            zoomLevel = minimumZoom;
-            panX = 0;
-            panY = 0;
-        }
-
-        updateZoom();
+        setZoomAroundPoint(
+            Number(zoomSlider.value),
+            0,
+            0
+        );
     }
 );
 
@@ -1404,10 +1445,24 @@ viewer.addEventListener(
         event.preventDefault();
         wakeInterface();
 
+        const anchor =
+            getZoomAnchor(
+                event.clientX,
+                event.clientY
+            );
+
         if (event.deltaY < 0) {
-            zoomIn();
+            setZoomAroundPoint(
+                zoomLevel + zoomStep,
+                anchor.x,
+                anchor.y
+            );
         } else if (event.deltaY > 0) {
-            zoomOut();
+            setZoomAroundPoint(
+                zoomLevel - zoomStep,
+                anchor.x,
+                anchor.y
+            );
         }
     },
     { passive: false }
@@ -1572,7 +1627,7 @@ document.addEventListener(
 
 [
     controlArea,
-    thumbnailsContainer,
+    thumbnailBar,
     bottomZoomControls,
     helpPanel,
     previousImageButton,
