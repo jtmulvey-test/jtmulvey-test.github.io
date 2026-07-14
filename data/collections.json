@@ -20,6 +20,22 @@
         {
             "name": "2026_Utah",
             "images": 6
+        },
+        {
+            "name": "blank",
+            "images": 0
+        },
+        {
+            "name": "Climbing",
+            "images": 21
+        },
+        {
+            "name": "Fins",
+            "images": 9
+        },
+        {
+            "name": "Nature",
+            "images": 19
         }
     ]
 }
