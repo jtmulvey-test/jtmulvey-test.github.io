@@ -1605,6 +1605,16 @@ normal fade substantially sooner.
 #mosaicOverlay.priority-selection.selecting
 .mosaic-item.mosaic-selected {
     transition:
-        opacity 0.52s ease,
-        transform 0.46s ease;
+        opacity 0.75s ease,
+        transform 0.68s ease;
 }
+
+
+/* Gallery experience updates: v1.5.45 */
+
+/*
+After the first page load, the selected mosaic tile now
+fades for 0.75 seconds and moves toward the center over
+0.68 seconds. The overlay remains present until those
+animations have completed.
+*/

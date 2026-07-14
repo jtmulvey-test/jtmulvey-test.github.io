@@ -1,4 +1,4 @@
-const version = "v1.5.44";
+const version = "v1.5.45";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -3252,7 +3252,7 @@ async function selectMosaicImage(
         wait(
             wasInitialMosaic
                 ? 900
-                : 400
+                : 760
         );
 
     current = imageIndex;
