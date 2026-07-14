@@ -1451,3 +1451,11 @@ body.ui-idle:not(.ui-hidden):not(.mosaic-open)
 #thumbnailBar.thumbnails-ready {
     transform: none;
 }
+
+
+/* Gallery experience updates: v1.5.31 */
+
+.mosaic-item {
+    box-sizing: border-box;
+    padding: 1px;
+}
