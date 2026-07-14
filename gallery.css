@@ -1479,3 +1479,10 @@ No visual padding workaround is required.
 The full-size photograph remains hidden until the mosaic
 overlay has fully closed, then uses the normal photo fade.
 */
+
+
+/* Gallery experience updates: v1.5.37 */
+
+body.mosaic-open #controlArea {
+    z-index: 80;
+}
