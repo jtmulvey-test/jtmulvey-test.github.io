@@ -1,4 +1,4 @@
-const version = "v1.5.47";
+const version = "v1.5.48";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -103,6 +103,8 @@ let wheelZoomEasing = 0.22;
 let lastWheelEventTime = 0;
 let mediaControlsPopTimer = null;
 let autoplayPanDirection = 0;
+let firstMosaicCueTimer = null;
+let firstMosaicCueShown = false;
 let loadingIndicatorTimer = null;
 let idleInterfaceTimer = null;
 let filmstripExpanded = false;
@@ -273,6 +275,38 @@ function showModeToast(message) {
     );
 }
 
+function triggerFirstMosaicButtonCue() {
+    if (firstMosaicCueShown) {
+        return;
+    }
+
+    firstMosaicCueShown = true;
+
+    window.clearTimeout(
+        firstMosaicCueTimer
+    );
+
+    filmstripButton.classList.remove(
+        "first-load-attention"
+    );
+
+    void filmstripButton.offsetWidth;
+
+    filmstripButton.classList.add(
+        "first-load-attention"
+    );
+
+    firstMosaicCueTimer =
+        window.setTimeout(
+            function () {
+                filmstripButton.classList.remove(
+                    "first-load-attention"
+                );
+            },
+            1800
+        );
+}
+
 function expandMediaControlsAfterFirstImageLoad() {
     if (
         initialMediaControlsExpanded ||
@@ -287,10 +321,26 @@ function expandMediaControlsAfterFirstImageLoad() {
     }
 
     initialMediaControlsExpanded = true;
+
     setMediaControlsCollapsed(
         false,
         true
     );
+
+    /*
+    The media-control pop lasts up to about 0.85 seconds.
+    Wait an additional 0.1 seconds before drawing attention
+    to the mosaic button.
+    */
+    window.clearTimeout(
+        firstMosaicCueTimer
+    );
+
+    firstMosaicCueTimer =
+        window.setTimeout(
+            triggerFirstMosaicButtonCue,
+            950
+        );
 }
 
 function waitForTwoFrames() {

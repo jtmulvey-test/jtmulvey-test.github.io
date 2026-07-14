@@ -1896,3 +1896,96 @@ body.autoplay-active:not(.autoplay-playing)
         transform: none !important;
     }
 }
+
+
+/* Gallery experience updates: v1.5.48 */
+
+/*
+After the first media-control expansion, the mosaic button
+jumps, lands with two small recovery bounces, then flashes
+its inverted white state twice. This runs only once.
+*/
+#filmstripButton.first-load-attention {
+    animation:
+        first-load-mosaic-attention
+        1.7s
+        ease-out
+        both;
+}
+
+@keyframes first-load-mosaic-attention {
+    0% {
+        color: white;
+        background: rgba(0, 0, 0, 0.5);
+        border-color: white;
+        transform: translateY(0) scale(1);
+    }
+
+    12% {
+        color: white;
+        background: rgba(0, 0, 0, 0.5);
+        border-color: white;
+        transform: translateY(-18px) scale(1.03);
+    }
+
+    24% {
+        transform: translateY(0) scale(1);
+    }
+
+    31% {
+        transform: translateY(-6px) scale(1.01);
+    }
+
+    39% {
+        transform: translateY(0) scale(1);
+    }
+
+    44% {
+        transform: translateY(-2px) scale(1.004);
+    }
+
+    50% {
+        color: white;
+        background: rgba(0, 0, 0, 0.5);
+        border-color: white;
+        transform: translateY(0) scale(1);
+    }
+
+    58%,
+    67% {
+        color: black;
+        background: white;
+        border-color: white;
+        transform: translateY(0) scale(1);
+    }
+
+    68%,
+    75% {
+        color: white;
+        background: rgba(0, 0, 0, 0.5);
+        border-color: white;
+        transform: translateY(0) scale(1);
+    }
+
+    76%,
+    85% {
+        color: black;
+        background: white;
+        border-color: white;
+        transform: translateY(0) scale(1);
+    }
+
+    86%,
+    100% {
+        color: white;
+        background: rgba(0, 0, 0, 0.5);
+        border-color: white;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #filmstripButton.first-load-attention {
+        animation: none !important;
+    }
+}
