@@ -1584,3 +1584,12 @@ The open mosaic keeps its generated composition during
 fullscreen and window-size changes. The entire layout is
 scaled uniformly to fit the newly available panel space.
 */
+
+
+/* Gallery experience updates: v1.5.43 */
+
+/*
+Mouse-wheel and trackpad zoom now use accumulated delta
+values with requestAnimationFrame easing for a smoother,
+continuous response.
+*/

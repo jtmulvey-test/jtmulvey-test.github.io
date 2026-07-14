@@ -1,4 +1,4 @@
-const version = "v1.5.42";
+const version = "v1.5.43";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -93,6 +93,10 @@ let modeToastTimer = null;
 let modeToastFadeTimer = null;
 let modeToastAnimationFrame = null;
 let zoomControlsHideTimer = null;
+let wheelZoomFrame = null;
+let wheelZoomTarget = 1;
+let wheelZoomAnchorX = 0;
+let wheelZoomAnchorY = 0;
 let loadingIndicatorTimer = null;
 let idleInterfaceTimer = null;
 let filmstripExpanded = false;
@@ -1337,6 +1341,10 @@ function setZoomAroundPoint(
 
     zoomLevel = newZoom;
 
+    if (wheelZoomFrame === null) {
+        wheelZoomTarget = zoomLevel;
+    }
+
     if (zoomLevel === minimumZoom) {
         panX = 0;
         panY = 0;
@@ -1359,6 +1367,80 @@ function getZoomAnchor(clientX, clientY) {
             clientY -
             (stageRect.top + stageRect.height / 2)
     };
+}
+
+function normalizeWheelDelta(event) {
+    let delta = event.deltaY;
+
+    if (event.deltaMode === 1) {
+        delta *= 16;
+    } else if (event.deltaMode === 2) {
+        delta *= window.innerHeight;
+    }
+
+    return Math.max(
+        -240,
+        Math.min(240, delta)
+    );
+}
+
+function animateWheelZoom() {
+    const distance =
+        wheelZoomTarget - zoomLevel;
+
+    if (Math.abs(distance) < 0.002) {
+        setZoomAroundPoint(
+            wheelZoomTarget,
+            wheelZoomAnchorX,
+            wheelZoomAnchorY
+        );
+
+        wheelZoomFrame = null;
+        return;
+    }
+
+    setZoomAroundPoint(
+        zoomLevel + distance * 0.22,
+        wheelZoomAnchorX,
+        wheelZoomAnchorY
+    );
+
+    wheelZoomFrame =
+        window.requestAnimationFrame(
+            animateWheelZoom
+        );
+}
+
+function queueWheelZoom(
+    delta,
+    anchorX,
+    anchorY
+) {
+    wheelZoomAnchorX = anchorX;
+    wheelZoomAnchorY = anchorY;
+
+    if (wheelZoomFrame === null) {
+        wheelZoomTarget = zoomLevel;
+    }
+
+    const zoomFactor =
+        Math.exp(-delta * 0.0018);
+
+    wheelZoomTarget =
+        Math.min(
+            maximumZoom,
+            Math.max(
+                minimumZoom,
+                wheelZoomTarget * zoomFactor
+            )
+        );
+
+    if (wheelZoomFrame === null) {
+        wheelZoomFrame =
+            window.requestAnimationFrame(
+                animateWheelZoom
+            );
+    }
 }
 
 function zoomIn() {
@@ -3738,9 +3820,20 @@ thumbnailsContainer.addEventListener(
 mosaicOverlay.addEventListener(
     "click",
     function (event) {
-        if (event.target === mosaicOverlay) {
-            setFilmstripExpanded(false);
+        if (event.target !== mosaicOverlay) {
+            return;
         }
+
+        if (
+            document.body.classList.contains(
+                "initial-mosaic-mode"
+            )
+        ) {
+            selectFirstPhotoFromInitialMosaic();
+            return;
+        }
+
+        setFilmstripExpanded(false);
     }
 );
 
@@ -4079,19 +4172,11 @@ viewer.addEventListener(
                 event.clientY
             );
 
-        if (event.deltaY < 0) {
-            setZoomAroundPoint(
-                zoomLevel + zoomStep,
-                anchor.x,
-                anchor.y
-            );
-        } else if (event.deltaY > 0) {
-            setZoomAroundPoint(
-                zoomLevel - zoomStep,
-                anchor.x,
-                anchor.y
-            );
-        }
+        queueWheelZoom(
+            normalizeWheelDelta(event),
+            anchor.x,
+            anchor.y
+        );
     },
     { passive: false }
 );
