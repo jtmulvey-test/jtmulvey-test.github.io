@@ -1,4 +1,4 @@
-const version = "v1.5.1";
+const version = "v1.5.2";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -48,6 +48,12 @@ const thumbnailsContainer =
     document.getElementById("thumbnails");
 const thumbnailBar =
     document.getElementById("thumbnailBar");
+const mosaicOverlay =
+    document.getElementById("mosaicOverlay");
+const mosaicPanel =
+    document.getElementById("mosaicPanel");
+const mosaicGrid =
+    document.getElementById("mosaicGrid");
 const controlArea =
     document.getElementById("controlArea");
 const helpPanel =
@@ -602,6 +608,15 @@ function updateThumbnails() {
             }
         }
     );
+
+    document
+        .querySelectorAll(".mosaic-item")
+        .forEach(tile => {
+            tile.classList.toggle(
+                "active",
+                Number(tile.dataset.imageIndex) === current
+            );
+        });
 }
 
 function updateCounter() {
@@ -1054,12 +1069,291 @@ function fitImageToViewer() {
     showModeToast("Fit Image");
 }
 
+function shuffleIndexes(length) {
+    const indexes =
+        Array.from(
+            { length: length },
+            (_, index) => index
+        );
+
+    for (let i = indexes.length - 1; i > 0; i--) {
+        const randomIndex =
+            Math.floor(Math.random() * (i + 1));
+
+        [
+            indexes[i],
+            indexes[randomIndex]
+        ] = [
+            indexes[randomIndex],
+            indexes[i]
+        ];
+    }
+
+    return indexes;
+}
+
+function createOccupancyGrid(rows, columns) {
+    return Array.from(
+        { length: rows },
+        () => Array(columns).fill(false)
+    );
+}
+
+function canPlaceMosaicTile(
+    occupancy,
+    row,
+    column,
+    rowSpan,
+    columnSpan
+) {
+    if (
+        row + rowSpan > occupancy.length ||
+        column + columnSpan > occupancy[0].length
+    ) {
+        return false;
+    }
+
+    for (
+        let currentRow = row;
+        currentRow < row + rowSpan;
+        currentRow++
+    ) {
+        for (
+            let currentColumn = column;
+            currentColumn < column + columnSpan;
+            currentColumn++
+        ) {
+            if (occupancy[currentRow][currentColumn]) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+function occupyMosaicCells(
+    occupancy,
+    row,
+    column,
+    rowSpan,
+    columnSpan
+) {
+    for (
+        let currentRow = row;
+        currentRow < row + rowSpan;
+        currentRow++
+    ) {
+        for (
+            let currentColumn = column;
+            currentColumn < column + columnSpan;
+            currentColumn++
+        ) {
+            occupancy[currentRow][currentColumn] = true;
+        }
+    }
+}
+
+function findMosaicPlacement(
+    occupancy,
+    rowSpan,
+    columnSpan
+) {
+    for (
+        let row = 0;
+        row < occupancy.length;
+        row++
+    ) {
+        for (
+            let column = 0;
+            column < occupancy[0].length;
+            column++
+        ) {
+            if (
+                canPlaceMosaicTile(
+                    occupancy,
+                    row,
+                    column,
+                    rowSpan,
+                    columnSpan
+                )
+            ) {
+                return {
+                    row: row,
+                    column: column
+                };
+            }
+        }
+    }
+
+    return null;
+}
+
+function randomMosaicSize() {
+    const roll = Math.random();
+
+    if (roll < 0.14) {
+        return { rows: 2, columns: 2 };
+    }
+
+    if (roll < 0.38) {
+        return { rows: 1, columns: 2 };
+    }
+
+    if (roll < 0.58) {
+        return { rows: 2, columns: 1 };
+    }
+
+    return { rows: 1, columns: 1 };
+}
+
+function buildRandomMosaic() {
+    mosaicGrid.innerHTML = "";
+
+    if (thumbnails.length === 0) {
+        return;
+    }
+
+    const columns = Math.min(
+        8,
+        Math.max(
+            4,
+            Math.ceil(
+                Math.sqrt(thumbnails.length * 1.55)
+            )
+        )
+    );
+
+    let rows = Math.max(
+        3,
+        Math.ceil(
+            thumbnails.length * 1.7 / columns
+        )
+    );
+
+    let occupancy =
+        createOccupancyGrid(rows, columns);
+
+    mosaicGrid.style.gridTemplateColumns =
+        `repeat(${columns}, minmax(0, 1fr))`;
+
+    const randomizedIndexes =
+        shuffleIndexes(thumbnails.length);
+
+    randomizedIndexes.forEach(
+        (imageIndex, mosaicPosition) => {
+            let size = randomMosaicSize();
+            let placement =
+                findMosaicPlacement(
+                    occupancy,
+                    size.rows,
+                    size.columns
+                );
+
+            if (!placement) {
+                size = {
+                    rows: 1,
+                    columns: 1
+                };
+
+                placement =
+                    findMosaicPlacement(
+                        occupancy,
+                        1,
+                        1
+                    );
+            }
+
+            while (!placement) {
+                rows += 1;
+                occupancy.push(
+                    Array(columns).fill(false)
+                );
+
+                placement =
+                    findMosaicPlacement(
+                        occupancy,
+                        1,
+                        1
+                    );
+            }
+
+            occupyMosaicCells(
+                occupancy,
+                placement.row,
+                placement.column,
+                size.rows,
+                size.columns
+            );
+
+            const tile =
+                document.createElement("button");
+
+            tile.type = "button";
+            tile.className = "mosaic-item";
+            tile.dataset.imageIndex =
+                String(imageIndex);
+
+            tile.setAttribute(
+                "aria-label",
+                `Open photograph ${imageIndex + 1}`
+            );
+
+            tile.style.gridColumn =
+                `${placement.column + 1} / span ` +
+                `${size.columns}`;
+
+            tile.style.gridRow =
+                `${placement.row + 1} / span ` +
+                `${size.rows}`;
+
+            if (imageIndex === current) {
+                tile.classList.add("active");
+            }
+
+            const image =
+                document.createElement("img");
+
+            image.src = thumbnails[imageIndex];
+            image.loading = "lazy";
+            image.decoding = "async";
+            image.alt = "";
+
+            tile.appendChild(image);
+
+            tile.addEventListener(
+                "click",
+                function () {
+                    current = imageIndex;
+                    setFilmstripExpanded(false);
+                    requestImageChange();
+                }
+            );
+
+            mosaicGrid.appendChild(tile);
+        }
+    );
+
+    mosaicGrid.style.gridTemplateRows =
+        `repeat(${rows}, minmax(0, 1fr))`;
+}
+
 function setFilmstripExpanded(expanded) {
     filmstripExpanded = expanded;
 
     document.body.classList.toggle(
-        "filmstrip-expanded",
+        "mosaic-open",
         filmstripExpanded
+    );
+
+    mosaicOverlay.classList.toggle(
+        "visible",
+        filmstripExpanded
+    );
+
+    mosaicOverlay.setAttribute(
+        "aria-hidden",
+        String(!filmstripExpanded)
     );
 
     filmstripButton.classList.toggle(
@@ -1075,11 +1369,14 @@ function setFilmstripExpanded(expanded) {
     filmstripButton.setAttribute(
         "aria-label",
         filmstripExpanded
-            ? "Collapse filmstrip"
-            : "Expand filmstrip"
+            ? "Close thumbnail mosaic"
+            : "Open thumbnail mosaic"
     );
 
-    window.setTimeout(updateThumbnails, 340);
+    if (filmstripExpanded) {
+        buildRandomMosaic();
+    }
+
     wakeInterface();
 }
 
@@ -1088,8 +1385,8 @@ function toggleFilmstrip() {
 
     showModeToast(
         filmstripExpanded
-            ? "Filmstrip Expanded"
-            : "Filmstrip Collapsed"
+            ? "Thumbnail Mosaic"
+            : "Mosaic Closed"
     );
 }
 
@@ -1196,6 +1493,10 @@ function toggleMediaControls() {
 }
 
 function showHelp() {
+    if (filmstripExpanded) {
+        setFilmstripExpanded(false);
+    }
+
     clearInterfaceIdleTimer();
     document.body.classList.remove("ui-idle");
     helpOverlay.classList.add("visible");
@@ -1254,6 +1555,7 @@ async function enterHideMode(
     toastMessage = "Hide Mode"
 ) {
     hideHelp();
+    setFilmstripExpanded(false);
 
     if (!document.fullscreenElement) {
         try {
@@ -1313,6 +1615,15 @@ nextImageButton.addEventListener(
 filmstripButton.addEventListener(
     "click",
     toggleFilmstrip
+);
+
+mosaicOverlay.addEventListener(
+    "click",
+    function (event) {
+        if (event.target === mosaicOverlay) {
+            setFilmstripExpanded(false);
+        }
+    }
 );
 
 bottomZoomIn.addEventListener(
@@ -1549,6 +1860,11 @@ document.addEventListener(
         const key = event.key.toLowerCase();
 
         if (key === "escape") {
+            if (filmstripExpanded) {
+                setFilmstripExpanded(false);
+                return;
+            }
+
             hideHelp();
             stopAutoplay();
             showUI();
@@ -1628,6 +1944,7 @@ document.addEventListener(
 [
     controlArea,
     thumbnailBar,
+    mosaicPanel,
     bottomZoomControls,
     helpPanel,
     previousImageButton,

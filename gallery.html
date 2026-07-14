@@ -164,13 +164,27 @@
         <button
             id="filmstripButton"
             type="button"
-            aria-label="Expand filmstrip"
+            aria-label="Open thumbnail mosaic"
             aria-pressed="false"
         >
             <span id="filmstripArrow" aria-hidden="true">↑</span>
         </button>
 
         <div id="thumbnails"></div>
+    </div>
+
+    <div
+        id="mosaicOverlay"
+        aria-hidden="true"
+    >
+        <div
+            id="mosaicPanel"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Select a photograph"
+        >
+            <div id="mosaicGrid"></div>
+        </div>
     </div>
 
     <div id="helpOverlay" aria-hidden="true">
@@ -227,7 +241,7 @@
             <div class="help-row">
                 <span class="help-key">↑</span>
                 <p>
-                    Expand or collapse the thumbnail filmstrip
+                    Open or close the thumbnail mosaic
                     (keypress "T")
                 </p>
             </div>

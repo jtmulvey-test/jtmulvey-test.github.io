@@ -445,35 +445,36 @@ body.ui-hidden #bottomZoomControls {
     position: fixed;
     bottom: 0;
     left: 0;
-    z-index: 20;
+    z-index: 80;
     width: 100%;
     height: 80px;
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 5px;
+    padding: 5px 5px 5px 20px;
     box-sizing: border-box;
     overflow: hidden;
     background: rgba(0, 0, 0, 0.75);
 }
 
 #filmstripButton {
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     padding: 0;
     flex: 0 0 auto;
     color: white;
-    background: rgba(0, 0, 0, 0.55);
-    border: 1px solid rgba(255, 255, 255, 0.65);
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid white;
     border-radius: 50%;
     cursor: pointer;
     font-size: 24px;
     line-height: 1;
+    text-align: center;
     transition:
         color 0.2s ease,
         background-color 0.2s ease,
         border-color 0.2s ease,
-        transform 0.2s ease;
+        transform 0.25s ease;
 }
 
 #filmstripButton:hover {
@@ -938,35 +939,104 @@ body:not(.ui-hidden):not(.ui-idle) #viewer:hover .edge-nav,
     transform: none;
 }
 
-body.filmstrip-expanded #viewer {
-    height: calc(100vh - 240px);
-}
-
-body.filmstrip-expanded #photoStage {
-    height: calc(100vh - 250px);
-}
-
-body.filmstrip-expanded #thumbnailBar {
-    height: 220px;
-    gap: 14px;
-    padding: 14px;
+#mosaicOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 64px 72px 110px;
+    box-sizing: border-box;
     overflow: hidden;
-    background: rgba(0, 0, 0, 0.92);
+    background: rgba(0, 0, 0, 0.84);
+    opacity: 0;
+    pointer-events: none;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: opacity 0.24s ease;
 }
 
-body.filmstrip-expanded #thumbnails {
-    justify-content: flex-start;
-    gap: 14px;
-    overflow-x: auto;
-    overflow-y: hidden;
+#mosaicOverlay.visible {
+    opacity: 1;
+    pointer-events: auto;
 }
 
-body.filmstrip-expanded .thumb {
-    height: 190px;
+#mosaicPanel {
+    width: min(1120px, calc(100vw - 180px));
+    height: min(700px, calc(100vh - 180px));
+    padding: 12px;
+    box-sizing: border-box;
+    overflow: hidden;
+    background: rgba(12, 12, 12, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 18px;
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.62);
+    transform: translateY(16px) scale(0.98);
+    transition: transform 0.28s ease;
 }
 
-body.filmstrip-expanded #counter {
-    bottom: 224px;
+#mosaicOverlay.visible #mosaicPanel {
+    transform: translateY(0) scale(1);
+}
+
+#mosaicGrid {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    gap: 9px;
+    overflow: hidden;
+}
+
+.mosaic-item {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+    background: #111111;
+    border: 0;
+    border-radius: 9px;
+    cursor: pointer;
+    opacity: 0.82;
+    transition:
+        opacity 0.2s ease,
+        transform 0.22s ease,
+        box-shadow 0.22s ease;
+}
+
+.mosaic-item:hover {
+    z-index: 2;
+    opacity: 1;
+    transform: scale(1.018);
+}
+
+.mosaic-item:focus-visible {
+    outline: 2px solid white;
+    outline-offset: 3px;
+}
+
+.mosaic-item.active {
+    opacity: 1;
+    box-shadow: inset 0 0 0 2px white;
+}
+
+.mosaic-item img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    user-select: none;
+    -webkit-user-drag: none;
+    pointer-events: none;
+}
+
+body.mosaic-open #counter {
+    opacity: 0;
+}
+
+body.ui-hidden #mosaicOverlay {
+    display: none !important;
 }
 
 body.ui-idle:not(.ui-hidden) #backLink,
@@ -976,7 +1046,7 @@ body.ui-idle:not(.ui-hidden) #counter {
     pointer-events: none;
 }
 
-body.ui-idle:not(.ui-hidden) #thumbnailBar {
+body.ui-idle:not(.ui-hidden):not(.mosaic-open) #thumbnailBar {
     opacity: 0;
     transform: translateY(100%);
     pointer-events: none;
@@ -1016,6 +1086,8 @@ body.ui-hidden #loadingIndicator {
 
     .edge-nav,
     #thumbnailBar,
+    #mosaicOverlay,
+    #mosaicPanel,
     #counter,
     #controlArea,
     #photo {
