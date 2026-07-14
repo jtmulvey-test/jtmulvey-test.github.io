@@ -496,7 +496,7 @@ body.ui-hidden #bottomZoomControls {
 }
 
 #filmstripButton.active #filmstripArrow {
-    transform: translateY(-1px) rotate(180deg);
+    transform: translateY(1px) rotate(180deg);
 }
 
 #thumbnails {
@@ -1049,6 +1049,16 @@ body:not(.ui-hidden):not(.ui-idle) #viewer:hover .edge-nav,
     pointer-events: none;
 }
 
+#mosaicOverlay.selecting {
+    background: rgba(0, 0, 0, 0.10);
+    backdrop-filter: blur(0);
+    -webkit-backdrop-filter: blur(0);
+    transition:
+        background-color 0.72s ease,
+        backdrop-filter 0.72s ease,
+        -webkit-backdrop-filter 0.72s ease;
+}
+
 #mosaicOverlay.selecting .mosaic-item {
     opacity: 0;
     transform:
@@ -1062,29 +1072,22 @@ body:not(.ui-hidden):not(.ui-idle) #viewer:hover .edge-nav,
 
 #mosaicOverlay.selecting .mosaic-item.mosaic-selected {
     z-index: 10;
-    opacity: 1;
-    transform:
-        rotate(var(--mosaic-tilt, 0deg))
-        scale(1.025);
-    transition:
-        opacity 0.62s ease,
-        transform 0.28s ease;
-}
-
-#mosaicOverlay.selecting .mosaic-item.mosaic-selected.selected-fading {
     opacity: 0;
     transform:
         rotate(var(--mosaic-tilt, 0deg))
         scale(1.04);
+    transition:
+        opacity 1.05s ease,
+        transform 0.72s ease;
 }
 
 #mosaicOverlay.selecting #mosaicPanel {
-    background: rgba(4, 4, 4, 0.38);
-    border-color: rgba(255, 255, 255, 0.08);
+    background: rgba(4, 4, 4, 0.10);
+    border-color: rgba(255, 255, 255, 0.03);
     box-shadow: none;
     transition:
-        background-color 0.18s ease,
-        border-color 0.18s ease,
+        background-color 0.58s ease,
+        border-color 0.30s ease,
         box-shadow 0.18s ease;
 }
 

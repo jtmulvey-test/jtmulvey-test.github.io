@@ -1,4 +1,4 @@
-const version = "v1.5.7";
+const version = "v1.5.8";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -2270,36 +2270,44 @@ async function selectMosaicImage(
         "mosaic-selected"
     );
 
+    /*
+    Force the browser to paint the selected state before
+    both fade transitions begin.
+    */
+    void selectedTile.getBoundingClientRect();
+
     mosaicOverlay.classList.add(
         "selecting"
     );
 
-    await wait(150);
-
     current = imageIndex;
     requestImageChange();
 
-    await waitForDisplayedIndex(
-        imageIndex
+    await Promise.all([
+        waitForDisplayedIndex(
+            imageIndex
+        ),
+        wait(1050)
+    ]);
+
+    mosaicSelectionRunning = false;
+
+    setFilmstripExpanded(
+        false,
+        true
     );
 
-    selectedTile.classList.add(
-        "selected-fading"
-    );
-
-    await wait(640);
+    await wait(260);
 
     mosaicOverlay.classList.remove(
         "selecting"
     );
 
     selectedTile.classList.remove(
-        "mosaic-selected",
-        "selected-fading"
+        "mosaic-selected"
     );
 
-    mosaicSelectionRunning = false;
-    setFilmstripExpanded(false);
+    mosaicGrid.innerHTML = "";
 }
 
 function renderMosaicLayout(layout) {
@@ -2429,10 +2437,14 @@ async function buildSeededMosaic() {
     renderMosaicLayout(layout);
 }
 
-function setFilmstripExpanded(expanded) {
+function setFilmstripExpanded(
+    expanded,
+    preserveContent = false
+) {
     if (
         mosaicSelectionRunning &&
-        expanded === false
+        expanded === false &&
+        !preserveContent
     ) {
         return;
     }
@@ -2475,7 +2487,10 @@ function setFilmstripExpanded(expanded) {
         buildSeededMosaic();
     } else {
         mosaicBuildToken += 1;
-        mosaicGrid.innerHTML = "";
+
+        if (!preserveContent) {
+            mosaicGrid.innerHTML = "";
+        }
     }
 
     wakeInterface();
