@@ -23,6 +23,9 @@
             top: 15px;
             left: 20px;
             z-index: 30;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
             color: white;
             font-size: 22.4px;
             line-height: 1.1;
@@ -41,6 +44,12 @@
             outline: 1px solid white;
             outline-offset: 5px;
             border-radius: 2px;
+        }
+
+        #backSymbol {
+            display: inline-block;
+            font-size: 21px;
+            transform: translateY(-1px);
         }
 
         #controlArea {
@@ -282,17 +291,11 @@
             opacity: 1;
         }
 
-        /*
-        The final position is now the exact center of the viewport.
-
-        The hidden position begins 140px above the center, so the message
-        visibly travels downward before settling in the middle.
-        */
         #modeToast {
             position: fixed;
-            top: 50%;
+            top: 25vh;
             left: 50%;
-            z-index: 80;
+            z-index: 120;
             max-width: calc(100vw - 40px);
             padding: 10px 20px 11px;
             box-sizing: border-box;
@@ -325,6 +328,14 @@
             transform:
                 translate(-50%, -50%)
                 scale(1);
+        }
+
+        #modeToast.leaving {
+            opacity: 0;
+            transform:
+                translate(-50%, -50%)
+                scale(1);
+            transition: opacity 0.48s ease;
         }
 
         #counter {
@@ -600,12 +611,23 @@
                     opacity 0.2s ease,
                     transform 0.2s ease;
             }
+
+            #modeToast.leaving {
+                transition: opacity 0.2s ease;
+            }
         }
     </style>
 </head>
 
 <body>
-    <a id="backLink" href="collections.html">Back</a>
+    <a
+        id="backLink"
+        href="collections.html"
+        aria-label="Back to collections"
+    >
+        <span id="backSymbol" aria-hidden="true">&lt;</span>
+        <span>Back</span>
+    </a>
 
     <div id="controlArea">
         <div id="controls" class="collapsed">
@@ -784,7 +806,7 @@
     </div>
 
     <script>
-        const version = "v1.4.13";
+        const version = "v1.4.14";
         document.getElementById("version").textContent = version;
 
         const params = new URLSearchParams(window.location.search);
@@ -842,6 +864,7 @@
         let autoplayProgressStart = null;
 
         let modeToastTimer = null;
+        let modeToastFadeTimer = null;
         let modeToastAnimationFrame = null;
 
         const imageCache = new Map();
@@ -909,6 +932,7 @@
 
         function showModeToast(message) {
             window.clearTimeout(modeToastTimer);
+            window.clearTimeout(modeToastFadeTimer);
 
             if (modeToastAnimationFrame !== null) {
                 window.cancelAnimationFrame(
@@ -918,15 +942,14 @@
                 modeToastAnimationFrame = null;
             }
 
-            modeToast.classList.remove("visible");
+            modeToast.classList.remove(
+                "visible",
+                "leaving"
+            );
+
             modeToast.textContent =
                 `${message} (esc to exit)`;
 
-            /*
-            Force the hidden transform to be rendered before
-            reapplying the visible class. This reliably restarts
-            the full downward animation every time.
-            */
             void modeToast.getBoundingClientRect();
 
             modeToastAnimationFrame =
@@ -938,6 +961,14 @@
             modeToastTimer = window.setTimeout(
                 function () {
                     modeToast.classList.remove("visible");
+                    modeToast.classList.add("leaving");
+
+                    modeToastFadeTimer = window.setTimeout(
+                        function () {
+                            modeToast.classList.remove("leaving");
+                        },
+                        500
+                    );
                 },
                 4100
             );
@@ -1044,7 +1075,7 @@
                             await loadedImage.decode();
                         } catch (error) {
                             /*
-                            Continue because the image itself loaded.
+                            Continue because the image loaded.
                             */
                         }
                     }
@@ -1111,7 +1142,7 @@
                         await photo.decode();
                     } catch (error) {
                         /*
-                        Continue if decode rejects after loading.
+                        Continue if decoding rejects.
                         */
                     }
                 }
@@ -1135,7 +1166,7 @@
                     false
                 ).catch(function () {
                     /*
-                    A future display request will report the error.
+                    A later display request will report the error.
                     */
                 });
             });
@@ -1177,6 +1208,7 @@
             }
 
             fadeOverlay.classList.add("visible");
+
             await waitForOverlayTransition();
             await waitForTwoFrames();
 
