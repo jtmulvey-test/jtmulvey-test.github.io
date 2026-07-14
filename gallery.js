@@ -1,4 +1,4 @@
-const version = "v1.5.21";
+const version = "v1.5.22";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -106,6 +106,7 @@ let thumbnailDragMoved = false;
 let thumbnailDragStartX = 0;
 let thumbnailDragStartScrollLeft = 0;
 let suppressThumbnailClick = false;
+let thumbnailPointerDownIndex = null;
 
 const imageCache = new Map();
 const mosaicLayoutCache = new Map();
@@ -645,6 +646,17 @@ function beginThumbnailDrag(event) {
         return;
     }
 
+    const clickedThumb =
+        event.target.closest(".thumb");
+
+    thumbnailPointerDownIndex =
+        clickedThumb
+            ? Number.parseInt(
+                clickedThumb.dataset.index,
+                10
+            )
+            : null;
+
     thumbnailDragActive = true;
     thumbnailDragMoved = false;
     suppressThumbnailClick = false;
@@ -673,7 +685,7 @@ function moveThumbnailDrag(event) {
         event.clientX -
         thumbnailDragStartX;
 
-    if (Math.abs(movement) > 4) {
+    if (Math.abs(movement) > 5) {
         thumbnailDragMoved = true;
         suppressThumbnailClick = true;
     }
@@ -692,7 +704,14 @@ function endThumbnailDrag(event) {
         return;
     }
 
+    const clickedIndex =
+        thumbnailPointerDownIndex;
+
+    const dragged =
+        thumbnailDragMoved;
+
     thumbnailDragActive = false;
+    thumbnailPointerDownIndex = null;
 
     if (
         thumbnailsContainer.hasPointerCapture(
@@ -707,6 +726,15 @@ function endThumbnailDrag(event) {
     thumbnailsContainer.classList.remove(
         "dragging"
     );
+
+    if (
+        !dragged &&
+        clickedIndex !== null &&
+        !Number.isNaN(clickedIndex)
+    ) {
+        current = clickedIndex;
+        requestImageChange();
+    }
 
     window.setTimeout(
         function () {
@@ -810,21 +838,10 @@ async function createThumbnails() {
 
     loadedThumbnails.forEach(
         (thumbnail, index) => {
-            thumbnail.addEventListener(
-                "click",
-                function (event) {
-                    if (
-                        suppressThumbnailClick ||
-                        thumbnailDragMoved
-                    ) {
-                        event.preventDefault();
-                        return;
-                    }
+            thumbnail.dataset.index =
+                String(index);
 
-                    current = index;
-                    requestImageChange();
-                }
-            );
+            thumbnail.draggable = false;
 
             fragment.appendChild(
                 thumbnail

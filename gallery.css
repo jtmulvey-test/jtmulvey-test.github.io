@@ -1409,3 +1409,11 @@ body.ui-idle:not(.ui-hidden):not(.mosaic-open)
 #thumbnails.dragging .thumb {
     pointer-events: none;
 }
+
+
+/* Gallery experience updates: v1.5.22 */
+
+#thumbnailBar {
+    left: calc(88px + ((100vw - 176px) * 0.05));
+    width: calc((100vw - 176px) * 0.9);
+}
