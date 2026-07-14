@@ -948,7 +948,7 @@
             );
 
             modeToast.textContent =
-                `${message === "Autoplay Mode" ? "Autoplay Start" : message} (esc to exit)`;
+                message === "Autoplay Mode" ? "Autoplay Start" : message;
 
             void modeToast.getBoundingClientRect();
 
