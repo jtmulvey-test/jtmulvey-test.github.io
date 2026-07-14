@@ -1,4 +1,4 @@
-const version = "v1.5.35";
+const version = "v1.5.36";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -2995,18 +2995,11 @@ async function selectMosaicImage(
     mosaicSelectionRunning = true;
 
     /*
-    Cover the entire browser window before any mosaic
-    elements begin disappearing. This prevents the mosaic
-    panel from appearing as a dark rectangle over the
-    full-size photograph during the final reveal.
+    Hide the full-size image while preserving the visible
+    mosaic animation. The black viewer behind the mosaic
+    prevents the next photograph from showing through the
+    semi-transparent mosaic panel.
     */
-    document.body.classList.add(
-        "mosaic-transition-cover-active"
-    );
-
-    void document.body.offsetHeight;
-    await waitForTwoFrames();
-
     viewer.classList.add(
         "mosaic-photo-blackout"
     );
@@ -3023,6 +3016,10 @@ async function selectMosaicImage(
         "mosaic-selected"
     );
 
+    /*
+    Force the browser to paint the selected state before
+    the mosaic animation starts.
+    */
     void selectedTile.getBoundingClientRect();
 
     mosaicOverlay.classList.add(
@@ -3035,15 +3032,20 @@ async function selectMosaicImage(
     current = imageIndex;
     requestImageChange();
 
-    await waitForDisplayedIndex(
-        imageIndex
-    );
-
-    await minimumMosaicFade;
+    /*
+    Wait for both the selected photograph and the mosaic
+    animation. This also works when the photograph is
+    already cached or already displayed.
+    */
+    await Promise.all([
+        waitForDisplayedIndex(imageIndex),
+        minimumMosaicFade
+    ]);
 
     /*
-    Close and fully clear the mosaic while the full-window
-    cover is still opaque.
+    Close the mosaic while the full-size viewer remains
+    black. The overlay's own fade completes against black,
+    so its dark panel can never cut across the photograph.
     */
     setFilmstripExpanded(
         false,
@@ -3070,30 +3072,17 @@ async function selectMosaicImage(
 
     mosaicGrid.innerHTML = "";
 
+    /*
+    Ensure the mosaic has been removed from the painted
+    frame before fading the full-size image back in.
+    */
     await waitForTwoFrames();
 
-    /*
-    The new photograph is ready and the mosaic is gone.
-    Fade the full-window cover away to reveal only the
-    clean full-size image.
-    */
     viewer.classList.remove(
         "mosaic-photo-blackout"
     );
 
-    document.body.classList.add(
-        "mosaic-transition-cover-fading"
-    );
-
-    await wait(620);
-
-    document.body.classList.remove(
-        "mosaic-transition-cover-fading"
-    );
-
-    document.body.classList.remove(
-        "mosaic-transition-cover-active"
-    );
+    await wait(580);
 
     mosaicSelectionRunning = false;
 }
