@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <title>Gallery</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <link rel="icon" type="image/png" href="favicon.png">
@@ -65,7 +66,7 @@
             cursor: pointer;
             font-size: 19.2px;
             text-align: center;
-            transform-origin: center center;
+            transform-origin: center;
             transition:
                 color 0.2s ease,
                 background-color 0.2s ease,
@@ -117,9 +118,6 @@
             height: 2px;
             background: currentColor;
             border-radius: 999px;
-            transition:
-                opacity 0.2s ease,
-                transform 0.2s ease;
         }
 
         #hamburgerIcon span:nth-child(1) {
@@ -263,7 +261,7 @@
             max-height: 100%;
             object-fit: contain;
             transform: none;
-            transform-origin: center center;
+            transform-origin: center;
             user-select: none;
             -webkit-user-drag: none;
             pointer-events: none;
@@ -284,32 +282,49 @@
             opacity: 1;
         }
 
+        /*
+        The final position is now the exact center of the viewport.
+
+        The hidden position begins 140px above the center, so the message
+        visibly travels downward before settling in the middle.
+        */
         #modeToast {
             position: fixed;
+            top: 50%;
             left: 50%;
-            top: max(72px, 7vh);
             z-index: 80;
-            padding: 9px 18px 10px;
+            max-width: calc(100vw - 40px);
+            padding: 10px 20px 11px;
+            box-sizing: border-box;
             color: white;
-            background: rgba(20, 20, 20, 0.64);
-            border: 1px solid rgba(255, 255, 255, 0.28);
+            background: rgba(20, 20, 20, 0.68);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 999px;
+            box-shadow:
+                0 8px 30px rgba(0, 0, 0, 0.38),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
             font-size: 13px;
             line-height: 1;
             letter-spacing: 0.02em;
+            text-align: center;
+            white-space: nowrap;
             opacity: 0;
-            transform: translate(-50%, -80px) scale(0.97);
+            transform:
+                translate(-50%, calc(-50% - 140px))
+                scale(0.95);
             pointer-events: none;
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             transition:
-                opacity 0.28s ease,
-                transform 0.34s cubic-bezier(0.2, 0.8, 0.2, 1);
+                opacity 0.32s ease,
+                transform 0.62s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         #modeToast.visible {
             opacity: 1;
-            transform: translate(-50%, 0) scale(1);
+            transform:
+                translate(-50%, -50%)
+                scale(1);
         }
 
         #counter {
@@ -555,26 +570,35 @@
             color: white;
         }
 
-        body.ui-hidden #modeToast {
-            top: max(72px, 7vh);
-        }
-
         body.ui-hidden.autoplay-active #autoplayStatus,
         body.ui-hidden.autoplay-active #autoplayProgress {
             display: block;
+        }
+
+        @media (max-width: 520px) {
+            #modeToast {
+                max-width: calc(100vw - 28px);
+                padding: 10px 16px 11px;
+                font-size: 12px;
+                white-space: normal;
+            }
         }
 
         @media (prefers-reduced-motion: reduce) {
             #fadeOverlay,
             .control-button,
             #version,
-            #hamburgerIcon span,
             #helpOverlay,
             #helpPanel,
             #closeHelp,
-            #backLink,
-            #modeToast {
+            #backLink {
                 transition-duration: 0.01ms;
+            }
+
+            #modeToast {
+                transition:
+                    opacity 0.2s ease,
+                    transform 0.2s ease;
             }
         }
     </style>
@@ -649,7 +673,12 @@
         <div id="fadeOverlay"></div>
     </div>
 
-    <div id="modeToast"></div>
+    <div
+        id="modeToast"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+    ></div>
 
     <div id="autoplayStatus"></div>
 
@@ -672,31 +701,49 @@
             <h2 id="helpTitle">Gallery Controls</h2>
 
             <div class="help-row">
-                <span class="help-key hamburger-help-icon" aria-hidden="true">
+                <span
+                    class="help-key hamburger-help-icon"
+                    aria-hidden="true"
+                >
                     <span></span>
                     <span></span>
                     <span></span>
                 </span>
-                <p>Expand or collapse the media controls (keypress "C")</p>
+
+                <p>
+                    Expand or collapse the media controls
+                    (keypress "C")
+                </p>
             </div>
 
             <div class="help-row">
                 <span class="help-key">F</span>
-                <p>Enter or exit Full Screen Mode (keypress "F")</p>
+                <p>
+                    Enter or exit Full Screen Mode
+                    (keypress "F")
+                </p>
             </div>
 
             <div class="help-row">
                 <span class="help-key">H</span>
-                <p>Enter or exit Hide Mode (keypress "H")</p>
+                <p>
+                    Enter or exit Hide Mode
+                    (keypress "H")
+                </p>
             </div>
 
             <div class="help-row">
                 <span class="help-key play-help-icon">▶</span>
-                <p>Play or pause Autoplay Mode (keypress "P")</p>
+                <p>
+                    Play or pause Autoplay Mode
+                    (keypress "P")
+                </p>
             </div>
 
             <div class="delay-setting">
-                <label for="autoplayDelay">Autoplay delay:</label>
+                <label for="autoplayDelay">
+                    Autoplay delay:
+                </label>
 
                 <input
                     id="autoplayDelay"
@@ -712,23 +759,32 @@
 
             <div class="help-row">
                 <span class="help-key">+</span>
-                <p>Zoom in for the current photograph (keypress "+")</p>
+                <p>
+                    Zoom in for the current photograph
+                    (keypress "+")
+                </p>
             </div>
 
             <div class="help-row">
                 <span class="help-key">−</span>
-                <p>Zoom out for the current photograph (keypress "-")</p>
+                <p>
+                    Zoom out for the current photograph
+                    (keypress "-")
+                </p>
             </div>
 
             <div class="help-row">
                 <span class="help-key">!</span>
-                <p>Double clicking image will zoom in or out</p>
+                <p>
+                    Double clicking the image will zoom
+                    in or out
+                </p>
             </div>
         </div>
     </div>
 
     <script>
-        const version = "v1.4.12";
+        const version = "v1.4.13";
         document.getElementById("version").textContent = version;
 
         const params = new URLSearchParams(window.location.search);
@@ -738,7 +794,8 @@
         const photo = document.getElementById("photo");
         const fadeOverlay =
             document.getElementById("fadeOverlay");
-        const controls = document.getElementById("controls");
+        const controls =
+            document.getElementById("controls");
         const toggleControls =
             document.getElementById("toggleControls");
         const versionElement =
@@ -785,6 +842,7 @@
         let autoplayProgressStart = null;
 
         let modeToastTimer = null;
+        let modeToastAnimationFrame = null;
 
         const imageCache = new Map();
 
@@ -820,6 +878,7 @@
                 if (!selected) {
                     document.getElementById("counter").textContent =
                         "Collection not found";
+
                     return;
                 }
 
@@ -828,11 +887,13 @@
 
                 for (let i = 1; i <= selected.images; i++) {
                     images.push(
-                        `${normalizedBase}${selected.name}/originals/${i}.jpg`
+                        `${normalizedBase}${selected.name}` +
+                        `/originals/${i}.jpg`
                     );
 
                     thumbnails.push(
-                        `${normalizedBase}${selected.name}/thumbnails/${i}.jpg`
+                        `${normalizedBase}${selected.name}` +
+                        `/thumbnails/${i}.jpg`
                     );
                 }
 
@@ -849,13 +910,30 @@
         function showModeToast(message) {
             window.clearTimeout(modeToastTimer);
 
-            modeToast.classList.remove("visible");
-            modeToast.offsetHeight;
+            if (modeToastAnimationFrame !== null) {
+                window.cancelAnimationFrame(
+                    modeToastAnimationFrame
+                );
 
+                modeToastAnimationFrame = null;
+            }
+
+            modeToast.classList.remove("visible");
             modeToast.textContent =
                 `${message} (esc to exit)`;
 
-            modeToast.classList.add("visible");
+            /*
+            Force the hidden transform to be rendered before
+            reapplying the visible class. This reliably restarts
+            the full downward animation every time.
+            */
+            void modeToast.getBoundingClientRect();
+
+            modeToastAnimationFrame =
+                window.requestAnimationFrame(function () {
+                    modeToast.classList.add("visible");
+                    modeToastAnimationFrame = null;
+                });
 
             modeToastTimer = window.setTimeout(
                 function () {
@@ -876,8 +954,8 @@
 
         function waitForTwoFrames() {
             return new Promise(resolve => {
-                requestAnimationFrame(function () {
-                    requestAnimationFrame(resolve);
+                window.requestAnimationFrame(function () {
+                    window.requestAnimationFrame(resolve);
                 });
             });
         }
@@ -966,8 +1044,7 @@
                             await loadedImage.decode();
                         } catch (error) {
                             /*
-                            The image loaded successfully and can still
-                            be displayed if decode() rejects.
+                            Continue because the image itself loaded.
                             */
                         }
                     }
@@ -988,8 +1065,16 @@
 
                     completed = true;
 
-                    photo.removeEventListener("load", handleLoad);
-                    photo.removeEventListener("error", handleError);
+                    photo.removeEventListener(
+                        "load",
+                        handleLoad
+                    );
+
+                    photo.removeEventListener(
+                        "error",
+                        handleError
+                    );
+
                     resolve();
                 }
 
@@ -1001,13 +1086,23 @@
                     finish();
                 }
 
-                if (photo.complete && photo.naturalWidth > 0) {
+                if (
+                    photo.complete &&
+                    photo.naturalWidth > 0
+                ) {
                     finish();
                     return;
                 }
 
-                photo.addEventListener("load", handleLoad);
-                photo.addEventListener("error", handleError);
+                photo.addEventListener(
+                    "load",
+                    handleLoad
+                );
+
+                photo.addEventListener(
+                    "error",
+                    handleError
+                );
 
                 window.setTimeout(finish, 2000);
             }).then(async function () {
@@ -1016,7 +1111,7 @@
                         await photo.decode();
                     } catch (error) {
                         /*
-                        Continue if decode() rejects after loading.
+                        Continue if decode rejects after loading.
                         */
                     }
                 }
@@ -1029,7 +1124,8 @@
             }
 
             const indexes = [
-                (current - 1 + images.length) % images.length,
+                (current - 1 + images.length) %
+                    images.length,
                 (current + 1) % images.length
             ];
 
@@ -1039,8 +1135,7 @@
                     false
                 ).catch(function () {
                     /*
-                    A failure will be reported if the photograph is
-                    requested later.
+                    A future display request will report the error.
                     */
                 });
             });
@@ -1051,18 +1146,23 @@
             let loadedImage;
 
             try {
-                loadedImage = await getCachedImage(src, true);
+                loadedImage =
+                    await getCachedImage(src, true);
             } catch (error) {
                 console.error(error);
                 return;
             }
 
             const loadedSource =
-                loadedImage.currentSrc || loadedImage.src || src;
+                loadedImage.currentSrc ||
+                loadedImage.src ||
+                src;
 
             if (displayedIndex === -1) {
                 photo.src = loadedSource;
+
                 await waitForDisplayedPhoto();
+                await waitForTwoFrames();
 
                 photo.style.visibility = "visible";
                 displayedIndex = index;
@@ -1087,8 +1187,8 @@
             await waitForTwoFrames();
 
             displayedIndex = index;
-
             photo.style.visibility = "visible";
+
             await waitForTwoFrames();
 
             fadeOverlay.classList.remove("visible");
@@ -1153,10 +1253,13 @@
                 thumbnail.className = "thumb";
                 thumbnail.alt = `Photo ${index + 1}`;
 
-                thumbnail.addEventListener("click", function () {
-                    current = index;
-                    requestImageChange();
-                });
+                thumbnail.addEventListener(
+                    "click",
+                    function () {
+                        current = index;
+                        requestImageChange();
+                    }
+                );
 
                 container.appendChild(thumbnail);
             });
@@ -1166,19 +1269,21 @@
             const thumbnailElements =
                 document.querySelectorAll(".thumb");
 
-            thumbnailElements.forEach((thumbnail, index) => {
-                if (index === current) {
-                    thumbnail.classList.add("active");
+            thumbnailElements.forEach(
+                (thumbnail, index) => {
+                    if (index === current) {
+                        thumbnail.classList.add("active");
 
-                    thumbnail.scrollIntoView({
-                        behavior: "auto",
-                        inline: "center",
-                        block: "nearest"
-                    });
-                } else {
-                    thumbnail.classList.remove("active");
+                        thumbnail.scrollIntoView({
+                            behavior: "auto",
+                            inline: "center",
+                            block: "nearest"
+                        });
+                    } else {
+                        thumbnail.classList.remove("active");
+                    }
                 }
-            });
+            );
         }
 
         function updateCounter() {
@@ -1191,7 +1296,9 @@
                 return;
             }
 
-            current = (current + 1) % images.length;
+            current =
+                (current + 1) % images.length;
+
             requestImageChange();
         }
 
@@ -1226,6 +1333,7 @@
 
         function resetProgressBar() {
             stopProgressBar();
+
             autoplayProgressStart = null;
             autoplayProgressBar.style.width = "0%";
         }
@@ -1290,7 +1398,10 @@
                         return;
                     }
 
-                    current = (current + 1) % images.length;
+                    current =
+                        (current + 1) %
+                        images.length;
+
                     requestImageChange();
                 },
                 autoplayDelaySeconds * 1000
@@ -1304,7 +1415,9 @@
                 );
 
                 autoplayStatus.textContent =
-                    autoplayPlaying ? "playing" : "paused";
+                    autoplayPlaying
+                        ? "playing"
+                        : "paused";
             } else {
                 document.body.classList.remove(
                     "autoplay-active"
@@ -1328,6 +1441,7 @@
 
             autoplayActive = true;
             autoplayPlaying = true;
+
             updateAutoplayDisplay();
 
             if (
@@ -1351,6 +1465,7 @@
             }
 
             autoplayPlaying = false;
+
             clearAutoplayTimer();
             stopProgressBar();
             updateAutoplayDisplay();
@@ -1364,6 +1479,7 @@
 
             autoplayActive = true;
             autoplayPlaying = true;
+
             updateAutoplayDisplay();
 
             if (
@@ -1384,6 +1500,7 @@
         function stopAutoplay() {
             autoplayActive = false;
             autoplayPlaying = false;
+
             clearAutoplayTimer();
             resetProgressBar();
             updateAutoplayDisplay();
@@ -1403,9 +1520,8 @@
         }
 
         function updateAutoplayDelay() {
-            const newDelay = Number(
-                autoplayDelayInput.value
-            );
+            const newDelay =
+                Number(autoplayDelayInput.value);
 
             if (
                 Number.isFinite(newDelay) &&
@@ -1424,18 +1540,15 @@
         }
 
         function validateAutoplayDelay() {
-            let newDelay = Number(
-                autoplayDelayInput.value
-            );
+            let newDelay =
+                Number(autoplayDelayInput.value);
 
             if (!Number.isFinite(newDelay)) {
                 newDelay = 7;
             }
 
-            newDelay = Math.min(
-                60,
-                Math.max(2, newDelay)
-            );
+            newDelay =
+                Math.min(60, Math.max(2, newDelay));
 
             autoplayDelaySeconds = newDelay;
             autoplayDelayInput.value =
@@ -1498,6 +1611,7 @@
             isDragging = false;
 
             viewer.classList.remove("dragging");
+
             updateZoom();
         }
 
@@ -1546,7 +1660,9 @@
                 document.documentElement
                     .requestFullscreen()
                     .then(function () {
-                        showModeToast("Full Screen Mode");
+                        showModeToast(
+                            "Full Screen Mode"
+                        );
                     })
                     .catch(error => {
                         console.error(
@@ -1590,6 +1706,7 @@
 
         function showHelp() {
             helpOverlay.classList.add("visible");
+
             helpOverlay.setAttribute(
                 "aria-hidden",
                 "false"
@@ -1598,6 +1715,7 @@
 
         function hideHelp() {
             helpOverlay.classList.remove("visible");
+
             helpOverlay.setAttribute(
                 "aria-hidden",
                 "true"
@@ -1606,7 +1724,9 @@
 
         function toggleHelp() {
             if (
-                helpOverlay.classList.contains("visible")
+                helpOverlay.classList.contains(
+                    "visible"
+                )
             ) {
                 hideHelp();
             } else {
@@ -1616,7 +1736,9 @@
         }
 
         function showUI() {
-            document.body.classList.remove("ui-hidden");
+            document.body.classList.remove(
+                "ui-hidden"
+            );
 
             controls.classList.toggle(
                 "collapsed",
@@ -1631,7 +1753,9 @@
             updateToggleButtonState();
         }
 
-        async function enterHideMode(toastMessage = "Hide Mode") {
+        async function enterHideMode(
+            toastMessage = "Hide Mode"
+        ) {
             hideHelp();
 
             if (!document.fullscreenElement) {
@@ -1646,7 +1770,9 @@
                 }
             }
 
-            document.body.classList.add("ui-hidden");
+            document.body.classList.add(
+                "ui-hidden"
+            );
 
             showModeToast(toastMessage);
         }
@@ -1669,22 +1795,29 @@
             }
         }
 
-        document.getElementById("zoomIn")
-            .addEventListener("click", function () {
-                zoomIn();
-                showModeToast("Zoom Mode");
-            });
+        document
+            .getElementById("zoomIn")
+            .addEventListener(
+                "click",
+                function () {
+                    zoomIn();
+                    showModeToast("Zoom Mode");
+                }
+            );
 
-        document.getElementById("zoomOut")
+        document
+            .getElementById("zoomOut")
             .addEventListener("click", zoomOut);
 
-        document.getElementById("fullscreen")
+        document
+            .getElementById("fullscreen")
             .addEventListener(
                 "click",
                 toggleFullscreen
             );
 
-        document.getElementById("hideUI")
+        document
+            .getElementById("hideUI")
             .addEventListener("click", toggleUI);
 
         autoplayButton.addEventListener(
@@ -1702,10 +1835,12 @@
             validateAutoplayDelay
         );
 
-        document.getElementById("helpButton")
+        document
+            .getElementById("helpButton")
             .addEventListener("click", toggleHelp);
 
-        document.getElementById("closeHelp")
+        document
+            .getElementById("closeHelp")
             .addEventListener("click", hideHelp);
 
         toggleControls.addEventListener(
@@ -1833,12 +1968,18 @@
                     previousImage();
                 }
 
-                if (key === "+" || key === "=") {
+                if (
+                    key === "+" ||
+                    key === "="
+                ) {
                     zoomIn();
                     showModeToast("Zoom Mode");
                 }
 
-                if (key === "-" || key === "_") {
+                if (
+                    key === "-" ||
+                    key === "_"
+                ) {
                     zoomOut();
                 }
 
