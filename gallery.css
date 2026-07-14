@@ -2000,3 +2000,13 @@ Its two recovery bounces scale with that larger jump. The
 two inverted-color blinks begin 0.1 seconds after all motion
 has stopped.
 */
+
+
+/* Gallery experience updates: v1.5.50 */
+
+/*
+After the first photograph finishes revealing, cursor
+inactivity cannot hide the gallery UI for at least 25
+seconds. Later pointer activity still resets the normal
+idle countdown.
+*/

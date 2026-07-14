@@ -1,4 +1,4 @@
-const version = "v1.5.49";
+const version = "v1.5.50";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -107,6 +107,7 @@ let firstMosaicCueTimer = null;
 let firstMosaicCueShown = false;
 let loadingIndicatorTimer = null;
 let idleInterfaceTimer = null;
+let initialUiProtectionUntil = 0;
 let filmstripExpanded = false;
 let mosaicBuildToken = 0;
 let mosaicResizeTimer = null;
@@ -132,6 +133,7 @@ const fadeDuration = 340;
 const zoomControlsHideDelay = 650;
 const loadingIndicatorDelay = 2000;
 const interfaceIdleDelay = 4680;
+const initialUiProtectionDuration = 25000;
 const autoplayDelayStorageKey =
     "jmPhotographyAutoplayDelay";
 
@@ -3510,6 +3512,8 @@ async function selectMosaicImage(
             "initial-gallery-reveal"
         );
 
+        beginInitialUiVisibilityProtection();
+
         await wait(200);
         expandMediaControlsAfterFirstImageLoad();
     } else {
@@ -3795,6 +3799,18 @@ function toggleFilmstrip() {
     setFilmstripExpanded(!filmstripExpanded);
 }
 
+function beginInitialUiVisibilityProtection() {
+    initialUiProtectionUntil =
+        performance.now() +
+        initialUiProtectionDuration;
+
+    document.body.classList.remove(
+        "ui-idle"
+    );
+
+    scheduleInterfaceIdle();
+}
+
 function clearInterfaceIdleTimer() {
     if (idleInterfaceTimer !== null) {
         window.clearTimeout(idleInterfaceTimer);
@@ -3818,13 +3834,38 @@ function scheduleInterfaceIdle() {
         return;
     }
 
+    const protectionRemaining =
+        Math.max(
+            0,
+            initialUiProtectionUntil -
+            performance.now()
+        );
+
+    const delay =
+        Math.max(
+            interfaceIdleDelay,
+            protectionRemaining
+        );
+
     idleInterfaceTimer = window.setTimeout(
         function () {
-            if (!shouldKeepInterfaceVisible()) {
-                document.body.classList.add("ui-idle");
+            if (shouldKeepInterfaceVisible()) {
+                return;
             }
+
+            if (
+                performance.now() <
+                initialUiProtectionUntil
+            ) {
+                scheduleInterfaceIdle();
+                return;
+            }
+
+            document.body.classList.add(
+                "ui-idle"
+            );
         },
-        interfaceIdleDelay
+        delay
     );
 }
 
