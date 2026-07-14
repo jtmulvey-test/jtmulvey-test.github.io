@@ -345,9 +345,17 @@ body {
 
 #zoomSlider {
     width: min(180px, 34vw);
-    height: 20px;
+    height: auto;
     accent-color: white;
     cursor: pointer;
+}
+
+#zoomSlider::-webkit-slider-runnable-track {
+    height: 5px;
+}
+
+#zoomSlider::-moz-range-track {
+    height: 5px;
 }
 
 body.ui-hidden #bottomZoomControls {
