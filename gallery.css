@@ -490,13 +490,39 @@ body.ui-hidden #bottomZoomControls {
 }
 
 #filmstripArrow {
+    position: relative;
     display: inline-block;
-    transform: translateY(-1px);
+    width: 18px;
+    height: 12px;
+    transform: translateY(1px);
     transition: transform 0.25s ease;
 }
 
+#filmstripArrow::before,
+#filmstripArrow::after {
+    position: absolute;
+    top: 4px;
+    width: 11px;
+    height: 2px;
+    content: "";
+    background: currentColor;
+    border-radius: 999px;
+}
+
+#filmstripArrow::before {
+    left: 0;
+    transform: rotate(-38deg);
+    transform-origin: right center;
+}
+
+#filmstripArrow::after {
+    right: 0;
+    transform: rotate(38deg);
+    transform-origin: left center;
+}
+
 #filmstripButton.active #filmstripArrow {
-    transform: translateY(1px) rotate(180deg);
+    transform: translateY(-1px) rotate(180deg);
 }
 
 #thumbnails {
@@ -965,15 +991,22 @@ body:not(.ui-hidden):not(.ui-idle) #viewer:hover .edge-nav,
 #mosaicPanel {
     width: min(1120px, calc(100vw - 180px));
     height: min(700px, calc(100vh - 180px));
-    padding: 12px;
+    padding: 14px;
     box-sizing: border-box;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     background: rgba(12, 12, 12, 0.94);
     border: 1px solid rgba(255, 255, 255, 0.28);
     border-radius: 18px;
     box-shadow: 0 28px 80px rgba(0, 0, 0, 0.62);
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     transform: translateY(16px) scale(0.98);
     transition: transform 0.28s ease;
+}
+
+#mosaicPanel::-webkit-scrollbar {
+    display: none;
 }
 
 #mosaicOverlay.visible #mosaicPanel {
@@ -982,33 +1015,35 @@ body:not(.ui-hidden):not(.ui-idle) #viewer:hover .edge-nav,
 
 #mosaicGrid {
     width: 100%;
-    height: 100%;
-    display: grid;
-    gap: 9px;
-    overflow: hidden;
+    column-gap: 10px;
 }
 
 .mosaic-item {
     position: relative;
-    min-width: 0;
-    min-height: 0;
+    display: block;
+    width: 100%;
+    margin: 0 0 10px;
     padding: 0;
     overflow: hidden;
+    break-inside: avoid;
     background: #111111;
     border: 0;
     border-radius: 9px;
     cursor: pointer;
-    opacity: 0.82;
+    opacity: 0.84;
+    transform: rotate(var(--mosaic-tilt, 0deg));
     transition:
         opacity 0.2s ease,
         transform 0.22s ease,
-        box-shadow 0.22s ease;
+        outline-color 0.22s ease;
 }
 
 .mosaic-item:hover {
     z-index: 2;
     opacity: 1;
-    transform: scale(1.018);
+    transform:
+        rotate(var(--mosaic-tilt, 0deg))
+        scale(1.018);
 }
 
 .mosaic-item:focus-visible {
@@ -1018,14 +1053,16 @@ body:not(.ui-hidden):not(.ui-idle) #viewer:hover .edge-nav,
 
 .mosaic-item.active {
     opacity: 1;
-    box-shadow: inset 0 0 0 2px white;
+    outline: 2px solid white;
+    outline-offset: -2px;
 }
 
 .mosaic-item img {
     display: block;
     width: 100%;
-    height: 100%;
-    object-fit: cover;
+    height: auto;
+    object-fit: contain;
+    border-radius: inherit;
     user-select: none;
     -webkit-user-drag: none;
     pointer-events: none;

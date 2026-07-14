@@ -1,4 +1,4 @@
-const version = "v1.5.2";
+const version = "v1.5.3";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -1092,121 +1092,6 @@ function shuffleIndexes(length) {
     return indexes;
 }
 
-function createOccupancyGrid(rows, columns) {
-    return Array.from(
-        { length: rows },
-        () => Array(columns).fill(false)
-    );
-}
-
-function canPlaceMosaicTile(
-    occupancy,
-    row,
-    column,
-    rowSpan,
-    columnSpan
-) {
-    if (
-        row + rowSpan > occupancy.length ||
-        column + columnSpan > occupancy[0].length
-    ) {
-        return false;
-    }
-
-    for (
-        let currentRow = row;
-        currentRow < row + rowSpan;
-        currentRow++
-    ) {
-        for (
-            let currentColumn = column;
-            currentColumn < column + columnSpan;
-            currentColumn++
-        ) {
-            if (occupancy[currentRow][currentColumn]) {
-                return false;
-            }
-        }
-    }
-
-    return true;
-}
-
-function occupyMosaicCells(
-    occupancy,
-    row,
-    column,
-    rowSpan,
-    columnSpan
-) {
-    for (
-        let currentRow = row;
-        currentRow < row + rowSpan;
-        currentRow++
-    ) {
-        for (
-            let currentColumn = column;
-            currentColumn < column + columnSpan;
-            currentColumn++
-        ) {
-            occupancy[currentRow][currentColumn] = true;
-        }
-    }
-}
-
-function findMosaicPlacement(
-    occupancy,
-    rowSpan,
-    columnSpan
-) {
-    for (
-        let row = 0;
-        row < occupancy.length;
-        row++
-    ) {
-        for (
-            let column = 0;
-            column < occupancy[0].length;
-            column++
-        ) {
-            if (
-                canPlaceMosaicTile(
-                    occupancy,
-                    row,
-                    column,
-                    rowSpan,
-                    columnSpan
-                )
-            ) {
-                return {
-                    row: row,
-                    column: column
-                };
-            }
-        }
-    }
-
-    return null;
-}
-
-function randomMosaicSize() {
-    const roll = Math.random();
-
-    if (roll < 0.14) {
-        return { rows: 2, columns: 2 };
-    }
-
-    if (roll < 0.38) {
-        return { rows: 1, columns: 2 };
-    }
-
-    if (roll < 0.58) {
-        return { rows: 2, columns: 1 };
-    }
-
-    return { rows: 1, columns: 1 };
-}
-
 function buildRandomMosaic() {
     mosaicGrid.innerHTML = "";
 
@@ -1214,128 +1099,91 @@ function buildRandomMosaic() {
         return;
     }
 
+    const panelWidth =
+        mosaicPanel.getBoundingClientRect().width;
+
+    const preferredColumnWidth = 190;
+
     const columns = Math.min(
-        8,
+        6,
         Math.max(
-            4,
-            Math.ceil(
-                Math.sqrt(thumbnails.length * 1.55)
+            3,
+            Math.floor(
+                panelWidth / preferredColumnWidth
             )
         )
     );
 
-    let rows = Math.max(
-        3,
-        Math.ceil(
-            thumbnails.length * 1.7 / columns
-        )
-    );
-
-    let occupancy =
-        createOccupancyGrid(rows, columns);
-
-    mosaicGrid.style.gridTemplateColumns =
-        `repeat(${columns}, minmax(0, 1fr))`;
+    mosaicGrid.style.columnCount =
+        String(columns);
 
     const randomizedIndexes =
         shuffleIndexes(thumbnails.length);
 
-    randomizedIndexes.forEach(
-        (imageIndex, mosaicPosition) => {
-            let size = randomMosaicSize();
-            let placement =
-                findMosaicPlacement(
-                    occupancy,
-                    size.rows,
-                    size.columns
-                );
+    randomizedIndexes.forEach(imageIndex => {
+        const tile =
+            document.createElement("button");
 
-            if (!placement) {
-                size = {
-                    rows: 1,
-                    columns: 1
-                };
+        tile.type = "button";
+        tile.className = "mosaic-item";
+        tile.dataset.imageIndex =
+            String(imageIndex);
 
-                placement =
-                    findMosaicPlacement(
-                        occupancy,
-                        1,
-                        1
-                    );
-            }
+        tile.setAttribute(
+            "aria-label",
+            `Open photograph ${imageIndex + 1}`
+        );
 
-            while (!placement) {
-                rows += 1;
-                occupancy.push(
-                    Array(columns).fill(false)
-                );
+        const randomTilt =
+            (Math.random() * 0.8) - 0.4;
 
-                placement =
-                    findMosaicPlacement(
-                        occupancy,
-                        1,
-                        1
-                    );
-            }
+        const randomWidth =
+            92 + Math.random() * 8;
 
-            occupyMosaicCells(
-                occupancy,
-                placement.row,
-                placement.column,
-                size.rows,
-                size.columns
-            );
+        const availableOffset =
+            100 - randomWidth;
 
-            const tile =
-                document.createElement("button");
+        const randomOffset =
+            Math.random() * availableOffset;
 
-            tile.type = "button";
-            tile.className = "mosaic-item";
-            tile.dataset.imageIndex =
-                String(imageIndex);
+        tile.style.setProperty(
+            "--mosaic-tilt",
+            `${randomTilt.toFixed(2)}deg`
+        );
 
-            tile.setAttribute(
-                "aria-label",
-                `Open photograph ${imageIndex + 1}`
-            );
+        tile.style.width =
+            `${randomWidth.toFixed(2)}%`;
 
-            tile.style.gridColumn =
-                `${placement.column + 1} / span ` +
-                `${size.columns}`;
+        tile.style.marginLeft =
+            `${randomOffset.toFixed(2)}%`;
 
-            tile.style.gridRow =
-                `${placement.row + 1} / span ` +
-                `${size.rows}`;
-
-            if (imageIndex === current) {
-                tile.classList.add("active");
-            }
-
-            const image =
-                document.createElement("img");
-
-            image.src = thumbnails[imageIndex];
-            image.loading = "lazy";
-            image.decoding = "async";
-            image.alt = "";
-
-            tile.appendChild(image);
-
-            tile.addEventListener(
-                "click",
-                function () {
-                    current = imageIndex;
-                    setFilmstripExpanded(false);
-                    requestImageChange();
-                }
-            );
-
-            mosaicGrid.appendChild(tile);
+        if (imageIndex === current) {
+            tile.classList.add("active");
         }
-    );
 
-    mosaicGrid.style.gridTemplateRows =
-        `repeat(${rows}, minmax(0, 1fr))`;
+        const image =
+            document.createElement("img");
+
+        image.src = thumbnails[imageIndex];
+        image.loading = "lazy";
+        image.decoding = "async";
+        image.alt = "";
+
+        tile.appendChild(image);
+
+        tile.addEventListener(
+            "click",
+            function () {
+                current = imageIndex;
+                setFilmstripExpanded(false);
+                requestImageChange();
+            }
+        );
+
+        mosaicGrid.appendChild(tile);
+    });
+
+    mosaicPanel.scrollTop = 0;
 }
 
 function setFilmstripExpanded(expanded) {
