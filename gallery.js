@@ -1,4 +1,4 @@
-const version = "v1.5.45";
+const version = "v1.5.46";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -97,6 +97,9 @@ let wheelZoomFrame = null;
 let wheelZoomTarget = 1;
 let wheelZoomAnchorX = 0;
 let wheelZoomAnchorY = 0;
+let wheelZoomEasing = 0.22;
+let lastWheelEventTime = 0;
+let mediaControlsPopTimer = null;
 let loadingIndicatorTimer = null;
 let idleInterfaceTimer = null;
 let filmstripExpanded = false;
@@ -280,7 +283,10 @@ function expandMediaControlsAfterFirstImageLoad() {
     }
 
     initialMediaControlsExpanded = true;
-    setMediaControlsCollapsed(false);
+    setMediaControlsCollapsed(
+        false,
+        true
+    );
 }
 
 function waitForTwoFrames() {
@@ -1419,6 +1425,45 @@ function normalizeWheelDelta(event) {
     );
 }
 
+function classifyWheelInput(
+    event,
+    normalizedDelta
+) {
+    const now = performance.now();
+    const elapsed =
+        now - lastWheelEventTime;
+
+    lastWheelEventTime = now;
+
+    const absoluteDelta =
+        Math.abs(normalizedDelta);
+
+    const hasFractionalDelta =
+        Math.abs(
+            event.deltaY -
+            Math.round(event.deltaY)
+        ) > 0.001;
+
+    const isSmallPixelDelta =
+        event.deltaMode === 0 &&
+        absoluteDelta < 45;
+
+    const isRapidModerateDelta =
+        event.deltaMode === 0 &&
+        elapsed < 45 &&
+        absoluteDelta < 85;
+
+    if (
+        hasFractionalDelta ||
+        isSmallPixelDelta ||
+        isRapidModerateDelta
+    ) {
+        return "trackpad";
+    }
+
+    return "mouse";
+}
+
 function animateWheelZoom() {
     const distance =
         wheelZoomTarget - zoomLevel;
@@ -1435,7 +1480,7 @@ function animateWheelZoom() {
     }
 
     setZoomAroundPoint(
-        zoomLevel + distance * 0.22,
+        zoomLevel + distance * wheelZoomEasing,
         wheelZoomAnchorX,
         wheelZoomAnchorY
     );
@@ -1449,7 +1494,8 @@ function animateWheelZoom() {
 function queueWheelZoom(
     delta,
     anchorX,
-    anchorY
+    anchorY,
+    inputType
 ) {
     wheelZoomAnchorX = anchorX;
     wheelZoomAnchorY = anchorY;
@@ -1458,8 +1504,23 @@ function queueWheelZoom(
         wheelZoomTarget = zoomLevel;
     }
 
+    const isTrackpad =
+        inputType === "trackpad";
+
+    const sensitivity =
+        isTrackpad
+            ? 0.009
+            : 0.002;
+
+    wheelZoomEasing =
+        isTrackpad
+            ? 0.30
+            : 0.20;
+
     const zoomFactor =
-        Math.exp(-delta * 0.005);
+        Math.exp(
+            -delta * sensitivity
+        );
 
     wheelZoomTarget =
         Math.min(
@@ -3694,7 +3755,40 @@ function updateToggleButtonState() {
     );
 }
 
-function setMediaControlsCollapsed(collapsed) {
+function triggerMediaControlsPopAnimation() {
+    window.clearTimeout(
+        mediaControlsPopTimer
+    );
+
+    controls.classList.remove(
+        "physics-pop"
+    );
+
+    void controls.offsetWidth;
+
+    controls.classList.add(
+        "physics-pop"
+    );
+
+    mediaControlsPopTimer =
+        window.setTimeout(
+            function () {
+                controls.classList.remove(
+                    "physics-pop"
+                );
+            },
+            850
+        );
+}
+
+function setMediaControlsCollapsed(
+    collapsed,
+    animateExpansion = false
+) {
+    const isExpanding =
+        controlsCollapsed &&
+        !collapsed;
+
     controlsCollapsed = collapsed;
 
     controls.classList.toggle(
@@ -3708,11 +3802,29 @@ function setMediaControlsCollapsed(collapsed) {
     );
 
     updateToggleButtonState();
+
+    if (
+        isExpanding &&
+        animateExpansion
+    ) {
+        triggerMediaControlsPopAnimation();
+    } else if (collapsed) {
+        window.clearTimeout(
+            mediaControlsPopTimer
+        );
+
+        controls.classList.remove(
+            "physics-pop"
+        );
+    }
 }
 
-function toggleMediaControls() {
+function toggleMediaControls(
+    animateExpansion = false
+) {
     setMediaControlsCollapsed(
-        !controlsCollapsed
+        !controlsCollapsed,
+        animateExpansion
     );
 }
 
@@ -3993,7 +4105,9 @@ document
 
 toggleControls.addEventListener(
     "click",
-    toggleMediaControls
+    function () {
+        toggleMediaControls(true);
+    }
 );
 
 helpOverlay.addEventListener(
@@ -4221,10 +4335,20 @@ viewer.addEventListener(
                 event.clientY
             );
 
+        const normalizedDelta =
+            normalizeWheelDelta(event);
+
+        const inputType =
+            classifyWheelInput(
+                event,
+                normalizedDelta
+            );
+
         queueWheelZoom(
-            normalizeWheelDelta(event),
+            normalizedDelta,
             anchor.x,
-            anchor.y
+            anchor.y,
+            inputType
         );
     },
     { passive: false }
@@ -4411,7 +4535,7 @@ document.addEventListener(
         }
 
         if (key === "c") {
-            toggleMediaControls();
+            toggleMediaControls(true);
         }
 
         if (key === "t") {

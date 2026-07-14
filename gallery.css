@@ -1618,3 +1618,174 @@ fades for 0.75 seconds and moves toward the center over
 0.68 seconds. The overlay remains present until those
 animations have completed.
 */
+
+
+/* Gallery experience updates: v1.5.46 */
+
+/*
+The first automatic media-control expansion, hamburger
+click expansions, and C-key expansions receive one subtle
+overshoot. Only opacity and transform are animated.
+*/
+#controls.physics-pop #helpButton {
+    animation:
+        media-control-pop-help
+        0.54s
+        ease-out
+        0ms
+        both;
+}
+
+#controls.physics-pop #fullscreen {
+    animation:
+        media-control-pop-fullscreen
+        0.56s
+        ease-out
+        28ms
+        both;
+}
+
+#controls.physics-pop #hideUI {
+    animation:
+        media-control-pop-hide
+        0.58s
+        ease-out
+        56ms
+        both;
+}
+
+#controls.physics-pop #autoplayButton {
+    animation:
+        media-control-pop-autoplay
+        0.60s
+        ease-out
+        84ms
+        both;
+}
+
+#controls.physics-pop #zoomIn {
+    animation:
+        media-control-pop-zoom-in
+        0.62s
+        ease-out
+        112ms
+        both;
+}
+
+#controls.physics-pop #zoomOut {
+    animation:
+        media-control-pop-zoom-out
+        0.64s
+        ease-out
+        140ms
+        both;
+}
+
+@keyframes media-control-pop-help {
+    0% {
+        opacity: 0;
+        transform: translateY(0);
+    }
+
+    70% {
+        opacity: 1;
+        transform: translateY(68px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(58px);
+    }
+}
+
+@keyframes media-control-pop-fullscreen {
+    0% {
+        opacity: 0;
+        transform: translateY(0);
+    }
+
+    70% {
+        opacity: 1;
+        transform: translateY(126px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(116px);
+    }
+}
+
+@keyframes media-control-pop-hide {
+    0% {
+        opacity: 0;
+        transform: translateY(0);
+    }
+
+    70% {
+        opacity: 1;
+        transform: translateY(184px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(174px);
+    }
+}
+
+@keyframes media-control-pop-autoplay {
+    0% {
+        opacity: 0;
+        transform: translateY(0);
+    }
+
+    70% {
+        opacity: 1;
+        transform: translateY(242px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(232px);
+    }
+}
+
+@keyframes media-control-pop-zoom-in {
+    0% {
+        opacity: 0;
+        transform: translateY(0);
+    }
+
+    70% {
+        opacity: 1;
+        transform: translateY(300px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(290px);
+    }
+}
+
+@keyframes media-control-pop-zoom-out {
+    0% {
+        opacity: 0;
+        transform: translateY(0);
+    }
+
+    70% {
+        opacity: 1;
+        transform: translateY(358px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(348px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #controls.physics-pop
+    .control-button {
+        animation: none !important;
+    }
+}
