@@ -1,4 +1,4 @@
-const version = "v1.5.18";
+const version = "v1.5.19";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -44,6 +44,10 @@ const filmstripButton =
     document.getElementById("filmstripButton");
 const thumbnailsContainer =
     document.getElementById("thumbnails");
+const thumbnailScrollLeft =
+    document.getElementById("thumbnailScrollLeft");
+const thumbnailScrollRight =
+    document.getElementById("thumbnailScrollRight");
 const thumbnailBar =
     document.getElementById("thumbnailBar");
 const mosaicOverlay =
@@ -586,6 +590,69 @@ function requestImageChange() {
     processImageQueue();
 }
 
+function getThumbnailScrollDistance() {
+    const thumbnailElements =
+        Array.from(
+            thumbnailsContainer.querySelectorAll(
+                ".thumb"
+            )
+        );
+
+    if (thumbnailElements.length === 0) {
+        return 0;
+    }
+
+    const visibleThumbs =
+        thumbnailElements.slice(0, 6);
+
+    const totalWidth =
+        visibleThumbs.reduce(
+            (sum, thumbnail) =>
+                sum +
+                thumbnail.getBoundingClientRect().width,
+            0
+        );
+
+    const gap =
+        Number.parseFloat(
+            window.getComputedStyle(
+                thumbnailsContainer
+            ).columnGap
+        ) || 8;
+
+    return (
+        totalWidth +
+        gap *
+            Math.max(
+                0,
+                visibleThumbs.length - 1
+            )
+    );
+}
+
+function updateThumbnailScrollButtons() {
+    const maximumScroll =
+        thumbnailsContainer.scrollWidth -
+        thumbnailsContainer.clientWidth;
+
+    thumbnailScrollLeft.disabled =
+        thumbnailsContainer.scrollLeft <= 2;
+
+    thumbnailScrollRight.disabled =
+        thumbnailsContainer.scrollLeft >=
+        maximumScroll - 2;
+}
+
+function scrollThumbnails(direction) {
+    const distance =
+        getThumbnailScrollDistance();
+
+    thumbnailsContainer.scrollBy({
+        left: direction * distance,
+        behavior: "smooth"
+    });
+}
+
 function createThumbnails() {
     const container =
         document.getElementById("thumbnails");
@@ -612,6 +679,10 @@ function createThumbnails() {
 
         container.appendChild(thumbnail);
     });
+
+    window.requestAnimationFrame(
+        updateThumbnailScrollButtons
+    );
 }
 
 function updateThumbnails() {
@@ -2806,6 +2877,26 @@ filmstripButton.addEventListener(
     toggleFilmstrip
 );
 
+thumbnailScrollLeft.addEventListener(
+    "click",
+    function () {
+        scrollThumbnails(-1);
+    }
+);
+
+thumbnailScrollRight.addEventListener(
+    "click",
+    function () {
+        scrollThumbnails(1);
+    }
+);
+
+thumbnailsContainer.addEventListener(
+    "scroll",
+    updateThumbnailScrollButtons,
+    { passive: true }
+);
+
 mosaicOverlay.addEventListener(
     "click",
     function (event) {
@@ -2819,6 +2910,7 @@ window.addEventListener(
     "resize",
     function () {
         positionPhotoNavigationIndicators();
+        updateThumbnailScrollButtons();
 
         if (!filmstripExpanded) {
             return;

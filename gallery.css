@@ -1197,10 +1197,10 @@ body.ui-hidden #loadingIndicator {
 }
 
 .photo-nav-indicator.active {
-    color: rgb(179, 179, 179);
+    color: rgb(128, 128, 128);
     text-shadow:
-        0 0 6px rgba(179, 179, 179, 0.48),
-        0 0 12px rgba(179, 179, 179, 0.22);
+        0 0 6px rgba(128, 128, 128, 0.48),
+        0 0 12px rgba(128, 128, 128, 0.22);
 }
 
 .photo-nav-indicator-left.clicked {
@@ -1241,4 +1241,63 @@ body.photo-navigation-ready.ui-idle:not(.ui-hidden) .photo-nav-indicator,
 body.photo-navigation-ready.ui-hidden .photo-nav-indicator,
 body.photo-navigation-ready.mosaic-open .photo-nav-indicator {
     opacity: 0;
+}
+
+
+/* Gallery experience updates: v1.5.19 */
+
+#thumbnailBar {
+    left: 88px;
+    width: calc(100% - 176px);
+    padding: 5px 8px;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.82);
+}
+
+#thumbnails {
+    justify-content: flex-start;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+#thumbnails::-webkit-scrollbar {
+    display: none;
+}
+
+.thumbnail-scroll-button {
+    width: 32px;
+    height: 48px;
+    padding: 0;
+    flex: 0 0 auto;
+    color: rgba(255, 255, 255, 0.58);
+    background: transparent;
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 30px;
+    font-weight: 300;
+    line-height: 1;
+    transition:
+        color 0.18s ease,
+        background-color 0.18s ease,
+        opacity 0.18s ease;
+}
+
+.thumbnail-scroll-button:hover:not(:disabled) {
+    color: white;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.thumbnail-scroll-button:focus-visible {
+    outline: 1px solid rgba(255, 255, 255, 0.7);
+    outline-offset: 2px;
+}
+
+.thumbnail-scroll-button:disabled {
+    opacity: 0.18;
+    cursor: default;
+}
+
+body.ui-hidden #thumbnailBar {
+    display: none !important;
 }
