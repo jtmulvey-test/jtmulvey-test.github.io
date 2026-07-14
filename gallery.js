@@ -1,4 +1,4 @@
-const version = "v1.4.28";
+const version = "v1.4.29";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -70,7 +70,7 @@ let modeToastAnimationFrame = null;
 const imageCache = new Map();
 
 const minimumZoom = 1;
-const maximumZoom = 4;
+const maximumZoom = 5;
 const zoomStep = 0.5;
 const fadeDuration = 340;
 
