@@ -1,4 +1,4 @@
-const version = "v1.5.16";
+const version = "v1.5.17";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -524,8 +524,19 @@ async function transitionToImage(index) {
 
     await waitForTwoFrames();
 
+    positionPhotoNavigationIndicators();
+
     fadeOverlay.classList.remove("visible");
     await waitForOverlayTransition();
+
+    previousPhotoIndicator.classList.remove(
+        "clicked"
+    );
+
+    nextPhotoIndicator.classList.remove(
+        "clicked"
+    );
+
     hideLoadingIndicator();
 }
 
@@ -3099,11 +3110,19 @@ function handlePhotoNavigationClick(event) {
                     currentDirection ===
                     "previous"
                 ) {
+                    previousPhotoIndicator.classList.add(
+                        "clicked"
+                    );
+
                     previousImage();
                 } else if (
                     currentDirection ===
                     "next"
                 ) {
+                    nextPhotoIndicator.classList.add(
+                        "clicked"
+                    );
+
                     nextImage();
                 }
             },

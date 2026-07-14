@@ -1180,36 +1180,41 @@ body.ui-hidden #loadingIndicator {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(255, 255, 255, 0.42);
+    color: rgba(185, 185, 185, 0.52);
     font-size: 40px;
     font-weight: 300;
     line-height: 1;
     opacity: 0;
     transform: translateY(-50%);
+    text-shadow: none;
     pointer-events: none;
     user-select: none;
     transition:
-        color 0.18s ease,
+        color 0.16s ease,
+        text-shadow 0.16s ease,
         opacity 0.34s ease-in-out,
         transform 0.18s ease;
 }
 
-.photo-nav-indicator-left {
-    transform: translateY(-50%) translateX(0);
+.photo-nav-indicator.active {
+    color: rgba(235, 235, 235, 0.96);
+    text-shadow:
+        0 0 6px rgba(255, 255, 255, 0.48),
+        0 0 12px rgba(255, 255, 255, 0.22);
 }
 
-.photo-nav-indicator-right {
-    transform: translateY(-50%) translateX(0);
+.photo-nav-indicator-left.clicked {
+    transform:
+        translateY(-50%)
+        translateX(-3px)
+        scale(0.94);
 }
 
-.photo-nav-indicator-left.active {
-    color: white;
-    transform: translateY(-50%) translateX(-4px);
-}
-
-.photo-nav-indicator-right.active {
-    color: white;
-    transform: translateY(-50%) translateX(4px);
+.photo-nav-indicator-right.clicked {
+    transform:
+        translateY(-50%)
+        translateX(3px)
+        scale(0.94);
 }
 
 body.ui-idle:not(.ui-hidden) .photo-nav-indicator,
