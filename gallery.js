@@ -1,4 +1,4 @@
-const version = "v1.5.43";
+const version = "v1.5.44";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -534,6 +534,41 @@ async function transitionToImage(index) {
 
     if (displayedIndex === index) {
         updateThumbnails(displayedIndex, null);
+        hideLoadingIndicator();
+        return;
+    }
+
+    /*
+    A mosaic selection already hides the full-size photo
+    behind a black viewer. Swap the cached/loaded image
+    directly instead of performing the normal fade-to-black
+    and fade-from-black sequence underneath that blackout.
+    */
+    if (mosaicSelectionRunning) {
+        fadeOverlay.classList.remove(
+            "visible"
+        );
+
+        photo.style.visibility = "hidden";
+        photo.src = loadedSource;
+
+        await waitForDisplayedPhoto();
+        await waitForTwoFrames();
+
+        displayedIndex = index;
+        photo.style.visibility = "visible";
+
+        updateThumbnails(displayedIndex, null);
+        positionPhotoNavigationIndicators();
+
+        previousPhotoIndicator.classList.remove(
+            "clicked"
+        );
+
+        nextPhotoIndicator.classList.remove(
+            "clicked"
+        );
+
         hideLoadingIndicator();
         return;
     }
@@ -1424,7 +1459,7 @@ function queueWheelZoom(
     }
 
     const zoomFactor =
-        Math.exp(-delta * 0.0018);
+        Math.exp(-delta * 0.005);
 
     wheelZoomTarget =
         Math.min(
@@ -3160,6 +3195,11 @@ async function selectMosaicImage(
         return;
     }
 
+    const wasInitialMosaic =
+        document.body.classList.contains(
+            "initial-mosaic-mode"
+        );
+
     mosaicSelectionRunning = true;
 
     document.body.classList.add(
@@ -3168,9 +3208,8 @@ async function selectMosaicImage(
 
     /*
     Hide the full-size image while preserving the visible
-    mosaic animation. The black viewer behind the mosaic
-    prevents the next photograph from showing through the
-    semi-transparent mosaic panel.
+    mosaic animation. The selected photo can now be swapped
+    immediately behind this blackout.
     */
     viewer.classList.add(
         "mosaic-photo-blackout"
@@ -3188,6 +3227,12 @@ async function selectMosaicImage(
         "mosaic-selected"
     );
 
+    if (!wasInitialMosaic) {
+        mosaicOverlay.classList.add(
+            "priority-selection"
+        );
+    }
+
     /*
     Force the browser to paint the selected state before
     the mosaic animation starts.
@@ -3198,36 +3243,44 @@ async function selectMosaicImage(
         "selecting"
     );
 
+    /*
+    Keep the longer introductory animation only on the
+    first page load. Later selections prioritize revealing
+    the chosen photograph.
+    */
     const minimumMosaicFade =
-        wait(900);
+        wait(
+            wasInitialMosaic
+                ? 900
+                : 400
+        );
 
     current = imageIndex;
     requestImageChange();
 
-    /*
-    Wait for both the selected photograph and the mosaic
-    animation. This also works when the photograph is
-    already cached or already displayed.
-    */
     await Promise.all([
         waitForDisplayedIndex(imageIndex),
         minimumMosaicFade
     ]);
 
     /*
-    Close the mosaic while the full-size viewer remains
-    black. The overlay's own fade completes against black,
-    so its dark panel can never cut across the photograph.
+    Close the mosaic against black. Once its 0.24-second
+    opacity transition is complete, reveal the photograph.
     */
     setFilmstripExpanded(
         false,
         true
     );
 
-    await wait(300);
+    await wait(
+        wasInitialMosaic
+            ? 300
+            : 260
+    );
 
     mosaicOverlay.classList.remove(
-        "selecting"
+        "selecting",
+        "priority-selection"
     );
 
     selectedTile.classList.remove(
@@ -3244,11 +3297,18 @@ async function selectMosaicImage(
 
     mosaicGrid.innerHTML = "";
 
-    /*
-    Ensure the mosaic has been removed from the painted
-    frame before fading the full-size image back in.
-    */
     await waitForTwoFrames();
+
+    /*
+    Only the first-load reveal receives the special
+    1.3-second transition. Later mosaic selections use the
+    normal 0.58-second photograph fade.
+    */
+    if (wasInitialMosaic) {
+        document.body.classList.add(
+            "initial-gallery-reveal"
+        );
+    }
 
     viewer.classList.remove(
         "mosaic-photo-blackout"
@@ -3258,32 +3318,21 @@ async function selectMosaicImage(
         "mosaic-photo-transition"
     );
 
-    const wasInitialMosaic =
-        document.body.classList.contains(
+    if (wasInitialMosaic) {
+        document.body.classList.remove(
             "initial-mosaic-mode"
         );
 
-    document.body.classList.add(
-        "initial-gallery-reveal"
-    );
+        await wait(1300);
 
-    document.body.classList.remove(
-        "initial-mosaic-mode"
-    );
+        document.body.classList.remove(
+            "initial-gallery-reveal"
+        );
 
-    await wait(
-        wasInitialMosaic
-            ? 1300
-            : 580
-    );
-
-    document.body.classList.remove(
-        "initial-gallery-reveal"
-    );
-
-    if (wasInitialMosaic) {
         await wait(200);
         expandMediaControlsAfterFirstImageLoad();
+    } else {
+        await wait(580);
     }
 
     mosaicSelectionRunning = false;

@@ -1593,3 +1593,18 @@ Mouse-wheel and trackpad zoom now use accumulated delta
 values with requestAnimationFrame easing for a smoother,
 continuous response.
 */
+
+
+/* Gallery experience updates: v1.5.44 */
+
+/*
+After the introductory load, mosaic selections use a shorter
+tile animation so the selected photograph can begin its
+normal fade substantially sooner.
+*/
+#mosaicOverlay.priority-selection.selecting
+.mosaic-item.mosaic-selected {
+    transition:
+        opacity 0.52s ease,
+        transform 0.46s ease;
+}
