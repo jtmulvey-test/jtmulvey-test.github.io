@@ -284,6 +284,34 @@
             opacity: 1;
         }
 
+        #modeToast {
+            position: fixed;
+            left: 50%;
+            bottom: 112px;
+            z-index: 80;
+            padding: 9px 18px 10px;
+            color: white;
+            background: rgba(20, 20, 20, 0.64);
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            border-radius: 999px;
+            font-size: 13px;
+            line-height: 1;
+            letter-spacing: 0.02em;
+            opacity: 0;
+            transform: translate(-50%, 14px) scale(0.97);
+            pointer-events: none;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition:
+                opacity 0.28s ease,
+                transform 0.34s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        #modeToast.visible {
+            opacity: 1;
+            transform: translate(-50%, 0) scale(1);
+        }
+
         #counter {
             position: fixed;
             bottom: 80px;
@@ -310,7 +338,7 @@
             bottom: 30px;
             z-index: 25;
             display: none;
-            width: 49px;
+            width: 47px;
             height: 3px;
             overflow: hidden;
             background: rgba(255, 255, 255, 0.26);
@@ -527,6 +555,10 @@
             color: white;
         }
 
+        body.ui-hidden #modeToast {
+            bottom: 44px;
+        }
+
         body.ui-hidden.autoplay-active #autoplayStatus,
         body.ui-hidden.autoplay-active #autoplayProgress {
             display: block;
@@ -540,7 +572,8 @@
             #helpOverlay,
             #helpPanel,
             #closeHelp,
-            #backLink {
+            #backLink,
+            #modeToast {
                 transition-duration: 0.01ms;
             }
         }
@@ -615,6 +648,8 @@
 
         <div id="fadeOverlay"></div>
     </div>
+
+    <div id="modeToast"></div>
 
     <div id="autoplayStatus"></div>
 
@@ -693,7 +728,7 @@
     </div>
 
     <script>
-        const version = "v1.4.5";
+        const version = "v1.4.6";
         document.getElementById("version").textContent = version;
 
         const params = new URLSearchParams(window.location.search);
@@ -710,6 +745,8 @@
             document.getElementById("version");
         const helpOverlay =
             document.getElementById("helpOverlay");
+        const modeToast =
+            document.getElementById("modeToast");
         const autoplayButton =
             document.getElementById("autoplayButton");
         const autoplayStatus =
@@ -745,6 +782,8 @@
         let autoplayDelaySeconds = 7;
         let autoplayProgressFrame = null;
         let autoplayProgressStart = null;
+
+        let modeToastTimer = null;
 
         const imageCache = new Map();
 
@@ -805,6 +844,22 @@
 
                 console.error(error);
             });
+
+        function showModeToast(message) {
+            window.clearTimeout(modeToastTimer);
+
+            modeToast.textContent =
+                `${message} (esc to exit)`;
+
+            modeToast.classList.add("visible");
+
+            modeToastTimer = window.setTimeout(
+                function () {
+                    modeToast.classList.remove("visible");
+                },
+                2600
+            );
+        }
 
         function waitForTwoFrames() {
             return new Promise(resolve => {
@@ -1264,7 +1319,9 @@
                     "ui-hidden"
                 )
             ) {
-                await enterHideMode();
+                await enterHideMode("Autoplay Mode");
+            } else {
+                showModeToast("Autoplay Mode");
             }
 
             if (!transitionRunning) {
@@ -1281,6 +1338,7 @@
             clearAutoplayTimer();
             stopProgressBar();
             updateAutoplayDisplay();
+            showModeToast("Autoplay Paused");
         }
 
         async function resumeAutoplay() {
@@ -1297,7 +1355,9 @@
                     "ui-hidden"
                 )
             ) {
-                await enterHideMode();
+                await enterHideMode("Autoplay Mode");
+            } else {
+                showModeToast("Autoplay Mode");
             }
 
             if (!transitionRunning) {
@@ -1462,12 +1522,16 @@
                 (zoomLevel - minimumZoom);
 
             updateZoom();
+            showModeToast("Zoom Mode");
         }
 
         function toggleFullscreen() {
             if (!document.fullscreenElement) {
                 document.documentElement
                     .requestFullscreen()
+                    .then(function () {
+                        showModeToast("Full Screen Mode");
+                    })
                     .catch(error => {
                         console.error(
                             "Unable to enter fullscreen:",
@@ -1525,6 +1589,7 @@
                 hideHelp();
             } else {
                 showHelp();
+                showModeToast("Help Mode");
             }
         }
 
@@ -1544,7 +1609,7 @@
             updateToggleButtonState();
         }
 
-        async function enterHideMode() {
+        async function enterHideMode(toastMessage = "Hide Mode") {
             hideHelp();
 
             if (!document.fullscreenElement) {
@@ -1560,6 +1625,8 @@
             }
 
             document.body.classList.add("ui-hidden");
+
+            showModeToast(toastMessage);
         }
 
         function exitHideMode() {
@@ -1576,12 +1643,15 @@
                 exitHideMode();
             } else {
                 stopAutoplay();
-                enterHideMode();
+                enterHideMode("Hide Mode");
             }
         }
 
         document.getElementById("zoomIn")
-            .addEventListener("click", zoomIn);
+            .addEventListener("click", function () {
+                zoomIn();
+                showModeToast("Zoom Mode");
+            });
 
         document.getElementById("zoomOut")
             .addEventListener("click", zoomOut);
@@ -1743,6 +1813,7 @@
 
                 if (key === "+" || key === "=") {
                     zoomIn();
+                    showModeToast("Zoom Mode");
                 }
 
                 if (key === "-" || key === "_") {
