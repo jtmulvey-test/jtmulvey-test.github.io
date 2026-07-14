@@ -806,7 +806,7 @@
     </div>
 
     <script>
-        const version = "v1.4.18";
+        const version = "v1.4.20";
         document.getElementById("version").textContent = version;
 
         const params = new URLSearchParams(window.location.search);
@@ -948,7 +948,7 @@
             );
 
             modeToast.textContent =
-                `${message} (esc to exit)`;
+                `${message === "Autoplay Mode" ? "Autoplay Start" : message} (esc to exit)`;
 
             void modeToast.getBoundingClientRect();
 
