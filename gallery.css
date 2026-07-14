@@ -1417,3 +1417,26 @@ body.ui-idle:not(.ui-hidden):not(.mosaic-open)
     left: calc(88px + ((100vw - 176px) * 0.05));
     width: calc((100vw - 176px) * 0.9);
 }
+
+
+/* Gallery experience updates: v1.5.23 */
+
+#thumbnailScrollLeft {
+    transform: translateX(-10px);
+}
+
+#thumbnailScrollRight {
+    transform: translateX(10px);
+}
+
+#thumbnailScrollLeft:hover:not(:disabled) {
+    transform:
+        translateX(-10px)
+        scale(0.94);
+}
+
+#thumbnailScrollRight:hover:not(:disabled) {
+    transform:
+        translateX(10px)
+        scale(0.94);
+}

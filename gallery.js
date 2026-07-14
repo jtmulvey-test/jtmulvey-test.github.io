@@ -1,4 +1,4 @@
-const version = "v1.5.22";
+const version = "v1.5.23";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -862,6 +862,38 @@ async function createThumbnails() {
     );
 }
 
+function centerActiveThumbnail(
+    thumbnail
+) {
+    if (
+        !thumbnailsContainer.classList.contains(
+            "has-overflow"
+        )
+    ) {
+        return;
+    }
+
+    const targetScrollLeft =
+        thumbnail.offsetLeft +
+        thumbnail.offsetWidth / 2 -
+        thumbnailsContainer.clientWidth / 2;
+
+    const maximumScroll =
+        thumbnailsContainer.scrollWidth -
+        thumbnailsContainer.clientWidth;
+
+    thumbnailsContainer.scrollTo({
+        left: Math.max(
+            0,
+            Math.min(
+                maximumScroll,
+                targetScrollLeft
+            )
+        ),
+        behavior: "smooth"
+    });
+}
+
 function updateThumbnails() {
     const thumbnailElements =
         document.querySelectorAll(".thumb");
@@ -870,12 +902,7 @@ function updateThumbnails() {
         (thumbnail, index) => {
             if (index === current) {
                 thumbnail.classList.add("active");
-
-                thumbnail.scrollIntoView({
-                    behavior: "auto",
-                    inline: "center",
-                    block: "nearest"
-                });
+                centerActiveThumbnail(thumbnail);
             } else {
                 thumbnail.classList.remove("active");
             }
