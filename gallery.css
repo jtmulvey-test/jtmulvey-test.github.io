@@ -1486,3 +1486,17 @@ overlay has fully closed, then uses the normal photo fade.
 body.mosaic-open #controlArea {
     z-index: 80;
 }
+
+
+/* Gallery experience updates: v1.5.38 */
+
+.photo-nav-indicator {
+    width: 52px;
+    height: 70px;
+    font-size: 52px;
+}
+
+body.mosaic-photo-transition
+.photo-nav-indicator {
+    opacity: 0 !important;
+}

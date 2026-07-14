@@ -1,4 +1,4 @@
-const version = "v1.5.37";
+const version = "v1.5.38";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -1969,14 +1969,10 @@ function findBestMosaicPosition(
         return {
             x:
                 canvasWidth / 2 -
-                tile.width / 2 +
-                (random() - 0.5) *
-                canvasWidth * 0.08,
+                tile.width / 2,
             y:
                 canvasHeight / 2 -
-                tile.height / 2 +
-                (random() - 0.5) *
-                canvasHeight * 0.08
+                tile.height / 2
         };
     }
 
@@ -2372,6 +2368,70 @@ function fitAndCenterMosaicLayout(
         });
     }
 
+    const firstCollectionTile =
+        tiles.find(
+            tile => tile.imageIndex === 0
+        );
+
+    if (firstCollectionTile) {
+        let firstShiftX =
+            canvasWidth / 2 -
+            (
+                firstCollectionTile.x +
+                firstCollectionTile.width / 2
+            );
+
+        let firstShiftY =
+            canvasHeight / 2 -
+            (
+                firstCollectionTile.y +
+                firstCollectionTile.height / 2
+            );
+
+        const minimumTileX =
+            Math.min(
+                ...tiles.map(tile => tile.x)
+            );
+
+        const maximumTileX =
+            Math.max(
+                ...tiles.map(
+                    tile =>
+                        tile.x + tile.width
+                )
+            );
+
+        const minimumTileY =
+            Math.min(
+                ...tiles.map(tile => tile.y)
+            );
+
+        const maximumTileY =
+            Math.max(
+                ...tiles.map(
+                    tile =>
+                        tile.y + tile.height
+                )
+            );
+
+        firstShiftX = clamp(
+            firstShiftX,
+            -minimumTileX,
+            canvasWidth - maximumTileX
+        );
+
+        firstShiftY = clamp(
+            firstShiftY,
+            -minimumTileY,
+            canvasHeight - maximumTileY
+        );
+
+        tiles.forEach(tile => {
+            tile.x += firstShiftX;
+            tile.y += firstShiftY;
+        });
+    }
+
     return tiles;
 }
 
@@ -2586,9 +2646,16 @@ function generateMosaicCandidate(
             random
         );
 
-    const placementOrder =
+    const firstTile =
+        sizedTiles.find(
+            tile => tile.imageIndex === 0
+        );
+
+    const remainingTiles =
         shuffleWithRandom(
-            sizedTiles,
+            sizedTiles.filter(
+                tile => tile.imageIndex !== 0
+            ),
             random
         ).sort(
             (first, second) =>
@@ -2597,6 +2664,11 @@ function generateMosaicCandidate(
                 (random() - 0.5) *
                 first.area * 0.08
         );
+
+    const placementOrder =
+        firstTile
+            ? [firstTile, ...remainingTiles]
+            : remainingTiles;
 
     const placedTiles = [];
 
@@ -2813,7 +2885,7 @@ function generateBestMosaicLayout(
         `${collection}|${widthBucket}|` +
         `${heightBucket}|${ratioSignature}|` +
         `gap-${mosaicPreferredGap}-` +
-        `${mosaicMinimumGap}`;
+        `${mosaicMinimumGap}|first-center-v1`;
 
     if (mosaicLayoutCache.has(layoutKey)) {
         return mosaicLayoutCache.get(
@@ -2994,6 +3066,10 @@ async function selectMosaicImage(
 
     mosaicSelectionRunning = true;
 
+    document.body.classList.add(
+        "mosaic-photo-transition"
+    );
+
     /*
     Hide the full-size image while preserving the visible
     mosaic animation. The black viewer behind the mosaic
@@ -3080,6 +3156,10 @@ async function selectMosaicImage(
 
     viewer.classList.remove(
         "mosaic-photo-blackout"
+    );
+
+    document.body.classList.remove(
+        "mosaic-photo-transition"
     );
 
     await wait(580);
@@ -3742,7 +3822,7 @@ function positionPhotoNavigationIndicators() {
     previousPhotoIndicator.style.left =
         `${Math.max(
             0,
-            photoRect.left - 40
+            photoRect.left - 52
         )}px`;
 
     previousPhotoIndicator.style.top =
@@ -3750,7 +3830,7 @@ function positionPhotoNavigationIndicators() {
 
     nextPhotoIndicator.style.left =
         `${Math.min(
-            window.innerWidth - 40,
+            window.innerWidth - 52,
             photoRect.right
         )}px`;
 
