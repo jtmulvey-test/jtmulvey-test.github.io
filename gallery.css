@@ -345,6 +345,7 @@ body {
 
 #zoomSlider {
     width: min(180px, 34vw);
+    height: 20px;
     accent-color: white;
     cursor: pointer;
 }
