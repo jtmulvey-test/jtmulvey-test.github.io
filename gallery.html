@@ -2,10 +2,9 @@
 <html>
 <head>
     <title>Gallery</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <link rel="icon" type="image/png" href="favicon.png">
-    
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <style>
         html,
@@ -18,18 +17,11 @@
             font-family: Arial, sans-serif;
         }
 
-        nav {
+        #backLink {
             position: fixed;
             top: 15px;
-            right: 20px;
+            left: 20px;
             z-index: 30;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 8px;
-        }
-
-        nav a {
             color: white;
             font-size: 22.4px;
             line-height: 1.1;
@@ -39,12 +31,12 @@
                 transform 0.2s ease;
         }
 
-        nav a:hover {
+        #backLink:hover {
             opacity: 0.65;
-            transform: translateX(-3px);
+            transform: translateX(3px);
         }
 
-        nav a:focus-visible {
+        #backLink:focus-visible {
             outline: 1px solid white;
             outline-offset: 5px;
             border-radius: 2px;
@@ -52,7 +44,7 @@
 
         #controlArea {
             position: fixed;
-            top: 15px;
+            top: 58px;
             left: 20px;
             z-index: 30;
             width: 106px;
@@ -103,14 +95,43 @@
             transform: translateY(0) scale(0.94);
         }
 
-        #toggleIcon {
-            display: inline-block;
-            opacity: 1;
-            transition: opacity 0.15s ease;
+        #toggleControls.expanded {
+            color: black;
+            background: white;
+            border-color: white;
         }
 
-        #toggleIcon.fading {
-            opacity: 0;
+        #hamburgerIcon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 18px;
+            height: 14px;
+            transform: translate(-50%, -50%);
+        }
+
+        #hamburgerIcon span {
+            position: absolute;
+            left: 0;
+            width: 18px;
+            height: 2px;
+            background: currentColor;
+            border-radius: 999px;
+            transition:
+                opacity 0.2s ease,
+                transform 0.2s ease;
+        }
+
+        #hamburgerIcon span:nth-child(1) {
+            top: 0;
+        }
+
+        #hamburgerIcon span:nth-child(2) {
+            top: 6px;
+        }
+
+        #hamburgerIcon span:nth-child(3) {
+            top: 12px;
         }
 
         #helpButton {
@@ -275,12 +296,32 @@
         #autoplayStatus {
             position: fixed;
             left: 12px;
-            bottom: 34px;
+            bottom: 38px;
             z-index: 25;
             display: none;
             color: white;
             font-size: 14px;
             line-height: 1;
+        }
+
+        #autoplayProgress {
+            position: fixed;
+            left: 12px;
+            bottom: 27px;
+            z-index: 25;
+            display: none;
+            width: 82px;
+            height: 3px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.26);
+            border-radius: 999px;
+        }
+
+        #autoplayProgressBar {
+            width: 0%;
+            height: 100%;
+            background: white;
+            border-radius: 999px;
         }
 
         #thumbnails {
@@ -389,6 +430,31 @@
             flex-shrink: 0;
         }
 
+        .help-key.hamburger-help-icon {
+            position: relative;
+        }
+
+        .help-key.hamburger-help-icon span {
+            position: absolute;
+            left: 9px;
+            width: 16px;
+            height: 2px;
+            background: currentColor;
+            border-radius: 999px;
+        }
+
+        .help-key.hamburger-help-icon span:nth-child(1) {
+            top: 11px;
+        }
+
+        .help-key.hamburger-help-icon span:nth-child(2) {
+            top: 17px;
+        }
+
+        .help-key.hamburger-help-icon span:nth-child(3) {
+            top: 23px;
+        }
+
         .help-key.play-help-icon {
             padding-left: 3px;
             padding-bottom: 2px;
@@ -438,8 +504,8 @@
             transform: scale(0.94);
         }
 
+        body.ui-hidden #backLink,
         body.ui-hidden #controlArea,
-        body.ui-hidden nav,
         body.ui-hidden #thumbnails,
         body.ui-hidden #helpOverlay {
             display: none !important;
@@ -461,7 +527,8 @@
             color: white;
         }
 
-        body.ui-hidden.autoplay-active #autoplayStatus {
+        body.ui-hidden.autoplay-active #autoplayStatus,
+        body.ui-hidden.autoplay-active #autoplayProgress {
             display: block;
         }
 
@@ -469,10 +536,11 @@
             #fadeOverlay,
             .control-button,
             #version,
-            #toggleIcon,
+            #hamburgerIcon span,
             #helpOverlay,
             #helpPanel,
-            #closeHelp {
+            #closeHelp,
+            #backLink {
                 transition-duration: 0.01ms;
             }
         }
@@ -480,14 +548,20 @@
 </head>
 
 <body>
+    <a id="backLink" href="collections.html">Back</a>
+
     <div id="controlArea">
         <div id="controls">
             <button
                 id="toggleControls"
-                class="control-button"
-                aria-label="Toggle controls"
+                class="control-button expanded"
+                aria-label="Toggle media controls"
             >
-                <span id="toggleIcon">&lt;</span>
+                <span id="hamburgerIcon" aria-hidden="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </span>
             </button>
 
             <button
@@ -534,10 +608,6 @@
         <div id="version"></div>
     </div>
 
-    <nav aria-label="Main navigation">
-        <a href="collections.html">Collections</a>
-    </nav>
-
     <div id="viewer">
         <div id="photoStage">
             <img id="photo" alt="">
@@ -547,6 +617,11 @@
     </div>
 
     <div id="autoplayStatus"></div>
+
+    <div id="autoplayProgress">
+        <div id="autoplayProgressBar"></div>
+    </div>
+
     <div id="counter"></div>
     <div id="thumbnails"></div>
 
@@ -562,13 +637,12 @@
             <h2 id="helpTitle">Gallery Controls</h2>
 
             <div class="help-row">
-                <span class="help-key">&gt;</span>
-                <p>Expand the media controls (keypress "C")</p>
-            </div>
-
-            <div class="help-row">
-                <span class="help-key">&lt;</span>
-                <p>Collapse the media controls (keypress "C")</p>
+                <span class="help-key hamburger-help-icon" aria-hidden="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </span>
+                <p>Expand or collapse the media controls (keypress "C")</p>
             </div>
 
             <div class="help-row">
@@ -619,7 +693,7 @@
     </div>
 
     <script>
-        const version = "v1.4.3";
+        const version = "v1.4.4";
         document.getElementById("version").textContent = version;
 
         const params = new URLSearchParams(window.location.search);
@@ -632,8 +706,6 @@
         const controls = document.getElementById("controls");
         const toggleControls =
             document.getElementById("toggleControls");
-        const toggleIcon =
-            document.getElementById("toggleIcon");
         const versionElement =
             document.getElementById("version");
         const helpOverlay =
@@ -642,6 +714,8 @@
             document.getElementById("autoplayButton");
         const autoplayStatus =
             document.getElementById("autoplayStatus");
+        const autoplayProgressBar =
+            document.getElementById("autoplayProgressBar");
         const autoplayDelayInput =
             document.getElementById("autoplayDelay");
 
@@ -661,7 +735,6 @@
         let startingPanY = 0;
 
         let controlsCollapsed = false;
-        let toggleIconTimer = null;
 
         let transitionRunning = false;
         let pendingImageIndex = null;
@@ -670,6 +743,8 @@
         let autoplayPlaying = false;
         let autoplayTimer = null;
         let autoplayDelaySeconds = 7;
+        let autoplayProgressFrame = null;
+        let autoplayProgressStart = null;
 
         const imageCache = new Map();
 
@@ -979,6 +1054,7 @@
 
             if (autoplayPlaying) {
                 clearAutoplayTimer();
+                stopProgressBar();
             }
 
             resetZoom();
@@ -1067,6 +1143,60 @@
             }
         }
 
+        function stopProgressBar() {
+            if (autoplayProgressFrame !== null) {
+                window.cancelAnimationFrame(
+                    autoplayProgressFrame
+                );
+
+                autoplayProgressFrame = null;
+            }
+        }
+
+        function resetProgressBar() {
+            stopProgressBar();
+            autoplayProgressStart = null;
+            autoplayProgressBar.style.width = "0%";
+        }
+
+        function animateProgressBar(timestamp) {
+            if (!autoplayPlaying) {
+                return;
+            }
+
+            if (autoplayProgressStart === null) {
+                autoplayProgressStart = timestamp;
+            }
+
+            const elapsed =
+                timestamp - autoplayProgressStart;
+
+            const duration =
+                autoplayDelaySeconds * 1000;
+
+            const progress =
+                Math.min(1, elapsed / duration);
+
+            autoplayProgressBar.style.width =
+                `${progress * 100}%`;
+
+            if (progress < 1) {
+                autoplayProgressFrame =
+                    window.requestAnimationFrame(
+                        animateProgressBar
+                    );
+            }
+        }
+
+        function startProgressBar() {
+            resetProgressBar();
+
+            autoplayProgressFrame =
+                window.requestAnimationFrame(
+                    animateProgressBar
+                );
+        }
+
         function scheduleAutoplay() {
             clearAutoplayTimer();
 
@@ -1078,9 +1208,12 @@
                 return;
             }
 
+            startProgressBar();
+
             autoplayTimer = window.setTimeout(
                 function () {
                     autoplayTimer = null;
+                    resetProgressBar();
 
                     if (!autoplayPlaying) {
                         return;
@@ -1100,7 +1233,7 @@
                 );
 
                 autoplayStatus.textContent =
-                    autoplayPlaying ? "▶" : "paused";
+                    autoplayPlaying ? "playing" : "paused";
             } else {
                 document.body.classList.remove(
                     "autoplay-active"
@@ -1146,6 +1279,7 @@
 
             autoplayPlaying = false;
             clearAutoplayTimer();
+            stopProgressBar();
             updateAutoplayDisplay();
         }
 
@@ -1175,6 +1309,7 @@
             autoplayActive = false;
             autoplayPlaying = false;
             clearAutoplayTimer();
+            resetProgressBar();
             updateAutoplayDisplay();
         }
 
@@ -1344,19 +1479,10 @@
             }
         }
 
-        function updateToggleIcon() {
-            window.clearTimeout(toggleIconTimer);
-
-            toggleIcon.classList.add("fading");
-
-            toggleIconTimer = window.setTimeout(
-                function () {
-                    toggleIcon.textContent =
-                        controlsCollapsed ? ">" : "<";
-
-                    toggleIcon.classList.remove("fading");
-                },
-                150
+        function updateToggleButtonState() {
+            toggleControls.classList.toggle(
+                "expanded",
+                !controlsCollapsed
             );
         }
 
@@ -1373,7 +1499,7 @@
                 controlsCollapsed
             );
 
-            updateToggleIcon();
+            updateToggleButtonState();
         }
 
         function showHelp() {
@@ -1415,10 +1541,7 @@
                 controlsCollapsed
             );
 
-            toggleIcon.textContent =
-                controlsCollapsed ? ">" : "<";
-
-            toggleIcon.classList.remove("fading");
+            updateToggleButtonState();
         }
 
         async function enterHideMode() {
@@ -1643,6 +1766,8 @@
                 }
             }
         );
+
+        updateToggleButtonState();
     </script>
 </body>
 </html>
