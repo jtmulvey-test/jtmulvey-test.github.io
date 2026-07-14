@@ -1,4 +1,4 @@
-const version = "v1.5.20";
+const version = "v1.5.21";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -101,6 +101,11 @@ let mosaicResizeTimer = null;
 let thumbnailAspectPromise = null;
 let mosaicSelectionRunning = false;
 let photoNavigationClickTimer = null;
+let thumbnailDragActive = false;
+let thumbnailDragMoved = false;
+let thumbnailDragStartX = 0;
+let thumbnailDragStartScrollLeft = 0;
+let suppressThumbnailClick = false;
 
 const imageCache = new Map();
 const mosaicLayoutCache = new Map();
@@ -630,6 +635,88 @@ function getThumbnailScrollDistance() {
     );
 }
 
+function beginThumbnailDrag(event) {
+    if (
+        event.button !== 0 ||
+        !thumbnailsContainer.classList.contains(
+            "has-overflow"
+        )
+    ) {
+        return;
+    }
+
+    thumbnailDragActive = true;
+    thumbnailDragMoved = false;
+    suppressThumbnailClick = false;
+
+    thumbnailDragStartX =
+        event.clientX;
+
+    thumbnailDragStartScrollLeft =
+        thumbnailsContainer.scrollLeft;
+
+    thumbnailsContainer.setPointerCapture(
+        event.pointerId
+    );
+
+    thumbnailsContainer.classList.add(
+        "dragging"
+    );
+}
+
+function moveThumbnailDrag(event) {
+    if (!thumbnailDragActive) {
+        return;
+    }
+
+    const movement =
+        event.clientX -
+        thumbnailDragStartX;
+
+    if (Math.abs(movement) > 4) {
+        thumbnailDragMoved = true;
+        suppressThumbnailClick = true;
+    }
+
+    if (thumbnailDragMoved) {
+        event.preventDefault();
+
+        thumbnailsContainer.scrollLeft =
+            thumbnailDragStartScrollLeft -
+            movement;
+    }
+}
+
+function endThumbnailDrag(event) {
+    if (!thumbnailDragActive) {
+        return;
+    }
+
+    thumbnailDragActive = false;
+
+    if (
+        thumbnailsContainer.hasPointerCapture(
+            event.pointerId
+        )
+    ) {
+        thumbnailsContainer.releasePointerCapture(
+            event.pointerId
+        );
+    }
+
+    thumbnailsContainer.classList.remove(
+        "dragging"
+    );
+
+    window.setTimeout(
+        function () {
+            suppressThumbnailClick = false;
+            thumbnailDragMoved = false;
+        },
+        0
+    );
+}
+
 function updateThumbnailScrollButtons() {
     const maximumScroll =
         thumbnailsContainer.scrollWidth -
@@ -668,35 +755,93 @@ function scrollThumbnails(direction) {
     });
 }
 
-function createThumbnails() {
-    const container =
-        document.getElementById("thumbnails");
-
-    container.innerHTML = "";
-
-    thumbnails.forEach((src, index) => {
+function preloadThumbnail(
+    src,
+    index
+) {
+    return new Promise(resolve => {
         const thumbnail =
             document.createElement("img");
 
-        thumbnail.src = src;
-        thumbnail.loading = "lazy";
+        thumbnail.loading = "eager";
         thumbnail.decoding = "async";
         thumbnail.className = "thumb";
         thumbnail.alt = `Photo ${index + 1}`;
 
         thumbnail.addEventListener(
-            "click",
+            "load",
             function () {
-                current = index;
-                requestImageChange();
-            }
+                resolve(thumbnail);
+            },
+            { once: true }
         );
 
-        container.appendChild(thumbnail);
+        thumbnail.addEventListener(
+            "error",
+            function () {
+                resolve(thumbnail);
+            },
+            { once: true }
+        );
+
+        thumbnail.src = src;
     });
+}
+
+async function createThumbnails() {
+    const container =
+        document.getElementById("thumbnails");
+
+    thumbnailBar.classList.remove(
+        "thumbnails-ready"
+    );
+
+    container.innerHTML = "";
+
+    const loadedThumbnails =
+        await Promise.all(
+            thumbnails.map(
+                preloadThumbnail
+            )
+        );
+
+    const fragment =
+        document.createDocumentFragment();
+
+    loadedThumbnails.forEach(
+        (thumbnail, index) => {
+            thumbnail.addEventListener(
+                "click",
+                function (event) {
+                    if (
+                        suppressThumbnailClick ||
+                        thumbnailDragMoved
+                    ) {
+                        event.preventDefault();
+                        return;
+                    }
+
+                    current = index;
+                    requestImageChange();
+                }
+            );
+
+            fragment.appendChild(
+                thumbnail
+            );
+        }
+    );
+
+    container.appendChild(fragment);
 
     window.requestAnimationFrame(
-        updateThumbnailScrollButtons
+        function () {
+            updateThumbnailScrollButtons();
+
+            thumbnailBar.classList.add(
+                "thumbnails-ready"
+            );
+        }
     );
 }
 
@@ -2910,6 +3055,26 @@ thumbnailsContainer.addEventListener(
     "scroll",
     updateThumbnailScrollButtons,
     { passive: true }
+);
+
+thumbnailsContainer.addEventListener(
+    "pointerdown",
+    beginThumbnailDrag
+);
+
+thumbnailsContainer.addEventListener(
+    "pointermove",
+    moveThumbnailDrag
+);
+
+thumbnailsContainer.addEventListener(
+    "pointerup",
+    endThumbnailDrag
+);
+
+thumbnailsContainer.addEventListener(
+    "pointercancel",
+    endThumbnailDrag
 );
 
 mosaicOverlay.addEventListener(

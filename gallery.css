@@ -1360,3 +1360,52 @@ body.ui-hidden #thumbnailBar {
         sans-serif;
     font-weight: 300;
 }
+
+
+/* Gallery experience updates: v1.5.21 */
+
+/*
+Restore the mosaic button to the original left-side alignment
+with the media controls while the thumbnail strip respects the
+88 px gallery borders.
+*/
+#filmstripButton {
+    position: fixed;
+    left: 20px;
+    bottom: 16px;
+    z-index: 82;
+}
+
+#thumbnailBar {
+    opacity: 0;
+    pointer-events: none;
+    transition:
+        opacity 0.28s ease,
+        transform 0.25s ease;
+}
+
+#thumbnailBar.thumbnails-ready {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+body.ui-idle:not(.ui-hidden):not(.mosaic-open)
+#thumbnailBar.thumbnails-ready {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#thumbnails {
+    cursor: grab;
+    touch-action: pan-y;
+    user-select: none;
+}
+
+#thumbnails.dragging {
+    cursor: grabbing;
+    scroll-behavior: auto;
+}
+
+#thumbnails.dragging .thumb {
+    pointer-events: none;
+}
