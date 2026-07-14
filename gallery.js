@@ -1,4 +1,4 @@
-const version = "v1.5.29";
+const version = "v1.5.30";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -1728,6 +1728,9 @@ function createMosaicTileSizes(
     );
 }
 
+const mosaicPreferredGap = 7;
+const mosaicMinimumGap = 2;
+
 function scoreMosaicPlacement(
     candidate,
     placedTiles,
@@ -1763,27 +1766,12 @@ function scoreMosaicPlacement(
 
     let nearestGap = Infinity;
 
-    placedTiles.forEach(tile => {
+    for (const tile of placedTiles) {
         const overlapArea =
             rectangleOverlapArea(
                 candidate,
                 tile
             );
-
-        if (overlapArea > 0) {
-            const smallerArea =
-                Math.min(
-                    candidate.width *
-                    candidate.height,
-                    tile.width *
-                    tile.height
-                );
-
-            score +=
-                overlapArea /
-                Math.max(1, smallerArea) *
-                24000;
-        }
 
         const gap =
             rectangleGap(
@@ -1795,12 +1783,18 @@ function scoreMosaicPlacement(
             Math.min(nearestGap, gap);
 
         if (
-            overlapArea === 0 &&
-            gap < 12
+            overlapArea > 0 ||
+            gap < mosaicMinimumGap
         ) {
+            return Infinity;
+        }
+
+        if (gap < mosaicPreferredGap) {
             score +=
-                Math.pow(12 - gap, 2) *
-                2.2;
+                Math.pow(
+                    mosaicPreferredGap - gap,
+                    2
+                ) * 2.2;
         }
 
         const tileCenterX =
@@ -1858,7 +1852,7 @@ function scoreMosaicPlacement(
                 }
             }
         );
-    });
+    }
 
     if (
         placedTiles.length > 0 &&
@@ -2241,6 +2235,7 @@ function scoreMosaicLayout(
     let weightedX = 0;
     let weightedY = 0;
     let nearestGapPenalty = 0;
+    let preferredGapPenalty = 0;
     let alignmentPenalty = 0;
 
     let minimumX = Infinity;
@@ -2294,20 +2289,41 @@ function scoreMosaicLayout(
             const other =
                 tiles[otherIndex];
 
-            overlapArea +=
+            const pairOverlap =
                 rectangleOverlapArea(
                     tile,
                     other
                 );
 
+            const pairGap =
+                rectangleGap(
+                    tile,
+                    other
+                );
+
+            if (
+                pairOverlap > 0 ||
+                pairGap < mosaicMinimumGap
+            ) {
+                return;
+            }
+
+            overlapArea += pairOverlap;
+
             nearestGap =
                 Math.min(
                     nearestGap,
-                    rectangleGap(
-                        tile,
-                        other
-                    )
+                    pairGap
                 );
+
+            if (pairGap < mosaicPreferredGap) {
+                preferredGapPenalty +=
+                    Math.pow(
+                        mosaicPreferredGap -
+                        pairGap,
+                        2
+                    );
+            }
 
             const centerX =
                 tile.x + tile.width / 2;
@@ -2351,6 +2367,38 @@ function scoreMosaicLayout(
                 );
         }
     });
+
+    /*
+    A return from forEach cannot return from scoreMosaicLayout,
+    so perform the hard minimum-gap check explicitly.
+    */
+    for (
+        let firstIndex = 0;
+        firstIndex < tiles.length;
+        firstIndex++
+    ) {
+        for (
+            let secondIndex = firstIndex + 1;
+            secondIndex < tiles.length;
+            secondIndex++
+        ) {
+            const first = tiles[firstIndex];
+            const second = tiles[secondIndex];
+
+            if (
+                rectangleOverlapArea(
+                    first,
+                    second
+                ) > 0 ||
+                rectangleGap(
+                    first,
+                    second
+                ) < mosaicMinimumGap
+            ) {
+                return Infinity;
+            }
+        }
+    }
 
     const coverage =
         totalImageArea / canvasArea;
@@ -2407,6 +2455,7 @@ function scoreMosaicLayout(
         ) * 520 +
         centerDistance * 3600 +
         nearestGapPenalty * 0.018 +
+        preferredGapPenalty * 3.2 +
         alignmentPenalty * 20
     );
 }
@@ -2541,6 +2590,19 @@ function generateBestMosaicLayout(
                     ...tile
                 }));
         }
+    }
+
+    if (!bestLayout) {
+        const fallbackRandom =
+            createSeededRandom(masterSeed);
+
+        bestLayout =
+            generateMosaicCandidate(
+                aspectRatios,
+                canvasWidth,
+                canvasHeight,
+                fallbackRandom
+            );
     }
 
     const orderedLayout =
