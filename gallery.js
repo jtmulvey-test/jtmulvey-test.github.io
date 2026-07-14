@@ -1,4 +1,4 @@
-const version = "v1.5.15";
+const version = "v1.5.16";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -490,6 +490,12 @@ async function transitionToImage(index) {
 
         photo.style.visibility = "visible";
         displayedIndex = index;
+
+        positionPhotoNavigationIndicators();
+
+        document.body.classList.add(
+            "photo-navigation-ready"
+        );
 
         hideLoadingIndicator();
         expandMediaControlsAfterFirstImageLoad();
@@ -3003,7 +3009,7 @@ function positionPhotoNavigationIndicators() {
     previousPhotoIndicator.style.left =
         `${Math.max(
             0,
-            photoRect.left - 72
+            photoRect.left - 40
         )}px`;
 
     previousPhotoIndicator.style.top =
@@ -3011,7 +3017,7 @@ function positionPhotoNavigationIndicators() {
 
     nextPhotoIndicator.style.left =
         `${Math.min(
-            window.innerWidth - 72,
+            window.innerWidth - 40,
             photoRect.right
         )}px`;
 

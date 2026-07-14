@@ -1175,22 +1175,22 @@ body.ui-hidden #loadingIndicator {
 .photo-nav-indicator {
     position: fixed;
     z-index: 18;
-    width: 72px;
-    height: 96px;
+    width: 40px;
+    height: 54px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: rgba(255, 255, 255, 0.42);
-    font-size: 72px;
+    font-size: 40px;
     font-weight: 300;
     line-height: 1;
-    opacity: 1;
+    opacity: 0;
     transform: translateY(-50%);
     pointer-events: none;
     user-select: none;
     transition:
         color 0.18s ease,
-        opacity 0.25s ease,
+        opacity 0.34s ease-in-out,
         transform 0.18s ease;
 }
 
@@ -1215,5 +1215,25 @@ body.ui-hidden #loadingIndicator {
 body.ui-idle:not(.ui-hidden) .photo-nav-indicator,
 body.ui-hidden .photo-nav-indicator,
 body.mosaic-open .photo-nav-indicator {
+    opacity: 0;
+}
+
+
+body.photo-navigation-ready .photo-nav-indicator {
+    opacity: 1;
+}
+
+/*
+Match the indicator fade to the photograph fade overlay.
+The indicators sit outside the image, so this extends the
+visual fade without enlarging the black overlay itself.
+*/
+#fadeOverlay.visible ~ .photo-nav-indicator {
+    opacity: 0;
+}
+
+body.photo-navigation-ready.ui-idle:not(.ui-hidden) .photo-nav-indicator,
+body.photo-navigation-ready.ui-hidden .photo-nav-indicator,
+body.photo-navigation-ready.mosaic-open .photo-nav-indicator {
     opacity: 0;
 }
