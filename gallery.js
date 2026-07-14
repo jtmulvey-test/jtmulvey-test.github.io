@@ -1,4 +1,4 @@
-const version = "v1.5.5";
+const version = "v1.5.6";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -2397,12 +2397,6 @@ function setFilmstripExpanded(expanded) {
 
 function toggleFilmstrip() {
     setFilmstripExpanded(!filmstripExpanded);
-
-    showModeToast(
-        filmstripExpanded
-            ? "Thumbnail Mosaic"
-            : "Mosaic Closed"
-    );
 }
 
 function clearInterfaceIdleTimer() {
