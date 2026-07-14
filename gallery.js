@@ -1,4 +1,4 @@
-const version = "v1.5.28";
+const version = "v1.5.29";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -1722,8 +1722,7 @@ function createMosaicTileSizes(
                 width: width,
                 height: height,
                 area: area,
-                rotation:
-                    (random() - 0.5) * 1.2
+                rotation: 0
             };
         }
     );
@@ -2751,11 +2750,6 @@ function renderMosaicLayout(layout) {
 
         tile.style.height =
             `${tileData.height.toFixed(1)}px`;
-
-        tile.style.setProperty(
-            "--mosaic-tilt",
-            `${tileData.rotation.toFixed(2)}deg`
-        );
 
         if (
             tileData.imageIndex === current
