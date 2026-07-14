@@ -246,7 +246,7 @@ body {
 
 #photoStage {
     position: relative;
-    width: 95vw;
+    width: calc(100vw - 176px);
     height: 85vh;
     display: flex;
     justify-content: center;
@@ -1036,7 +1036,7 @@ body.ui-hidden.autoplay-active #autoplayProgress {
     opacity: 0;
     transform:
         rotate(var(--mosaic-tilt, 0deg))
-        scale(1.04);
+        scale(0.94);
     transition:
         opacity 1.05s ease,
         transform 0.72s ease;
