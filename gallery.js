@@ -1,4 +1,4 @@
-const version = "v1.5.6";
+const version = "v1.5.7";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -97,6 +97,7 @@ let filmstripExpanded = false;
 let mosaicBuildToken = 0;
 let mosaicResizeTimer = null;
 let thumbnailAspectPromise = null;
+let mosaicSelectionRunning = false;
 
 const imageCache = new Map();
 const mosaicLayoutCache = new Map();
@@ -107,7 +108,7 @@ const zoomStep = 0.5;
 const fadeDuration = 340;
 const zoomControlsHideDelay = 650;
 const loadingIndicatorDelay = 2000;
-const interfaceIdleDelay = 3600;
+const interfaceIdleDelay = 4680;
 const autoplayDelayStorageKey =
     "jmPhotographyAutoplayDelay";
 
@@ -2222,6 +2223,85 @@ function generateBestMosaicLayout(
     return orderedLayout;
 }
 
+function wait(milliseconds) {
+    return new Promise(resolve => {
+        window.setTimeout(resolve, milliseconds);
+    });
+}
+
+function waitForDisplayedIndex(
+    targetIndex,
+    timeoutMilliseconds = 5000
+) {
+    return new Promise(resolve => {
+        const startTime =
+            performance.now();
+
+        function checkDisplayedImage() {
+            if (
+                displayedIndex === targetIndex ||
+                performance.now() - startTime >=
+                    timeoutMilliseconds
+            ) {
+                resolve();
+                return;
+            }
+
+            window.requestAnimationFrame(
+                checkDisplayedImage
+            );
+        }
+
+        checkDisplayedImage();
+    });
+}
+
+async function selectMosaicImage(
+    imageIndex,
+    selectedTile
+) {
+    if (mosaicSelectionRunning) {
+        return;
+    }
+
+    mosaicSelectionRunning = true;
+
+    selectedTile.classList.add(
+        "mosaic-selected"
+    );
+
+    mosaicOverlay.classList.add(
+        "selecting"
+    );
+
+    await wait(150);
+
+    current = imageIndex;
+    requestImageChange();
+
+    await waitForDisplayedIndex(
+        imageIndex
+    );
+
+    selectedTile.classList.add(
+        "selected-fading"
+    );
+
+    await wait(640);
+
+    mosaicOverlay.classList.remove(
+        "selecting"
+    );
+
+    selectedTile.classList.remove(
+        "mosaic-selected",
+        "selected-fading"
+    );
+
+    mosaicSelectionRunning = false;
+    setFilmstripExpanded(false);
+}
+
 function renderMosaicLayout(layout) {
     mosaicGrid.innerHTML = "";
 
@@ -2279,11 +2359,10 @@ function renderMosaicLayout(layout) {
         tile.addEventListener(
             "click",
             function () {
-                current =
-                    tileData.imageIndex;
-
-                setFilmstripExpanded(false);
-                requestImageChange();
+                selectMosaicImage(
+                    tileData.imageIndex,
+                    tile
+                );
             }
         );
 
@@ -2351,6 +2430,13 @@ async function buildSeededMosaic() {
 }
 
 function setFilmstripExpanded(expanded) {
+    if (
+        mosaicSelectionRunning &&
+        expanded === false
+    ) {
+        return;
+    }
+
     filmstripExpanded = expanded;
 
     document.body.classList.toggle(
@@ -2396,6 +2482,10 @@ function setFilmstripExpanded(expanded) {
 }
 
 function toggleFilmstrip() {
+    if (mosaicSelectionRunning) {
+        return;
+    }
+
     setFilmstripExpanded(!filmstripExpanded);
 }
 
