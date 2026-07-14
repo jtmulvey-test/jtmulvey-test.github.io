@@ -1440,3 +1440,10 @@ body.ui-idle:not(.ui-hidden):not(.mosaic-open)
         translateX(10px)
         scale(0.94);
 }
+
+
+/* Gallery experience updates: v1.5.24 */
+
+#thumbnailBar {
+    overflow: visible;
+}

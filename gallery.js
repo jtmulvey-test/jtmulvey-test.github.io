@@ -1,4 +1,4 @@
-const version = "v1.5.23";
+const version = "v1.5.24";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -500,6 +500,7 @@ async function transitionToImage(index) {
 
         photo.style.visibility = "visible";
         displayedIndex = index;
+        updateThumbnails(displayedIndex);
 
         positionPhotoNavigationIndicators();
 
@@ -514,6 +515,7 @@ async function transitionToImage(index) {
     }
 
     if (displayedIndex === index) {
+        updateThumbnails(displayedIndex);
         hideLoadingIndicator();
         return;
     }
@@ -533,6 +535,8 @@ async function transitionToImage(index) {
     photo.style.visibility = "visible";
 
     await waitForTwoFrames();
+
+    updateThumbnails(displayedIndex);
 
     positionPhotoNavigationIndicators();
 
@@ -573,7 +577,9 @@ async function processImageQueue() {
     }
 }
 
-function requestImageChange() {
+function requestImageChange(
+    updateThumbnailImmediately = false
+) {
     if (images.length === 0) {
         return;
     }
@@ -585,7 +591,11 @@ function requestImageChange() {
 
     resetZoom();
     updateCounter();
-    updateThumbnails();
+
+    if (updateThumbnailImmediately) {
+        updateThumbnails(current);
+    }
+
     preloadNearbyImages();
 
     window.requestAnimationFrame(
@@ -637,12 +647,7 @@ function getThumbnailScrollDistance() {
 }
 
 function beginThumbnailDrag(event) {
-    if (
-        event.button !== 0 ||
-        !thumbnailsContainer.classList.contains(
-            "has-overflow"
-        )
-    ) {
+    if (event.button !== 0) {
         return;
     }
 
@@ -690,7 +695,12 @@ function moveThumbnailDrag(event) {
         suppressThumbnailClick = true;
     }
 
-    if (thumbnailDragMoved) {
+    if (
+        thumbnailDragMoved &&
+        thumbnailsContainer.classList.contains(
+            "has-overflow"
+        )
+    ) {
         event.preventDefault();
 
         thumbnailsContainer.scrollLeft =
@@ -733,7 +743,7 @@ function endThumbnailDrag(event) {
         !Number.isNaN(clickedIndex)
     ) {
         current = clickedIndex;
-        requestImageChange();
+        requestImageChange(true);
     }
 
     window.setTimeout(
@@ -894,13 +904,15 @@ function centerActiveThumbnail(
     });
 }
 
-function updateThumbnails() {
+function updateThumbnails(
+    activeIndex = current
+) {
     const thumbnailElements =
         document.querySelectorAll(".thumb");
 
     thumbnailElements.forEach(
         (thumbnail, index) => {
-            if (index === current) {
+            if (index === activeIndex) {
                 thumbnail.classList.add("active");
                 centerActiveThumbnail(thumbnail);
             } else {
@@ -914,7 +926,7 @@ function updateThumbnails() {
         .forEach(tile => {
             tile.classList.toggle(
                 "active",
-                Number(tile.dataset.imageIndex) === current
+                Number(tile.dataset.imageIndex) === activeIndex
             );
         });
 }
