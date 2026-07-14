@@ -866,57 +866,11 @@ body.ui-hidden.autoplay-active #autoplayProgress {
     }
 }
 
-.edge-nav {
-    position: absolute;
-    top: 50%;
-    z-index: 16;
-    width: 52px;
-    height: 52px;
-    padding: 0 0 4px;
-    color: white;
-    background: rgba(0, 0, 0, 0.48);
-    border: 1px solid rgba(255, 255, 255, 0.56);
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 40px;
-    line-height: 1;
-    opacity: 0;
-    transform: translateY(-50%) scale(0.92);
-    pointer-events: none;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    transition:
-        opacity 0.22s ease,
-        transform 0.22s ease,
-        color 0.2s ease,
-        background-color 0.2s ease;
-}
 
-.edge-nav-left {
-    left: 26px;
-}
 
-.edge-nav-right {
-    right: 26px;
-}
 
-body:not(.ui-hidden):not(.ui-idle) #viewer:hover .edge-nav,
-.edge-nav:focus-visible {
-    opacity: 0.78;
-    transform: translateY(-50%) scale(1);
-    pointer-events: auto;
-}
 
-.edge-nav:hover {
-    color: black;
-    background: white;
-    opacity: 1 !important;
-}
 
-.edge-nav:focus-visible {
-    outline: 1px solid white;
-    outline-offset: 5px;
-}
 
 .bottom-zoom-button:disabled {
     opacity: 0.34;
@@ -1125,33 +1079,16 @@ body.ui-idle:not(.ui-hidden) #bottomZoomControls.visible {
     pointer-events: none;
 }
 
-body.ui-hidden .edge-nav,
 body.ui-hidden #loadingIndicator {
     display: none !important;
 }
 
-@media (max-width: 520px) {
-    .edge-nav {
-        width: 44px;
-        height: 44px;
-        font-size: 34px;
-    }
-
-    .edge-nav-left {
-        left: 12px;
-    }
-
-    .edge-nav-right {
-        right: 12px;
-    }
-}
 
 @media (prefers-reduced-motion: reduce) {
     #loadingIndicator span {
         animation-duration: 1.6s;
     }
 
-    .edge-nav,
     #thumbnailBar,
     #mosaicOverlay,
     #mosaicPanel,

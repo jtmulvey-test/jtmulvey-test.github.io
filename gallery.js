@@ -1,4 +1,4 @@
-const version = "v1.5.9";
+const version = "v1.5.10";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -34,10 +34,6 @@ const bottomZoomOut =
     document.getElementById("bottomZoomOut");
 const zoomSlider =
     document.getElementById("zoomSlider");
-const previousImageButton =
-    document.getElementById("previousImageButton");
-const nextImageButton =
-    document.getElementById("nextImageButton");
 const loadingIndicator =
     document.getElementById("loadingIndicator");
 const filmstripButton =
@@ -2722,16 +2718,6 @@ function toggleUI() {
     }
 }
 
-previousImageButton.addEventListener(
-    "click",
-    previousImage
-);
-
-nextImageButton.addEventListener(
-    "click",
-    nextImage
-);
-
 filmstripButton.addEventListener(
     "click",
     toggleFilmstrip
@@ -2800,24 +2786,6 @@ bottomZoomControls.addEventListener(
     }
 );
 
-[
-    previousImageButton,
-    nextImageButton
-].forEach(button => {
-    button.addEventListener(
-        "mousedown",
-        function (event) {
-            event.stopPropagation();
-        }
-    );
-
-    button.addEventListener(
-        "dblclick",
-        function (event) {
-            event.stopPropagation();
-        }
-    );
-});
 
 document
     .getElementById("zoomIn")
@@ -2881,12 +2849,58 @@ helpOverlay.addEventListener(
     }
 );
 
+
+function handleBlackSpaceNavigation(event) {
+    if (
+        event.button !== 0 ||
+        event.detail > 1 ||
+        zoomLevel > minimumZoom ||
+        isDragging ||
+        transitionRunning ||
+        filmstripExpanded ||
+        helpOverlay.classList.contains("visible") ||
+        !photo.complete ||
+        photo.naturalWidth === 0
+    ) {
+        return;
+    }
+
+    if (
+        event.target.closest(
+            "button, input, a, #bottomZoomControls, " +
+            "#controlArea, #loadingIndicator"
+        )
+    ) {
+        return;
+    }
+
+    const photoRect =
+        photo.getBoundingClientRect();
+
+    const isBesidePhotoVertically =
+        event.clientY >= photoRect.top &&
+        event.clientY <= photoRect.bottom;
+
+    if (!isBesidePhotoVertically) {
+        return;
+    }
+
+    if (event.clientX < photoRect.left) {
+        previousImage();
+        return;
+    }
+
+    if (event.clientX > photoRect.right) {
+        nextImage();
+    }
+}
+
 viewer.addEventListener(
     "wheel",
     function (event) {
         if (
             event.target.closest(
-                "#bottomZoomControls, .edge-nav"
+                "#bottomZoomControls"
             )
         ) {
             return;
@@ -2916,6 +2930,11 @@ viewer.addEventListener(
         }
     },
     { passive: false }
+);
+
+viewer.addEventListener(
+    "click",
+    handleBlackSpaceNavigation
 );
 
 viewer.addEventListener(
@@ -3082,9 +3101,7 @@ document.addEventListener(
     thumbnailBar,
     mosaicPanel,
     bottomZoomControls,
-    helpPanel,
-    previousImageButton,
-    nextImageButton
+    helpPanel
 ].forEach(keepInterfaceVisibleWhileHovered);
 
 document.addEventListener(
