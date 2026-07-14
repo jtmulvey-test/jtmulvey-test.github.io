@@ -1,4 +1,4 @@
-const version = "v1.5.40";
+const version = "v1.5.41";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -261,7 +261,15 @@ function showModeToast(message) {
 }
 
 function expandMediaControlsAfterFirstImageLoad() {
-    if (initialMediaControlsExpanded) {
+    if (
+        initialMediaControlsExpanded ||
+        document.body.classList.contains(
+            "initial-mosaic-mode"
+        ) ||
+        document.body.classList.contains(
+            "initial-gallery-reveal"
+        )
+    ) {
         return;
     }
 
@@ -3166,6 +3174,11 @@ async function selectMosaicImage(
         "mosaic-photo-transition"
     );
 
+    const wasInitialMosaic =
+        document.body.classList.contains(
+            "initial-mosaic-mode"
+        );
+
     document.body.classList.add(
         "initial-gallery-reveal"
     );
@@ -3174,11 +3187,20 @@ async function selectMosaicImage(
         "initial-mosaic-mode"
     );
 
-    await wait(1160);
+    await wait(
+        wasInitialMosaic
+            ? 1300
+            : 580
+    );
 
     document.body.classList.remove(
         "initial-gallery-reveal"
     );
+
+    if (wasInitialMosaic) {
+        await wait(100);
+        expandMediaControlsAfterFirstImageLoad();
+    }
 
     mosaicSelectionRunning = false;
 }
@@ -3303,6 +3325,43 @@ async function buildSeededMosaic() {
     }
 
     renderMosaicLayout(layout);
+}
+
+async function selectFirstPhotoFromInitialMosaic() {
+    if (
+        !document.body.classList.contains(
+            "initial-mosaic-mode"
+        ) ||
+        mosaicSelectionRunning
+    ) {
+        return;
+    }
+
+    const timeoutAt =
+        performance.now() + 3000;
+
+    let firstTile = null;
+
+    while (
+        !firstTile &&
+        performance.now() < timeoutAt
+    ) {
+        firstTile =
+            mosaicGrid.querySelector(
+                '.mosaic-item[data-image-index="0"]'
+            );
+
+        if (!firstTile) {
+            await wait(50);
+        }
+    }
+
+    if (firstTile) {
+        selectMosaicImage(
+            0,
+            firstTile
+        );
+    }
 }
 
 function setFilmstripExpanded(
@@ -4082,6 +4141,16 @@ document.addEventListener(
         const key = event.key.toLowerCase();
 
         if (key === "escape") {
+            if (
+                document.body.classList.contains(
+                    "initial-mosaic-mode"
+                )
+            ) {
+                event.preventDefault();
+                selectFirstPhotoFromInitialMosaic();
+                return;
+            }
+
             if (filmstripExpanded) {
                 setFilmstripExpanded(false);
                 return;
