@@ -1,4 +1,4 @@
-const version = "v1.5.13";
+const version = "v1.5.14";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -2996,20 +2996,23 @@ function positionPhotoNavigationIndicators() {
 
     const verticalPosition =
         Math.max(
-            photoRect.top + 22,
-            photoRect.bottom - 24
+            photoRect.top + 48,
+            photoRect.bottom - 124
         );
 
     previousPhotoIndicator.style.left =
-        `${Math.max(4, photoRect.left + 8)}px`;
+        `${Math.max(
+            0,
+            photoRect.left - 72
+        )}px`;
 
     previousPhotoIndicator.style.top =
         `${verticalPosition}px`;
 
     nextPhotoIndicator.style.left =
         `${Math.min(
-            window.innerWidth - 28,
-            photoRect.right - 32
+            window.innerWidth - 72,
+            photoRect.right
         )}px`;
 
     nextPhotoIndicator.style.top =
