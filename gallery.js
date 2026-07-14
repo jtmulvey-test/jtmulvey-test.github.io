@@ -1,4 +1,4 @@
-const version = "v1.5.24";
+const version = "v1.5.26";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -1373,7 +1373,6 @@ function doubleClickZoom(event) {
         (zoomLevel - minimumZoom);
 
     updateZoom();
-    showModeToast("Zoom Mode");
 }
 
 function clamp(value, minimum, maximum) {
@@ -1695,6 +1694,9 @@ function createMosaicTileSizes(
     );
 }
 
+const mosaicPreferredGap = 10;
+const mosaicMinimumGap = 5;
+
 function scoreMosaicPlacement(
     candidate,
     placedTiles,
@@ -1762,12 +1764,18 @@ function scoreMosaicPlacement(
             Math.min(nearestGap, gap);
 
         if (
-            overlapArea === 0 &&
-            gap < 12
+            overlapArea > 0 ||
+            gap < mosaicMinimumGap
         ) {
+            return Infinity;
+        }
+
+        if (gap < mosaicPreferredGap) {
             score +=
-                Math.pow(12 - gap, 2) *
-                2.2;
+                Math.pow(
+                    mosaicPreferredGap - gap,
+                    2
+                ) * 18;
         }
 
         const tileCenterX =
@@ -1871,14 +1879,10 @@ function findBestMosaicPosition(
         return {
             x:
                 canvasWidth / 2 -
-                tile.width / 2 +
-                (random() - 0.5) *
-                canvasWidth * 0.08,
+                tile.width / 2,
             y:
                 canvasHeight / 2 -
-                tile.height / 2 +
-                (random() - 0.5) *
-                canvasHeight * 0.08
+                tile.height / 2
         };
     }
 
@@ -2195,11 +2199,134 @@ function fitAndCenterMosaicLayout(
     return tiles;
 }
 
+function getMosaicMinimumPairGap(tiles) {
+    let minimumGap = Infinity;
+
+    for (
+        let firstIndex = 0;
+        firstIndex < tiles.length;
+        firstIndex++
+    ) {
+        for (
+            let secondIndex = firstIndex + 1;
+            secondIndex < tiles.length;
+            secondIndex++
+        ) {
+            const overlapArea =
+                rectangleOverlapArea(
+                    tiles[firstIndex],
+                    tiles[secondIndex]
+                );
+
+            if (overlapArea > 0) {
+                return -Infinity;
+            }
+
+            minimumGap =
+                Math.min(
+                    minimumGap,
+                    rectangleGap(
+                        tiles[firstIndex],
+                        tiles[secondIndex]
+                    )
+                );
+        }
+    }
+
+    return minimumGap;
+}
+
+function centerFirstMosaicImage(
+    tiles,
+    canvasWidth,
+    canvasHeight
+) {
+    const firstTile =
+        tiles.find(
+            tile => tile.imageIndex === 0
+        );
+
+    if (!firstTile) {
+        return tiles;
+    }
+
+    const desiredShiftX =
+        canvasWidth / 2 -
+        (
+            firstTile.x +
+            firstTile.width / 2
+        );
+
+    const desiredShiftY =
+        canvasHeight / 2 -
+        (
+            firstTile.y +
+            firstTile.height / 2
+        );
+
+    const minimumX =
+        Math.min(
+            ...tiles.map(tile => tile.x)
+        );
+
+    const minimumY =
+        Math.min(
+            ...tiles.map(tile => tile.y)
+        );
+
+    const maximumX =
+        Math.max(
+            ...tiles.map(
+                tile =>
+                    tile.x + tile.width
+            )
+        );
+
+    const maximumY =
+        Math.max(
+            ...tiles.map(
+                tile =>
+                    tile.y + tile.height
+            )
+        );
+
+    const shiftX =
+        clamp(
+            desiredShiftX,
+            -minimumX,
+            canvasWidth - maximumX
+        );
+
+    const shiftY =
+        clamp(
+            desiredShiftY,
+            -minimumY,
+            canvasHeight - maximumY
+        );
+
+    tiles.forEach(tile => {
+        tile.x += shiftX;
+        tile.y += shiftY;
+    });
+
+    return tiles;
+}
+
 function scoreMosaicLayout(
     tiles,
     canvasWidth,
     canvasHeight
 ) {
+    const minimumPairGap =
+        getMosaicMinimumPairGap(tiles);
+
+    if (
+        minimumPairGap <
+        mosaicMinimumGap
+    ) {
+        return Infinity;
+    }
+
     const canvasArea =
         canvasWidth * canvasHeight;
 
@@ -2374,7 +2501,18 @@ function scoreMosaicLayout(
         ) * 520 +
         centerDistance * 3600 +
         nearestGapPenalty * 0.018 +
-        alignmentPenalty * 20
+        alignmentPenalty * 20 +
+        (
+            Number.isFinite(minimumPairGap) &&
+            minimumPairGap <
+                mosaicPreferredGap
+                ? Math.pow(
+                    mosaicPreferredGap -
+                    minimumPairGap,
+                    2
+                ) * 320
+                : 0
+        )
     );
 }
 
@@ -2392,9 +2530,16 @@ function generateMosaicCandidate(
             random
         );
 
-    const placementOrder =
+    const firstImageTile =
+        sizedTiles.find(
+            tile => tile.imageIndex === 0
+        );
+
+    const remainingTiles =
         shuffleWithRandom(
-            sizedTiles,
+            sizedTiles.filter(
+                tile => tile.imageIndex !== 0
+            ),
             random
         ).sort(
             (first, second) =>
@@ -2403,6 +2548,14 @@ function generateMosaicCandidate(
                 (random() - 0.5) *
                 first.area * 0.08
         );
+
+    const placementOrder =
+        firstImageTile
+            ? [
+                firstImageTile,
+                ...remainingTiles
+            ]
+            : remainingTiles;
 
     const placedTiles = [];
 
@@ -2423,8 +2576,15 @@ function generateMosaicCandidate(
         });
     });
 
-    return fitAndCenterMosaicLayout(
-        placedTiles,
+    const fittedLayout =
+        fitAndCenterMosaicLayout(
+            placedTiles,
+            canvasWidth,
+            canvasHeight
+        );
+
+    return centerFirstMosaicImage(
+        fittedLayout,
         canvasWidth,
         canvasHeight
     );
@@ -2464,8 +2624,8 @@ function generateBestMosaicLayout(
 
     const candidateCount =
         aspectRatios.length <= 14
-            ? 84
-            : 58;
+            ? 110
+            : 82;
 
     let bestLayout = null;
     let bestScore = Infinity;
@@ -2508,6 +2668,19 @@ function generateBestMosaicLayout(
                     ...tile
                 }));
         }
+    }
+
+    if (!bestLayout) {
+        const fallbackRandom =
+            createSeededRandom(masterSeed);
+
+        bestLayout =
+            generateMosaicCandidate(
+                aspectRatios,
+                canvasWidth,
+                canvasHeight,
+                fallbackRandom
+            );
     }
 
     const orderedLayout =
@@ -3206,7 +3379,6 @@ document
         "click",
         function () {
             zoomIn();
-            showModeToast("Zoom Mode");
         }
     );
 
@@ -3637,7 +3809,6 @@ document.addEventListener(
             key === "="
         ) {
             zoomIn();
-            showModeToast("Zoom Mode");
         }
 
         if (

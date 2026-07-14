@@ -1447,3 +1447,13 @@ body.ui-idle:not(.ui-hidden):not(.mosaic-open)
 #thumbnailBar {
     overflow: visible;
 }
+
+
+/* Gallery experience updates: v1.5.25 */
+
+#thumbnailBar,
+body.ui-idle:not(.ui-hidden):not(.mosaic-open) #thumbnailBar,
+body.ui-idle:not(.ui-hidden):not(.mosaic-open)
+#thumbnailBar.thumbnails-ready {
+    transform: none;
+}
