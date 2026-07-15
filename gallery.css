@@ -2010,3 +2010,527 @@ inactivity cannot hide the gallery UI for at least 25
 seconds. Later pointer activity still resets the normal
 idle countdown.
 */
+
+
+/* Gallery experience updates: v1.5.51 */
+
+/*
+Experimental justified-row mosaic:
+- all rows use a consistent 7 px gap
+- image aspect ratios are preserved
+- completed rows fill the available width
+- the final row is centered when stretching would be excessive
+- photograph 1 is softly favored near the visual center
+*/
+#mosaicPanel {
+    padding: 14px;
+}
+
+.mosaic-item {
+    opacity: 0.96;
+    border-radius: 4px;
+    clip-path: inset(0 round 4px);
+}
+
+.mosaic-item img {
+    border-radius: 4px;
+    clip-path: inset(0 round 4px);
+}
+
+
+/* Gallery experience updates: v1.5.58 */
+
+/*
+Localized hover repulsion, built on the unchanged v1.5.51
+mosaic geometry. This first pass intentionally uses strong
+motion so the final values can be reduced after testing.
+*/
+#mosaicGrid .mosaic-item {
+    --mosaic-repel-x: 0px;
+    --mosaic-repel-y: 0px;
+    --mosaic-hover-scale: 1;
+
+    transform:
+        translate3d(
+            var(--mosaic-repel-x),
+            var(--mosaic-repel-y),
+            0
+        )
+        scale(
+            var(--mosaic-hover-scale)
+        );
+
+    transition:
+        opacity 0.22s ease,
+        transform 0.6s
+            cubic-bezier(
+                0.22,
+                0.61,
+                0.36,
+                1
+            );
+}
+
+#mosaicGrid.mosaic-repulsion-active
+.mosaic-item:hover {
+    z-index: 4;
+    opacity: 1;
+    transform:
+        translate3d(
+            var(--mosaic-repel-x),
+            var(--mosaic-repel-y),
+            0
+        )
+        scale(
+            var(--mosaic-hover-scale)
+        );
+}
+
+#mosaicGrid.mosaic-repulsion-returning
+.mosaic-item {
+    transition:
+        opacity 0.22s ease,
+        transform 0.6s
+            cubic-bezier(
+                0.22,
+                0.61,
+                0.36,
+                1
+            );
+}
+
+#mosaicGrid.mosaic-repulsion-immediate
+.mosaic-item {
+    transition: none !important;
+}
+
+/*
+Selection transforms continue to take priority over hover
+motion, so the existing v1.5.51 close/reveal animation is
+unchanged.
+*/
+#mosaicOverlay.selecting
+#mosaicGrid .mosaic-item {
+    transform: scale(0.965);
+}
+
+#mosaicOverlay.selecting
+#mosaicGrid
+.mosaic-item.mosaic-selected {
+    transform:
+        translate(
+            var(
+                --mosaic-center-shift-x,
+                0px
+            ),
+            var(
+                --mosaic-center-shift-y,
+                0px
+            )
+        )
+        scale(0.94);
+}
+
+@media (
+    hover: none
+),
+(
+    pointer: coarse
+),
+(
+    prefers-reduced-motion: reduce
+) {
+    #mosaicGrid .mosaic-item {
+        --mosaic-repel-x: 0px !important;
+        --mosaic-repel-y: 0px !important;
+        --mosaic-hover-scale: 1 !important;
+    }
+}
+
+
+/* Gallery experience updates: v1.5.59 */
+
+/*
+Hover repulsion tuning:
+- neighbor displacement reduced from 42 px to 21 px
+- hovered-image enlargement reduced from 7.5% to 3.75%
+- outward and return motion now ease smoothly over 1 second
+*/
+
+
+/* Gallery experience updates: v1.5.60 */
+
+/*
+Hover-motion timing:
+- total movement reduced from 1.0 s to 0.72 s
+- the beginning remains comparatively gentle
+- the easing accelerates more strongly through the second
+  half, producing a faster finish without a sharp initial
+  movement
+*/
+
+
+/* Gallery experience updates: v1.5.61 */
+
+/*
+Hover-motion refinement:
+- preserves the faster 0.72-second duration
+- restores the smoother v1.5.59 acceleration curve
+- maximum neighbor displacement reduced from 21 px to 17 px
+- influence radius increased from 360 px / 2.4 diagonals
+  to 420 px / 2.7 diagonals, spreading movement across
+  more tiles and reducing local overlap pressure
+*/
+
+
+/* Gallery experience updates: v1.5.62 */
+
+/*
+Cursor-driven hover repulsion:
+- maximum displacement reduced another 10%, from 17 px
+  to 15.3 px
+- neighboring photographs now move away from the actual
+  cursor position rather than the center of the hovered tile
+- the existing 0.72-second timing and influence radius are
+  unchanged
+*/
+
+
+/* Gallery experience updates: v1.5.63 */
+
+/*
+Cursor-field refinement:
+- maximum displacement reduced by 20%, from 15.3 px to
+  12.24 px
+- pointer tracking now runs on the entire mosaic grid
+- photographs continue reacting while the cursor moves
+  through black gaps between tiles
+- tile enlargement occurs only when the cursor is directly
+  over that photograph
+*/
+
+
+/* Gallery experience updates: v1.5.64 */
+
+/*
+Hover repulsion tuning:
+- maximum cursor-driven displacement reduced by another 30%
+- 12.24 px becomes 8.568 px
+- black-gap pointer tracking, radius, scale, timing, and
+  easing remain unchanged
+*/
+
+
+/* Gallery experience updates: v1.5.65 */
+
+/*
+Uniform edge response:
+- removed the grid-boundary clamp that reduced outward
+  movement for photographs near the mosaic edges
+- every tile now receives the same cursor-driven displacement
+  regardless of whether it is near the center or an edge
+- the mosaic grid allows temporary visual overflow
+- the surrounding panel remains the final clipping boundary
+*/
+#mosaicGrid {
+    overflow: visible;
+}
+
+
+/* Gallery experience updates: v1.5.66 */
+
+/*
+More localized cursor repulsion:
+- minimum influence radius reduced by 30%, from 420 px
+  to 294 px
+- tile-size radius multiplier reduced by 30%, from 2.7
+  diagonals to 1.89 diagonals
+- falloff exponent increased from 1.15 to 1.45 so movement
+  fades more quickly with distance
+- maximum displacement and animation timing are unchanged
+*/
+
+
+/* Gallery experience updates: v1.5.67 */
+
+/*
+Cursor-repulsion radius reduced by another 25%:
+- minimum influence radius: 294 px -> 220.5 px
+- tile-size multiplier: 1.89 -> 1.4175 diagonals
+- displacement, falloff curve, timing, and easing unchanged
+*/
+
+
+/* Gallery experience updates: v1.5.68 */
+
+/*
+Hover-motion timing reduced:
+- outward movement: 0.72 s -> 0.5 s
+- return movement: 0.72 s -> 0.5 s
+- easing curve, displacement, radius, and falloff unchanged
+*/
+
+
+/* Gallery experience updates: v1.5.69 */
+
+/*
+Hover-motion timing increased:
+- outward movement: 0.5 s -> 0.6 s
+- return movement: 0.5 s -> 0.6 s
+- easing curve, displacement, radius, and falloff unchanged
+*/
+
+
+/* Gallery experience updates: v1.5.70 */
+
+/*
+Keep the Back control permanently available:
+- visible during the initial first-view mosaic
+- visible whenever the expanded mosaic is open
+- unaffected by normal interface-idle fading
+- still visible in hide mode
+- placed above the mosaic overlay so it remains clickable
+*/
+#backLink,
+body.initial-mosaic-mode #backLink,
+body.initial-mosaic-mode.mosaic-open #backLink,
+body.mosaic-open #backLink,
+body.ui-idle:not(.ui-hidden) #backLink,
+body.ui-hidden #backLink {
+    z-index: 100;
+    display: inline-flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+
+/* Gallery experience updates: v1.5.71 */
+
+/*
+First-view mosaic entrance:
+- thumbnails begin fading only after their image is ready
+- each tile receives a slightly different delay
+- fade durations vary from 0.25 to 0.40 seconds
+- this entrance runs only during initial-mosaic-mode
+*/
+body.initial-mosaic-mode
+#mosaicGrid
+.mosaic-item.initial-thumbnail-entry {
+    opacity: 0 !important;
+    transition:
+        opacity
+        var(
+            --initial-thumbnail-duration,
+            325ms
+        )
+        ease
+        var(
+            --initial-thumbnail-delay,
+            0ms
+        ),
+        transform 0.6s
+        cubic-bezier(
+            0.22,
+            0.61,
+            0.36,
+            1
+        );
+}
+
+body.initial-mosaic-mode
+#mosaicGrid
+.mosaic-item.initial-thumbnail-entry.initial-thumbnail-visible {
+    opacity: 0.88 !important;
+}
+
+body.initial-mosaic-mode
+#mosaicGrid
+.mosaic-item.initial-thumbnail-entry.initial-thumbnail-visible.active {
+    opacity: 1 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.initial-mosaic-mode
+    #mosaicGrid
+    .mosaic-item.initial-thumbnail-entry {
+        opacity: 0.88 !important;
+        transition: none !important;
+    }
+
+    body.initial-mosaic-mode
+    #mosaicGrid
+    .mosaic-item.initial-thumbnail-entry.active {
+        opacity: 1 !important;
+    }
+}
+
+
+/* Gallery experience updates: v1.5.72 */
+
+/*
+First-view thumbnail fade variation expanded:
+- fade durations now range from 0.30 to 0.70 seconds
+- a curved timing distribution keeps some fades relatively
+  quick while allowing others to be substantially slower
+- staggered start delays remain unchanged
+*/
+
+
+/* Gallery experience updates: v1.5.73 */
+
+/*
+First-view mosaic entrance rebuilt:
+- every thumbnail uses the same 0.70-second duration
+- opacity and position animate together with the same easing
+- each thumbnail begins 80-150 px away from its final grid
+  position in a varied direction
+- every thumbnail reaches its exact grid position as its
+  fade completes
+- entry classes are removed afterward so normal mosaic hover
+  repulsion resumes
+*/
+body.initial-mosaic-mode
+#mosaicGrid
+.mosaic-item.initial-thumbnail-entry {
+    opacity: 0 !important;
+    transform:
+        translate3d(
+            var(
+                --initial-thumbnail-offset-x,
+                0px
+            ),
+            var(
+                --initial-thumbnail-offset-y,
+                0px
+            ),
+            0
+        )
+        scale(1) !important;
+    transition:
+        opacity 1.2s
+        cubic-bezier(
+            0.22,
+            0.61,
+            0.36,
+            1
+        ),
+        transform 1.3s
+        cubic-bezier(
+            0.22,
+            0.61,
+            0.36,
+            1
+        ) !important;
+}
+
+body.initial-mosaic-mode
+#mosaicGrid
+.mosaic-item.initial-thumbnail-entry.initial-thumbnail-visible {
+    opacity: 0.96 !important;
+    transform:
+        translate3d(
+            0,
+            0,
+            0
+        )
+        scale(1) !important;
+}
+
+body.initial-mosaic-mode
+#mosaicGrid
+.mosaic-item.initial-thumbnail-entry.initial-thumbnail-visible.active {
+    opacity: 1 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.initial-mosaic-mode
+    #mosaicGrid
+    .mosaic-item.initial-thumbnail-entry,
+    body.initial-mosaic-mode
+    #mosaicGrid
+    .mosaic-item.initial-thumbnail-entry.initial-thumbnail-visible {
+        opacity: 0.96 !important;
+        transform: none !important;
+        transition: none !important;
+    }
+
+    body.initial-mosaic-mode
+    #mosaicGrid
+    .mosaic-item.initial-thumbnail-entry.active {
+        opacity: 1 !important;
+    }
+}
+
+
+/* Gallery experience updates: v1.5.74 */
+
+/*
+First-view mosaic entrance tuning:
+- animation duration increased from 0.70 s to 1.00 s
+- starting displacement reduced from 80-150 px to 50-100 px
+- opacity and movement still finish together
+*/
+
+
+/* Gallery experience updates: v1.5.75 */
+
+/*
+First-view entrance timing:
+- transform: 1.3 s
+- opacity: 1.2 s
+- fade completes 0.1 s before motion finishes
+*/
+
+
+/* Gallery experience updates: v1.5.76 */
+
+/*
+First-view entrance fade timing:
+- opacity duration: 1.2 s -> 0.7 s
+- movement duration remains 1.3 s
+*/
+
+
+/* Gallery experience updates: v1.5.77 */
+
+/*
+Fix the end-of-animation brightness jump:
+- the entrance animation now finishes at the same 0.96
+  opacity used by the normal mosaic tiles
+- removing the temporary entrance classes therefore no
+  longer changes brightness
+- the selected tile still finishes at full opacity
+*/
+
+
+/* Gallery experience updates: v1.5.78 */
+
+/*
+First-view entrance fade timing:
+- opacity duration: 0.7 s -> 1.2 s
+- movement duration remains 1.3 s
+- brightness-jump fix remains in place
+*/
+
+
+/* Gallery experience updates: v1.5.79 */
+
+/*
+First-thumbnail placement refinement:
+- odd row counts place photograph 1 in the middle row
+- even row counts place photograph 1 in the upper-middle row
+- within that row, photograph 1 is strongly favored near
+  the horizontal center
+- justified-row sizing and spacing logic remain unchanged
+*/
+
+
+/* Gallery experience updates: v1.5.80 */
+
+/*
+Photo filename sequence update:
+- gallery image URLs now use 100.jpg, 200.jpg, 300.jpg...
+  instead of 1.jpg, 2.jpg, 3.jpg...
+- thumbnail and original image paths use the same sequence
+*/

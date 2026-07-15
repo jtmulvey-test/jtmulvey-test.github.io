@@ -1,4 +1,4 @@
-const version = "v1.5.50";
+const version = "v1.5.80";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -115,6 +115,9 @@ let mosaicBaseWidth = 0;
 let mosaicBaseHeight = 0;
 let thumbnailAspectPromise = null;
 let mosaicSelectionRunning = false;
+let mosaicRepulsionFrame = null;
+let mosaicRepulsionResetTimer = null;
+let mosaicHoveredTile = null;
 let photoNavigationClickTimer = null;
 let thumbnailDragActive = false;
 let thumbnailDragMoved = false;
@@ -208,14 +211,17 @@ fetch("data/collections.json")
             base.endsWith("/") ? base : `${base}/`;
 
         for (let i = 1; i <= selected.images; i++) {
+            const imageFilename =
+                `${i * 100}.jpg`;
+
             images.push(
                 `${normalizedBase}${selected.name}` +
-                `/originals/${i}.jpg`
+                `/originals/${imageFilename}`
             );
 
             thumbnails.push(
                 `${normalizedBase}${selected.name}` +
-                `/thumbnails/${i}.jpg`
+                `/thumbnails/${imageFilename}`
             );
         }
 
@@ -3179,117 +3185,741 @@ function generateFallbackMosaicLayout(
     return bestLayout || [];
 }
 
+function createJustifiedMosaicOrder(
+    imageCount,
+    firstImagePosition
+) {
+    const order = [];
+
+    for (
+        let imageIndex = 1;
+        imageIndex < imageCount;
+        imageIndex++
+    ) {
+        order.push(imageIndex);
+    }
+
+    order.splice(
+        firstImagePosition,
+        0,
+        0
+    );
+
+    return order;
+}
+
+function createJustifiedMosaicRows(
+    order,
+    aspectRatios,
+    availableWidth,
+    targetHeight,
+    gap
+) {
+    const rows = [];
+    let currentIndexes = [];
+    let currentRatioSum = 0;
+
+    function finishRow(
+        isLastRow = false
+    ) {
+        if (currentIndexes.length === 0) {
+            return;
+        }
+
+        const gapWidth =
+            gap *
+            Math.max(
+                0,
+                currentIndexes.length - 1
+            );
+
+        const justifiedHeight =
+            (
+                availableWidth -
+                gapWidth
+            ) /
+            Math.max(
+                0.01,
+                currentRatioSum
+            );
+
+        let rowHeight =
+            justifiedHeight;
+
+        let fillsWidth = true;
+
+        if (isLastRow) {
+            const naturalWidth =
+                currentRatioSum *
+                targetHeight +
+                gapWidth;
+
+            const fillRatio =
+                naturalWidth /
+                availableWidth;
+
+            const maximumLastRowHeight =
+                targetHeight * 1.14;
+
+            if (
+                fillRatio < 0.74 ||
+                justifiedHeight >
+                    maximumLastRowHeight
+            ) {
+                rowHeight =
+                    Math.min(
+                        targetHeight,
+                        justifiedHeight
+                    );
+
+                fillsWidth = false;
+            }
+        }
+
+        const rowWidth =
+            currentRatioSum *
+            rowHeight +
+            gapWidth;
+
+        rows.push({
+            indexes: currentIndexes,
+            ratioSum: currentRatioSum,
+            height: rowHeight,
+            width: rowWidth,
+            fillsWidth: fillsWidth
+        });
+
+        currentIndexes = [];
+        currentRatioSum = 0;
+    }
+
+    order.forEach(imageIndex => {
+        const ratio =
+            clamp(
+                aspectRatios[imageIndex],
+                0.18,
+                7
+            );
+
+        const candidateCount =
+            currentIndexes.length + 1;
+
+        const candidateRatioSum =
+            currentRatioSum + ratio;
+
+        const candidateWidth =
+            candidateRatioSum *
+            targetHeight +
+            gap *
+            Math.max(
+                0,
+                candidateCount - 1
+            );
+
+        if (
+            currentIndexes.length > 0 &&
+            candidateWidth >=
+                availableWidth
+        ) {
+            const currentGapWidth =
+                gap *
+                Math.max(
+                    0,
+                    currentIndexes.length - 1
+                );
+
+            const heightWithout =
+                (
+                    availableWidth -
+                    currentGapWidth
+                ) /
+                Math.max(
+                    0.01,
+                    currentRatioSum
+                );
+
+            const candidateGapWidth =
+                gap *
+                Math.max(
+                    0,
+                    candidateCount - 1
+                );
+
+            const heightWith =
+                (
+                    availableWidth -
+                    candidateGapWidth
+                ) /
+                Math.max(
+                    0.01,
+                    candidateRatioSum
+                );
+
+            const useCandidate =
+                Math.abs(
+                    heightWith -
+                    targetHeight
+                ) <=
+                Math.abs(
+                    heightWithout -
+                    targetHeight
+                );
+
+            if (useCandidate) {
+                currentIndexes.push(
+                    imageIndex
+                );
+
+                currentRatioSum =
+                    candidateRatioSum;
+
+                finishRow(false);
+            } else {
+                finishRow(false);
+
+                currentIndexes = [
+                    imageIndex
+                ];
+
+                currentRatioSum = ratio;
+            }
+        } else {
+            currentIndexes.push(
+                imageIndex
+            );
+
+            currentRatioSum =
+                candidateRatioSum;
+        }
+    });
+
+    finishRow(true);
+
+    return rows;
+}
+
+function layoutJustifiedMosaicRows(
+    rows,
+    aspectRatios,
+    canvasWidth,
+    canvasHeight,
+    gap,
+    outerMargin
+) {
+    const availableWidth =
+        canvasWidth -
+        outerMargin * 2;
+
+    const availableHeight =
+        canvasHeight -
+        outerMargin * 2;
+
+    const rowGapHeight =
+        gap *
+        Math.max(
+            0,
+            rows.length - 1
+        );
+
+    const totalRowHeight =
+        rows.reduce(
+            (
+                sum,
+                row
+            ) =>
+                sum +
+                row.height,
+            0
+        );
+
+    const totalHeight =
+        totalRowHeight +
+        rowGapHeight;
+
+    let y =
+        outerMargin +
+        Math.max(
+            0,
+            (
+                availableHeight -
+                totalHeight
+            ) / 2
+        );
+
+    const layout = [];
+
+    rows.forEach(row => {
+        let x =
+            outerMargin;
+
+        if (!row.fillsWidth) {
+            x +=
+                Math.max(
+                    0,
+                    (
+                        availableWidth -
+                        row.width
+                    ) / 2
+                );
+        }
+
+        row.indexes.forEach(
+            (
+                imageIndex,
+                positionInRow
+            ) => {
+                const aspectRatio =
+                    clamp(
+                        aspectRatios[
+                            imageIndex
+                        ],
+                        0.18,
+                        7
+                    );
+
+                const width =
+                    aspectRatio *
+                    row.height;
+
+                layout.push({
+                    imageIndex: imageIndex,
+                    aspectRatio:
+                        aspectRatio,
+                    width: width,
+                    height: row.height,
+                    area:
+                        width *
+                        row.height,
+                    rotation: 0,
+                    x: x,
+                    y: y
+                });
+
+                x += width;
+
+                if (
+                    positionInRow <
+                    row.indexes.length - 1
+                ) {
+                    x += gap;
+                }
+            }
+        );
+
+        y +=
+            row.height +
+            gap;
+    });
+
+    return {
+        layout: layout,
+        totalHeight: totalHeight,
+        availableWidth:
+            availableWidth,
+        availableHeight:
+            availableHeight
+    };
+}
+
+function scoreJustifiedMosaicLayout(
+    result,
+    targetHeight,
+    canvasWidth,
+    canvasHeight
+) {
+    const layout =
+        result.layout;
+
+    if (layout.length === 0) {
+        return Infinity;
+    }
+
+    const firstTile =
+        layout.find(
+            tile =>
+                tile.imageIndex === 0
+        );
+
+    const centerX =
+        canvasWidth / 2;
+
+    const rowYValues =
+        Array.from(
+            new Set(
+                layout.map(
+                    tile =>
+                        Number(
+                            tile.y.toFixed(1)
+                        )
+                )
+            )
+        ).sort(
+            (
+                first,
+                second
+            ) =>
+                first - second
+        );
+
+    /*
+    For an odd row count, target the true middle row.
+    For an even row count, target the upper of the two
+    middle rows: row 1 of 2, row 2 of 4, and so on.
+    */
+    const targetRowIndex =
+        Math.floor(
+            (
+                rowYValues.length -
+                1
+            ) /
+            2
+        );
+
+    const firstRowIndex =
+        firstTile
+            ? rowYValues.findIndex(
+                rowY =>
+                    Math.abs(
+                        firstTile.y -
+                        rowY
+                    ) < 0.6
+            )
+            : -1;
+
+    const firstRowPenalty =
+        firstRowIndex ===
+        targetRowIndex
+            ? 0
+            : 100000000;
+
+    const firstHorizontalDistance =
+        firstTile
+            ? Math.abs(
+                (
+                    firstTile.x +
+                    firstTile.width / 2
+                ) -
+                    centerX
+            ) /
+            Math.max(
+                1,
+                canvasWidth / 2
+            )
+            : 1;
+
+    const unusedHeight =
+        Math.max(
+            0,
+            result.availableHeight -
+            result.totalHeight
+        );
+
+    const overflowHeight =
+        Math.max(
+            0,
+            result.totalHeight -
+            result.availableHeight
+        );
+
+    const lastRowTiles =
+        layout.filter(tile => {
+            const maximumY =
+                Math.max(
+                    ...layout.map(
+                        item => item.y
+                    )
+                );
+
+            return (
+                Math.abs(
+                    tile.y -
+                    maximumY
+                ) < 0.5
+            );
+        });
+
+    const lastRowMinimumX =
+        Math.min(
+            ...lastRowTiles.map(
+                tile => tile.x
+            )
+        );
+
+    const lastRowMaximumX =
+        Math.max(
+            ...lastRowTiles.map(
+                tile =>
+                    tile.x +
+                    tile.width
+            )
+        );
+
+    const lastRowUnusedWidth =
+        Math.max(
+            0,
+            result.availableWidth -
+            (
+                lastRowMaximumX -
+                lastRowMinimumX
+            )
+        );
+
+    const heights =
+        layout.map(
+            tile => tile.height
+        );
+
+    const averageHeight =
+        heights.reduce(
+            (
+                sum,
+                height
+            ) =>
+                sum +
+                height,
+            0
+        ) /
+        Math.max(
+            1,
+            heights.length
+        );
+
+    const heightVariation =
+        heights.reduce(
+            (
+                sum,
+                height
+            ) =>
+                sum +
+                Math.abs(
+                    height -
+                    averageHeight
+                ),
+            0
+        ) /
+        Math.max(
+            1,
+            heights.length *
+            Math.max(
+                1,
+                targetHeight
+            )
+        );
+
+    return (
+        overflowHeight * 100000 +
+        unusedHeight * 9 +
+        lastRowUnusedWidth * 0.55 +
+        heightVariation * 700 +
+        firstRowPenalty +
+        firstHorizontalDistance * 5200
+    );
+}
+
+function generateJustifiedMosaicLayout(
+    aspectRatios,
+    canvasWidth,
+    canvasHeight
+) {
+    const imageCount =
+        aspectRatios.length;
+
+    if (imageCount === 0) {
+        return [];
+    }
+
+    const gap =
+        mosaicPreferredGap;
+
+    const outerMargin =
+        mosaicPreferredGap;
+
+    const availableWidth =
+        Math.max(
+            1,
+            canvasWidth -
+            outerMargin * 2
+        );
+
+    const maximumTargetHeight =
+        Math.min(
+            420,
+            canvasHeight -
+            outerMargin * 2
+        );
+
+    const centralPosition =
+        Math.floor(
+            imageCount / 2
+        );
+
+    const candidatePositions = [];
+
+    for (
+        let offset = 0;
+        offset < imageCount;
+        offset++
+    ) {
+        const left =
+            centralPosition -
+            offset;
+
+        const right =
+            centralPosition +
+            offset;
+
+        if (
+            left >= 0 &&
+            left < imageCount &&
+            !candidatePositions.includes(
+                left
+            )
+        ) {
+            candidatePositions.push(
+                left
+            );
+        }
+
+        if (
+            right >= 0 &&
+            right < imageCount &&
+            !candidatePositions.includes(
+                right
+            )
+        ) {
+            candidatePositions.push(
+                right
+            );
+        }
+    }
+
+    let bestLayout = null;
+    let bestScore = Infinity;
+
+    candidatePositions.forEach(
+        firstImagePosition => {
+            const order =
+                createJustifiedMosaicOrder(
+                    imageCount,
+                    firstImagePosition
+                );
+
+            for (
+                let targetHeight = 24;
+                targetHeight <=
+                    maximumTargetHeight;
+                targetHeight += 3
+            ) {
+                const rows =
+                    createJustifiedMosaicRows(
+                        order,
+                        aspectRatios,
+                        availableWidth,
+                        targetHeight,
+                        gap
+                    );
+
+                const result =
+                    layoutJustifiedMosaicRows(
+                        rows,
+                        aspectRatios,
+                        canvasWidth,
+                        canvasHeight,
+                        gap,
+                        outerMargin
+                    );
+
+                const score =
+                    scoreJustifiedMosaicLayout(
+                        result,
+                        targetHeight,
+                        canvasWidth,
+                        canvasHeight
+                    );
+
+                if (
+                    Number.isFinite(score) &&
+                    score < bestScore
+                ) {
+                    bestScore = score;
+
+                    bestLayout =
+                        result.layout.map(
+                            tile => ({
+                                ...tile
+                            })
+                        );
+                }
+            }
+        }
+    );
+
+    if (!bestLayout) {
+        return [];
+    }
+
+    return bestLayout.sort(
+        (
+            first,
+            second
+        ) =>
+            first.imageIndex -
+            second.imageIndex
+    );
+}
+
 function generateBestMosaicLayout(
     aspectRatios,
     canvasWidth,
     canvasHeight
 ) {
     const widthBucket =
-        Math.round(canvasWidth / 20);
+        Math.round(
+            canvasWidth / 20
+        );
 
     const heightBucket =
-        Math.round(canvasHeight / 20);
+        Math.round(
+            canvasHeight / 20
+        );
 
     const ratioSignature =
         aspectRatios
-            .map(ratio => ratio.toFixed(3))
+            .map(
+                ratio =>
+                    ratio.toFixed(3)
+            )
             .join(",");
 
     const layoutKey =
         `${collection}|${widthBucket}|` +
         `${heightBucket}|${ratioSignature}|` +
-        `gap-${mosaicPreferredGap}-` +
-        `${mosaicMinimumGap}|first-center-v1`;
+        `justified-grid-v1|` +
+        `gap-${mosaicPreferredGap}`;
 
-    if (mosaicLayoutCache.has(layoutKey)) {
+    if (
+        mosaicLayoutCache.has(
+            layoutKey
+        )
+    ) {
         return mosaicLayoutCache.get(
             layoutKey
         );
     }
 
-    const masterSeed =
-        hashText(layoutKey);
-
-    const masterRandom =
-        createSeededRandom(masterSeed);
-
-    const candidateCount =
-        aspectRatios.length <= 14
-            ? 150
-            : 110;
-
-    let bestLayout = null;
-    let bestScore = Infinity;
-
-    for (
-        let candidateIndex = 0;
-        candidateIndex < candidateCount;
-        candidateIndex++
-    ) {
-        const candidateSeed =
-            Math.floor(
-                masterRandom() *
-                4294967295
-            );
-
-        const candidateRandom =
-            createSeededRandom(
-                candidateSeed
-            );
-
-        const candidate =
-            generateMosaicCandidate(
-                aspectRatios,
-                canvasWidth,
-                canvasHeight,
-                candidateRandom
-            );
-
-        if (!candidate) {
-            continue;
-        }
-
-        const score =
-            scoreMosaicLayout(
-                candidate,
-                canvasWidth,
-                canvasHeight
-            );
-
-        if (
-            Number.isFinite(score) &&
-            score < bestScore
-        ) {
-            bestScore = score;
-            bestLayout =
-                candidate.map(tile => ({
-                    ...tile
-                }));
-        }
-    }
-
-    if (!bestLayout) {
-        bestLayout =
-            generateFallbackMosaicLayout(
-                aspectRatios,
-                canvasWidth,
-                canvasHeight
-            );
-    }
-
-    const orderedLayout =
-        bestLayout.sort(
-            (first, second) =>
-                first.imageIndex -
-                second.imageIndex
+    const layout =
+        generateJustifiedMosaicLayout(
+            aspectRatios,
+            canvasWidth,
+            canvasHeight
         );
 
     mosaicLayoutCache.set(
         layoutKey,
-        orderedLayout
+        layout
     );
 
-    return orderedLayout;
+    return layout;
 }
 
 function wait(milliseconds) {
@@ -3384,6 +4014,8 @@ async function selectMosaicImage(
         );
 
     mosaicSelectionRunning = true;
+
+    resetMosaicRepulsion(true);
 
     document.body.classList.add(
         "mosaic-photo-transition"
@@ -3523,10 +4155,293 @@ async function selectMosaicImage(
     mosaicSelectionRunning = false;
 }
 
+function canUseMosaicHoverMotion() {
+    return (
+        window.matchMedia(
+            "(hover: hover) and (pointer: fine)"
+        ).matches &&
+        !window.matchMedia(
+            "(prefers-reduced-motion: reduce)"
+        ).matches
+    );
+}
+
+function clearMosaicRepulsionFrame() {
+    if (mosaicRepulsionFrame !== null) {
+        window.cancelAnimationFrame(
+            mosaicRepulsionFrame
+        );
+
+        mosaicRepulsionFrame = null;
+    }
+}
+
+function resetMosaicRepulsion(
+    immediate = false
+) {
+    clearMosaicRepulsionFrame();
+
+    window.clearTimeout(
+        mosaicRepulsionResetTimer
+    );
+
+    mosaicHoveredTile = null;
+
+    mosaicGrid.classList.remove(
+        "mosaic-repulsion-active"
+    );
+
+    mosaicGrid.classList.toggle(
+        "mosaic-repulsion-immediate",
+        immediate
+    );
+
+    mosaicGrid
+        .querySelectorAll(
+            ".mosaic-item"
+        )
+        .forEach(tile => {
+            tile.style.setProperty(
+                "--mosaic-repel-x",
+                "0px"
+            );
+
+            tile.style.setProperty(
+                "--mosaic-repel-y",
+                "0px"
+            );
+
+            tile.style.setProperty(
+                "--mosaic-hover-scale",
+                "1"
+            );
+        });
+
+    if (immediate) {
+        void mosaicGrid.offsetWidth;
+
+        mosaicGrid.classList.remove(
+            "mosaic-repulsion-immediate"
+        );
+
+        return;
+    }
+
+    mosaicGrid.classList.add(
+        "mosaic-repulsion-returning"
+    );
+
+    mosaicRepulsionResetTimer =
+        window.setTimeout(
+            function () {
+                mosaicGrid.classList.remove(
+                    "mosaic-repulsion-returning"
+                );
+            },
+            700
+        );
+}
+
+function applyMosaicRepulsion(
+    hoveredTile,
+    cursorX,
+    cursorY
+) {
+    if (
+        !Number.isFinite(cursorX) ||
+        !Number.isFinite(cursorY) ||
+        !filmstripExpanded ||
+        mosaicSelectionRunning ||
+        !canUseMosaicHoverMotion()
+    ) {
+        resetMosaicRepulsion(true);
+        return;
+    }
+
+    const tiles = Array.from(
+        mosaicGrid.querySelectorAll(
+            ".mosaic-item"
+        )
+    );
+
+    if (tiles.length === 0) {
+        return;
+    }
+
+    const hoveredRect =
+        hoveredTile
+            ? hoveredTile.getBoundingClientRect()
+            : null;
+
+    const hoveredDiagonal =
+        hoveredRect
+            ? Math.hypot(
+                hoveredRect.width,
+                hoveredRect.height
+            )
+            : 160;
+
+    const influenceRadius =
+        Math.max(
+            220.5,
+            hoveredDiagonal * 1.4175
+        );
+
+    const maximumPush = 8.568;
+    mosaicGrid.classList.remove(
+        "mosaic-repulsion-returning",
+        "mosaic-repulsion-immediate"
+    );
+
+    mosaicGrid.classList.add(
+        "mosaic-repulsion-active"
+    );
+
+    tiles.forEach(tile => {
+        if (
+            hoveredTile &&
+            tile === hoveredTile
+        ) {
+            tile.style.setProperty(
+                "--mosaic-repel-x",
+                "0px"
+            );
+
+            tile.style.setProperty(
+                "--mosaic-repel-y",
+                "0px"
+            );
+
+            tile.style.setProperty(
+                "--mosaic-hover-scale",
+                "1.0375"
+            );
+
+            return;
+        }
+
+        const tileRect =
+            tile.getBoundingClientRect();
+
+        const tileCenterX =
+            tileRect.left +
+            tileRect.width / 2;
+
+        const tileCenterY =
+            tileRect.top +
+            tileRect.height / 2;
+
+        const differenceX =
+            tileCenterX -
+            cursorX;
+
+        const differenceY =
+            tileCenterY -
+            cursorY;
+
+        const distance =
+            Math.max(
+                0.001,
+                Math.hypot(
+                    differenceX,
+                    differenceY
+                )
+            );
+
+        const normalizedDistance =
+            Math.min(
+                1,
+                distance /
+                influenceRadius
+            );
+
+        const influence =
+            Math.pow(
+                1 -
+                normalizedDistance,
+                1.45
+            );
+
+        if (influence <= 0) {
+            tile.style.setProperty(
+                "--mosaic-repel-x",
+                "0px"
+            );
+
+            tile.style.setProperty(
+                "--mosaic-repel-y",
+                "0px"
+            );
+
+            tile.style.setProperty(
+                "--mosaic-hover-scale",
+                "1"
+            );
+
+            return;
+        }
+
+        let repelX =
+            (
+                differenceX /
+                distance
+            ) *
+            maximumPush *
+            influence;
+
+        let repelY =
+            (
+                differenceY /
+                distance
+            ) *
+            maximumPush *
+            influence;
+
+        tile.style.setProperty(
+            "--mosaic-repel-x",
+            `${repelX.toFixed(2)}px`
+        );
+
+        tile.style.setProperty(
+            "--mosaic-repel-y",
+            `${repelY.toFixed(2)}px`
+        );
+
+        tile.style.setProperty(
+            "--mosaic-hover-scale",
+            "1"
+        );
+    });
+}
+
+function queueMosaicRepulsion(
+    hoveredTile,
+    cursorX,
+    cursorY
+) {
+    mosaicHoveredTile =
+        hoveredTile;
+
+    clearMosaicRepulsionFrame();
+
+    mosaicRepulsionFrame =
+        window.requestAnimationFrame(
+            function () {
+                mosaicRepulsionFrame = null;
+
+                applyMosaicRepulsion(
+                    mosaicHoveredTile,
+                    cursorX,
+                    cursorY
+                );
+            }
+        );
+}
+
 function renderMosaicLayout(layout) {
     mosaicGrid.innerHTML = "";
 
-    layout.forEach(tileData => {
+    layout.forEach((tileData, tilePosition) => {
         const tile =
             document.createElement("button");
 
@@ -3572,6 +4487,120 @@ function renderMosaicLayout(layout) {
 
         tile.appendChild(image);
 
+        const isInitialMosaic =
+            document.body.classList.contains(
+                "initial-mosaic-mode"
+            );
+
+        if (isInitialMosaic) {
+            const displacementSeed =
+                (
+                    (
+                        tileData.imageIndex +
+                        1
+                    ) *
+                    47 +
+                    tilePosition *
+                    29
+                ) %
+                101;
+
+            const angleSeed =
+                (
+                    displacementSeed *
+                    53 +
+                    tilePosition *
+                    17
+                ) %
+                360;
+
+            const displacement =
+                50 +
+                displacementSeed /
+                    100 *
+                    50;
+
+            const angle =
+                angleSeed *
+                Math.PI /
+                180;
+
+            const offsetX =
+                Math.cos(angle) *
+                displacement;
+
+            const offsetY =
+                Math.sin(angle) *
+                displacement;
+
+            tile.classList.add(
+                "initial-thumbnail-entry"
+            );
+
+            tile.style.setProperty(
+                "--initial-thumbnail-offset-x",
+                `${offsetX.toFixed(1)}px`
+            );
+
+            tile.style.setProperty(
+                "--initial-thumbnail-offset-y",
+                `${offsetY.toFixed(1)}px`
+            );
+
+            const revealThumbnail =
+                function () {
+                    window.requestAnimationFrame(
+                        function () {
+                            window.requestAnimationFrame(
+                                function () {
+                                    tile.classList.add(
+                                        "initial-thumbnail-visible"
+                                    );
+
+                                    window.setTimeout(
+                                        function () {
+                                            tile.classList.remove(
+                                                "initial-thumbnail-entry",
+                                                "initial-thumbnail-visible"
+                                            );
+
+                                            tile.style.removeProperty(
+                                                "--initial-thumbnail-offset-x"
+                                            );
+
+                                            tile.style.removeProperty(
+                                                "--initial-thumbnail-offset-y"
+                                            );
+                                        },
+                                        1340
+                                    );
+                                }
+                            );
+                        }
+                    );
+                };
+
+            if (image.complete) {
+                revealThumbnail();
+            } else {
+                image.addEventListener(
+                    "load",
+                    revealThumbnail,
+                    {
+                        once: true
+                    }
+                );
+
+                image.addEventListener(
+                    "error",
+                    revealThumbnail,
+                    {
+                        once: true
+                    }
+                );
+            }
+        }
+
         tile.addEventListener(
             "click",
             function () {
@@ -3584,6 +4613,31 @@ function renderMosaicLayout(layout) {
 
         mosaicGrid.appendChild(tile);
     });
+
+    /*
+    Track the pointer across the entire mosaic grid so the
+    repulsion continues through the black gaps between
+    photographs. A tile is enlarged only while the cursor
+    is directly over that tile.
+    */
+    mosaicGrid.onpointermove =
+        function (event) {
+            const targetTile =
+                event.target.closest(
+                    ".mosaic-item"
+                );
+
+            queueMosaicRepulsion(
+                targetTile,
+                event.clientX,
+                event.clientY
+            );
+        };
+
+    mosaicGrid.onpointerleave =
+        function () {
+            resetMosaicRepulsion();
+        };
 }
 
 function scaleExistingMosaicToPanel() {
@@ -3741,6 +4795,10 @@ function setFilmstripExpanded(
     }
 
     filmstripExpanded = expanded;
+
+    if (!filmstripExpanded) {
+        resetMosaicRepulsion(true);
+    }
 
     document.body.classList.toggle(
         "mosaic-open",
