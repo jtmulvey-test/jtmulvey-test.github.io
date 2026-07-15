@@ -1,10 +1,12 @@
-const version = "v1.5.81";
+const version = "v1.6.62";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
 const collection = params.get("collection");
 
 const viewer = document.getElementById("viewer");
+const backLink =
+    document.getElementById("backLink");
 const photo = document.getElementById("photo");
 const photoMotionLayer =
     document.getElementById("photoMotionLayer");
@@ -44,6 +46,8 @@ const loadingIndicator =
     document.getElementById("loadingIndicator");
 const filmstripButton =
     document.getElementById("filmstripButton");
+const mosaicReshuffleButton =
+    document.getElementById("mosaicReshuffleButton");
 const thumbnailsContainer =
     document.getElementById("thumbnails");
 const thumbnailScrollLeft =
@@ -58,6 +62,10 @@ const mosaicPanel =
     document.getElementById("mosaicPanel");
 const mosaicGrid =
     document.getElementById("mosaicGrid");
+const initialMosaicFullscreenButton =
+    document.getElementById(
+        "initialMosaicFullscreenButton"
+    );
 const controlArea =
     document.getElementById("controlArea");
 const helpPanel =
@@ -109,8 +117,17 @@ let firstMosaicCueShown = false;
 let loadingIndicatorTimer = null;
 let idleInterfaceTimer = null;
 let initialUiProtectionUntil = 0;
+let initialMosaicChromeRevealRequested = false;
 let filmstripExpanded = false;
 let mosaicBuildToken = 0;
+let expandedMosaicEntryToken = 0;
+let expandedMosaicAnimations = [];
+let mosaicReshuffleRunning = false;
+let mosaicAutoReshuffleActive = false;
+let mosaicAutoReshuffleTimer = null;
+let mosaicReshuffleSeed = 0;
+let currentMosaicLayout = [];
+let savedMosaicOrder = null;
 let mosaicResizeTimer = null;
 let mosaicBaseWidth = 0;
 let mosaicBaseHeight = 0;
@@ -133,7 +150,7 @@ const mosaicLayoutCache = new Map();
 const minimumZoom = 1;
 const maximumZoom = 5;
 const zoomStep = 0.5;
-const fadeDuration = 340;
+const fadeDuration = 700;
 const zoomControlsHideDelay = 650;
 const loadingIndicatorDelay = 2000;
 const interfaceIdleDelay = 4680;
@@ -254,8 +271,18 @@ function showModeToast(message) {
 
     modeToast.classList.remove(
         "visible",
-        "leaving"
+        "leaving",
+        "bottom-entry"
     );
+
+    if (
+        message === "Auto Shuffle Started" ||
+        message === "Auto Shuffle Stopped"
+    ) {
+        modeToast.classList.add(
+            "bottom-entry"
+        );
+    }
 
     modeToast.textContent =
         message === "Autoplay Mode" ? "Autoplay Start" : message;
@@ -275,7 +302,10 @@ function showModeToast(message) {
 
             modeToastFadeTimer = window.setTimeout(
                 function () {
-                    modeToast.classList.remove("leaving");
+                    modeToast.classList.remove(
+                        "leaving",
+                        "bottom-entry"
+                    );
                 },
                 500
             );
@@ -337,19 +367,16 @@ function expandMediaControlsAfterFirstImageLoad() {
     );
 
     /*
-    The media-control pop lasts up to about 0.85 seconds.
-    Wait an additional 0.1 seconds before drawing attention
-    to the mosaic button.
+    The old bounce-and-blink attention animation has been
+    removed. The mosaic button now remains visually still.
     */
     window.clearTimeout(
         firstMosaicCueTimer
     );
 
-    firstMosaicCueTimer =
-        window.setTimeout(
-            triggerFirstMosaicButtonCue,
-            950
-        );
+    filmstripButton.classList.remove(
+        "first-load-attention"
+    );
 }
 
 function waitForTwoFrames() {
@@ -360,7 +387,9 @@ function waitForTwoFrames() {
     });
 }
 
-function waitForOverlayTransition() {
+function waitForOverlayTransition(
+    fallbackDuration = fadeDuration
+) {
     return new Promise(resolve => {
         let completed = false;
 
@@ -395,7 +424,7 @@ function waitForOverlayTransition() {
 
         window.setTimeout(
             finish,
-            fadeDuration + 100
+            fallbackDuration + 100
         );
     });
 }
@@ -415,15 +444,36 @@ function beginPhotoFadeOut() {
         );
     }
 
-    fadeOverlay.classList.add("visible");
-
     pendingPhotoFadeOutPromise =
-        waitForOverlayTransition()
+        waitForOverlayTransition(440)
             .finally(function () {
                 pendingPhotoFadeOutPromise = null;
             });
 
+    fadeOverlay.classList.add("visible");
+
     return pendingPhotoFadeOutPromise;
+}
+
+function coverPhotoWithBlackOverlayInstantly() {
+    /*
+    Mosaic selections already cover the viewer visually, so
+    put the simple black overlay at full opacity without
+    animating the large photographic texture underneath.
+    */
+    fadeOverlay.classList.add(
+        "instant-black"
+    );
+
+    fadeOverlay.classList.add(
+        "visible"
+    );
+
+    void fadeOverlay.offsetWidth;
+
+    fadeOverlay.classList.remove(
+        "instant-black"
+    );
 }
 
 function getCachedImage(src, decodeImage) {
@@ -572,7 +622,6 @@ function showLoadingIndicator() {
 
     loadingIndicatorTimer = window.setTimeout(
         function () {
-            viewer.classList.add("loading");
             loadingIndicator.classList.add("visible");
         },
         loadingIndicatorDelay
@@ -582,13 +631,27 @@ function showLoadingIndicator() {
 function hideLoadingIndicator() {
     window.clearTimeout(loadingIndicatorTimer);
     loadingIndicator.classList.remove("visible");
-    viewer.classList.remove("loading");
+}
+
+async function hideLoadingIndicatorAfterFadeStarts() {
+    /*
+    Keep the loader visible through the first 0.1 seconds of
+    the newly loaded photograph's fade-in.
+    */
+    await wait(100);
+    hideLoadingIndicator();
 }
 
 async function transitionToImage(index) {
     const src = images[index];
     let loadedImage;
 
+    /*
+    Keep the photographic layer static while any black-overlay
+    transition is running. Autoplay motion resumes only after
+    the overlay has completely cleared.
+    */
+    stopAutoplayPan();
     showLoadingIndicator();
 
     const shouldUseNormalFade =
@@ -639,10 +702,37 @@ async function transitionToImage(index) {
             "photo-navigation-ready"
         );
 
-        restartAutoplayPan(displayedIndex);
+        /*
+        A startup mosaic selection owns the visible reveal.
+        For any direct first-image load, reveal through the
+        same simple black overlay.
+        */
+        if (!mosaicSelectionRunning) {
+            if (
+                !fadeOverlay.classList.contains(
+                    "visible"
+                )
+            ) {
+                coverPhotoWithBlackOverlayInstantly();
+            }
 
-        hideLoadingIndicator();
-        expandMediaControlsAfterFirstImageLoad();
+            const photoReveal =
+                waitForOverlayTransition(
+                    fadeDuration
+                );
+
+            fadeOverlay.classList.remove(
+                "visible"
+            );
+
+            const loaderDismissal =
+                hideLoadingIndicatorAfterFadeStarts();
+
+            await photoReveal;
+            await loaderDismissal;
+            restartAutoplayPan(displayedIndex);
+            expandMediaControlsAfterFirstImageLoad();
+        }
 
         return;
     }
@@ -655,16 +745,11 @@ async function transitionToImage(index) {
     }
 
     /*
-    A mosaic selection already hides the full-size photo
-    behind a black viewer. Swap the cached/loaded image
-    directly instead of performing the normal fade-to-black
-    and fade-from-black sequence underneath that blackout.
+    A mosaic selection already holds the simple black overlay
+    at full opacity. Swap the cached/decoded source underneath
+    it without animating the photographic texture.
     */
     if (mosaicSelectionRunning) {
-        fadeOverlay.classList.remove(
-            "visible"
-        );
-
         photo.style.visibility = "hidden";
         photo.src = loadedSource;
 
@@ -676,7 +761,6 @@ async function transitionToImage(index) {
 
         updateThumbnails(displayedIndex, null);
         positionPhotoNavigationIndicators();
-        restartAutoplayPan(displayedIndex);
 
         previousPhotoIndicator.classList.remove(
             "clicked"
@@ -686,7 +770,6 @@ async function transitionToImage(index) {
             "clicked"
         );
 
-        hideLoadingIndicator();
         return;
     }
 
@@ -711,10 +794,20 @@ async function transitionToImage(index) {
     updateThumbnails(displayedIndex, null);
 
     positionPhotoNavigationIndicators();
-    restartAutoplayPan(displayedIndex);
+
+    const photoReveal =
+        waitForOverlayTransition(
+            fadeDuration
+        );
 
     fadeOverlay.classList.remove("visible");
-    await waitForOverlayTransition();
+
+    const loaderDismissal =
+        hideLoadingIndicatorAfterFadeStarts();
+
+    await photoReveal;
+    await loaderDismissal;
+    restartAutoplayPan(displayedIndex);
 
     previousPhotoIndicator.classList.remove(
         "clicked"
@@ -723,8 +816,6 @@ async function transitionToImage(index) {
     nextPhotoIndicator.classList.remove(
         "clicked"
     );
-
-    hideLoadingIndicator();
 }
 
 async function processImageQueue() {
@@ -1357,11 +1448,10 @@ async function startAutoplay() {
         return;
     }
 
-    autoplayActive = true;
-    autoplayPlaying = true;
-
-    updateAutoplayDisplay();
-
+    /*
+    Finish the normal highlighted-photo transition before
+    applying autoplay-specific body classes.
+    */
     if (
         !document.body.classList.contains(
             "ui-hidden"
@@ -1372,6 +1462,10 @@ async function startAutoplay() {
         showModeToast("Autoplay Mode");
     }
 
+    autoplayActive = true;
+    autoplayPlaying = true;
+
+    updateAutoplayDisplay();
     restartAutoplayPan();
 
     if (!transitionRunning) {
@@ -1397,11 +1491,6 @@ async function resumeAutoplay() {
         return;
     }
 
-    autoplayActive = true;
-    autoplayPlaying = true;
-
-    updateAutoplayDisplay();
-
     if (
         !document.body.classList.contains(
             "ui-hidden"
@@ -1412,6 +1501,10 @@ async function resumeAutoplay() {
         showModeToast("Autoplay Mode");
     }
 
+    autoplayActive = true;
+    autoplayPlaying = true;
+
+    updateAutoplayDisplay();
     restartAutoplayPan();
 
     if (!transitionRunning) {
@@ -1505,7 +1598,123 @@ function updateBottomZoomControls(isZoomed) {
     );
 }
 
+function getPhotoPanLimits() {
+    const photoStage =
+        document.getElementById("photoStage");
+
+    if (
+        !photoStage ||
+        !photo.complete ||
+        photo.naturalWidth === 0 ||
+        photo.naturalHeight === 0 ||
+        photoStage.clientWidth <= 0 ||
+        photoStage.clientHeight <= 0
+    ) {
+        return {
+            x: 0,
+            y: 0
+        };
+    }
+
+    /*
+    Build the smallest centered rectangle that:
+    - completely contains the fitted photograph
+    - has the same aspect ratio as the visible display stage
+
+    Pan limits are calculated from this display-shaped
+    envelope rather than directly from the photo dimensions.
+    Portrait photographs therefore retain useful horizontal
+    movement, while landscape photographs retain useful
+    vertical movement.
+    */
+    const fittedWidth =
+        photo.offsetWidth;
+
+    const fittedHeight =
+        photo.offsetHeight;
+
+    const displayAspectRatio =
+        photoStage.clientWidth /
+        photoStage.clientHeight;
+
+    const photoAspectRatio =
+        fittedWidth /
+        fittedHeight;
+
+    let envelopeWidth;
+    let envelopeHeight;
+
+    if (
+        photoAspectRatio >
+        displayAspectRatio
+    ) {
+        envelopeWidth =
+            fittedWidth;
+
+        envelopeHeight =
+            fittedWidth /
+            displayAspectRatio;
+    } else {
+        envelopeHeight =
+            fittedHeight;
+
+        envelopeWidth =
+            fittedHeight *
+            displayAspectRatio;
+    }
+
+    const scaledEnvelopeWidth =
+        envelopeWidth * zoomLevel;
+
+    const scaledEnvelopeHeight =
+        envelopeHeight * zoomLevel;
+
+    return {
+        x:
+            Math.max(
+                0,
+                (
+                    scaledEnvelopeWidth -
+                    photoStage.clientWidth
+                ) / 2
+            ),
+        y:
+            Math.max(
+                0,
+                (
+                    scaledEnvelopeHeight -
+                    photoStage.clientHeight
+                ) / 2
+            )
+    };
+}
+
+function clampPhotoPan() {
+    if (zoomLevel <= minimumZoom) {
+        panX = 0;
+        panY = 0;
+        return;
+    }
+
+    const limits =
+        getPhotoPanLimits();
+
+    panX =
+        Math.max(
+            -limits.x,
+            Math.min(limits.x, panX)
+        );
+
+    panY =
+        Math.max(
+            -limits.y,
+            Math.min(limits.y, panY)
+        );
+}
+
 function updateZoom() {
+    clampPhotoPan();
+
     if (
         zoomLevel === minimumZoom &&
         panX === 0 &&
@@ -4063,151 +4272,331 @@ async function selectMosaicImage(
         return;
     }
 
-    const wasInitialMosaic =
+    const isInitialSelection =
         document.body.classList.contains(
             "initial-mosaic-mode"
         );
 
+    const timing =
+        isInitialSelection
+            ? {
+                minimumBeforeReveal: 1050,
+                overlayClose: 300,
+                imageFadeIn: 1600,
+                controlsDelay: 200
+            }
+            : {
+                minimumBeforeReveal: 440,
+                overlayClose: 260,
+                imageFadeIn: 700,
+                controlsDelay: 0
+            };
+
+    const selectionClass =
+        isInitialSelection
+            ? "initial-mosaic-selection"
+            : "normal-mosaic-selection";
+
     mosaicSelectionRunning = true;
 
-    resetMosaicRepulsion(true);
+    if (isInitialSelection) {
+        filmstripButton.classList.remove(
+            "active"
+        );
 
-    document.body.classList.add(
-        "mosaic-photo-transition"
-    );
+        filmstripButton.setAttribute(
+            "aria-pressed",
+            "false"
+        );
 
-    /*
-    Hide the full-size image while preserving the visible
-    mosaic animation. The selected photo can now be swapped
-    immediately behind this blackout.
-    */
-    viewer.classList.add(
-        "mosaic-photo-blackout"
-    );
+        mosaicReshuffleButton.hidden = true;
 
-    setMosaicCenterShift(
-        selectedTile
-    );
+        /*
+        Every first-view exit now uses the exact same path as
+        clicking a photograph: the highlighted tile, mosaic
+        frame, collapse button, and Full Screen button all
+        complete the established selection transition.
+        */
+        document.body.classList.add(
+            "initial-mosaic-controls-exiting"
+        );
+    } else {
+        document.body.classList.add(
+            "mosaic-selection-buttons-hidden"
+        );
+    }
 
-    selectedTile.classList.remove(
-        "active"
-    );
+    try {
+        resetMosaicRepulsion(true);
 
-    selectedTile.classList.add(
-        "mosaic-selected"
-    );
+        document.body.classList.add(
+            "mosaic-photo-transition",
+            "mosaic-selection-active",
+            selectionClass
+        );
 
-    if (!wasInitialMosaic) {
+        setMosaicCenterShift(
+            selectedTile
+        );
+
+        selectedTile.classList.remove(
+            "active"
+        );
+
+        selectedTile.classList.add(
+            "mosaic-selected"
+        );
+
         mosaicOverlay.classList.add(
             "priority-selection"
         );
-    }
 
-    /*
-    Force the browser to paint the selected state before
-    the mosaic animation starts.
-    */
-    void selectedTile.getBoundingClientRect();
+        void selectedTile.getBoundingClientRect();
+        void photo.getBoundingClientRect();
 
-    mosaicOverlay.classList.add(
-        "selecting"
-    );
+        /*
+        Keep the full-resolution image at full opacity and
+        static. A plain black rectangle covers it while the
+        source changes, avoiding GPU texture-tile seams.
+        */
+        stopAutoplayPan();
+        coverPhotoWithBlackOverlayInstantly();
 
-    /*
-    Keep the longer introductory animation only on the
-    first page load. Later selections prioritize revealing
-    the chosen photograph.
-    */
-    const minimumMosaicFade =
-        wait(
-            wasInitialMosaic
-                ? 900
-                : 760
+        mosaicOverlay.classList.add(
+            "selecting"
         );
 
-    current = imageIndex;
-    requestImageChange();
+        current = imageIndex;
+        requestImageChange();
 
-    await Promise.all([
-        waitForDisplayedIndex(imageIndex),
-        minimumMosaicFade
-    ]);
+        await Promise.all([
+            waitForDisplayedIndex(
+                imageIndex
+            ),
+            wait(
+                timing.minimumBeforeReveal
+            )
+        ]);
 
-    /*
-    Close the mosaic against black. Once its 0.24-second
-    opacity transition is complete, reveal the photograph.
-    */
-    setFilmstripExpanded(
-        false,
-        true
-    );
+        if (isInitialSelection) {
+            /*
+            The 1.05-second fade is now complete. Fully
+            unload the first-view controls before closing the
+            mosaic so neither can pop or be clipped midway.
+            */
+            filmstripButton.hidden = true;
+            initialMosaicFullscreenButton.hidden = true;
 
-    await wait(
-        wasInitialMosaic
-            ? 300
-            : 260
-    );
+            document.body.classList.remove(
+                "initial-mosaic-controls-ready",
+                "initial-mosaic-controls-exiting"
+            );
 
-    mosaicOverlay.classList.remove(
-        "selecting",
-        "priority-selection"
-    );
+            document.body.classList.add(
+                "initial-player-ui-held"
+            );
+        }
 
-    selectedTile.classList.remove(
-        "mosaic-selected"
-    );
-
-    selectedTile.style.removeProperty(
-        "--mosaic-center-shift-x"
-    );
-
-    selectedTile.style.removeProperty(
-        "--mosaic-center-shift-y"
-    );
-
-    mosaicGrid.innerHTML = "";
-
-    await waitForTwoFrames();
-
-    /*
-    Only the first-load reveal receives the special
-    1.3-second transition. Later mosaic selections use the
-    normal 0.58-second photograph fade.
-    */
-    if (wasInitialMosaic) {
-        document.body.classList.add(
-            "initial-gallery-reveal"
+        /*
+        Close the mosaic only after the first-view chrome has
+        completed its own fade.
+        */
+        setFilmstripExpanded(
+            false,
+            true
         );
-    }
 
-    viewer.classList.remove(
-        "mosaic-photo-blackout"
-    );
+        if (!isInitialSelection) {
+            /*
+            Restore the expand button at the same moment the
+            thumbnail bar begins returning. Its position is
+            reset while still invisible, then the hidden
+            state is removed so both use the same 0.28-second
+            opacity transition.
+            */
+            filmstripButton.style.left =
+                "20px";
 
-    document.body.classList.remove(
-        "mosaic-photo-transition"
-    );
+            filmstripButton.style.bottom =
+                "16px";
 
-    if (wasInitialMosaic) {
+            filmstripButton.style.top =
+                "auto";
+
+            void filmstripButton.getBoundingClientRect();
+
+            document.body.classList.remove(
+                "mosaic-selection-buttons-hidden"
+            );
+        }
+
+        if (isInitialSelection) {
+            filmstripButton.style.left =
+                "20px";
+
+            filmstripButton.style.bottom =
+                "16px";
+
+            filmstripButton.style.top =
+                "auto";
+
+            /*
+            Restore the normal player expand button while
+            the entire player UI is still fully hidden. It
+            then shares the exact thumbnail-bar reveal.
+            */
+            filmstripButton.hidden = false;
+            void filmstripButton.getBoundingClientRect();
+
+            initialMosaicFullscreenButton.hidden = true;
+            mosaicReshuffleButton.hidden = true;
+
+            document.body.classList.remove(
+                "initial-mosaic-controls-exiting"
+            );
+
+            /*
+            The held state keeps the complete player UI at
+            opacity zero while the button is restored at the
+            default location. Removing the held state starts
+            one shared 1.3-second fade for the thumbnail bar
+            and the expand button inside it.
+            */
+            document.body.classList.add(
+                "initial-gallery-reveal"
+            );
+
+            document.body.classList.remove(
+                "initial-mosaic-mode"
+            );
+
+            void thumbnailBar.getBoundingClientRect();
+
+            await waitForTwoFrames();
+
+            document.body.classList.remove(
+                "initial-player-ui-held"
+            );
+        } else {
+            await waitForTwoFrames();
+        }
+
+        /*
+        Reveal the loaded photo by fading only the black
+        overlay. The photo itself remains opacity 1 and does
+        not transform while this transition runs.
+        */
+        const imageFadeIn =
+            waitForOverlayTransition(
+                timing.imageFadeIn
+            );
+
+        fadeOverlay.classList.remove(
+            "visible"
+        );
+
+        const loaderDismissal =
+            hideLoadingIndicatorAfterFadeStarts();
+
+        await wait(
+            timing.overlayClose
+        );
+
+        mosaicOverlay.classList.remove(
+            "selecting",
+            "priority-selection"
+        );
+
+        selectedTile.classList.remove(
+            "mosaic-selected"
+        );
+
+        selectedTile.style.removeProperty(
+            "--mosaic-center-shift-x"
+        );
+
+        selectedTile.style.removeProperty(
+            "--mosaic-center-shift-y"
+        );
+
+        mosaicGrid.innerHTML = "";
+
+        await imageFadeIn;
+        await loaderDismissal;
+        restartAutoplayPan(displayedIndex);
+
         document.body.classList.remove(
-            "initial-mosaic-mode"
+            "mosaic-photo-transition",
+            "mosaic-selection-active",
+            selectionClass
         );
 
-        await wait(1300);
+        if (isInitialSelection) {
+            document.body.classList.remove(
+                "initial-gallery-reveal"
+            );
+
+            beginInitialUiVisibilityProtection();
+
+            await wait(
+                timing.controlsDelay
+            );
+
+            expandMediaControlsAfterFirstImageLoad();
+        }
+    } finally {
+        mosaicOverlay.classList.remove(
+            "selecting",
+            "priority-selection"
+        );
 
         document.body.classList.remove(
-            "initial-gallery-reveal"
+            "mosaic-photo-transition",
+            "mosaic-selection-active",
+            "initial-mosaic-selection",
+            "normal-mosaic-selection",
+            "initial-mosaic-controls-exiting",
+            "initial-player-ui-held"
         );
 
-        beginInitialUiVisibilityProtection();
+        selectedTile.classList.remove(
+            "mosaic-selected"
+        );
 
-        await wait(200);
-        expandMediaControlsAfterFirstImageLoad();
-    } else {
-        await wait(580);
+        selectedTile.style.removeProperty(
+            "--mosaic-center-shift-x"
+        );
+
+        selectedTile.style.removeProperty(
+            "--mosaic-center-shift-y"
+        );
+
+        /*
+        Never leave the viewer covered if an unexpected image
+        or transition error interrupts a mosaic selection.
+        */
+        fadeOverlay.classList.remove(
+            "visible",
+            "instant-black"
+        );
+
+        if (
+            isInitialSelection &&
+            !document.body.classList.contains(
+                "initial-mosaic-mode"
+            )
+        ) {
+            /*
+            Keep the reshuffle control suppressed after the
+            first-view transition. The expand button has
+            already been restored earlier while the player UI
+            was still hidden.
+            */
+            mosaicReshuffleButton.hidden = true;
+        }
+
+        mosaicSelectionRunning = false;
     }
-
-    mosaicSelectionRunning = false;
 }
 
 function canUseMosaicHoverMotion() {
@@ -4494,6 +4883,11 @@ function queueMosaicRepulsion(
 }
 
 function renderMosaicLayout(layout) {
+    currentMosaicLayout =
+        layout.map(tile => ({
+            ...tile
+        }));
+
     mosaicGrid.innerHTML = "";
 
     layout.forEach((tileData, tilePosition) => {
@@ -4604,6 +4998,23 @@ function renderMosaicLayout(layout) {
 
             const revealThumbnail =
                 function () {
+                    if (
+                        !initialMosaicChromeRevealRequested
+                    ) {
+                        initialMosaicChromeRevealRequested =
+                            true;
+
+                        if (
+                            document.body.classList.contains(
+                                "initial-mosaic-controls-ready"
+                            )
+                        ) {
+                            document.body.classList.add(
+                                "initial-mosaic-chrome-visible"
+                            );
+                        }
+                    }
+
                     window.requestAnimationFrame(
                         function () {
                             window.requestAnimationFrame(
@@ -4783,12 +5194,36 @@ async function buildSeededMosaic() {
     mosaicGrid.style.transform =
         "scale(1)";
 
-    const layout =
-        generateBestMosaicLayout(
-            aspectRatios,
-            canvasWidth,
-            canvasHeight
+    const isInitialMosaic =
+        document.body.classList.contains(
+            "initial-mosaic-mode"
         );
+
+    let layout = [];
+
+    if (
+        !isInitialMosaic &&
+        Array.isArray(savedMosaicOrder) &&
+        savedMosaicOrder.length ===
+            aspectRatios.length
+    ) {
+        layout =
+            generateMosaicLayoutFromOrder(
+                aspectRatios,
+                canvasWidth,
+                canvasHeight,
+                savedMosaicOrder
+            );
+    }
+
+    if (layout.length === 0) {
+        layout =
+            generateBestMosaicLayout(
+                aspectRatios,
+                canvasWidth,
+                canvasHeight
+            );
+    }
 
     if (
         !filmstripExpanded ||
@@ -4798,41 +5233,1450 @@ async function buildSeededMosaic() {
     }
 
     renderMosaicLayout(layout);
-}
 
-async function selectFirstPhotoFromInitialMosaic() {
     if (
         !document.body.classList.contains(
             "initial-mosaic-mode"
-        ) ||
-        mosaicSelectionRunning
+        )
     ) {
-        return;
+        animateExpandedMosaicFromThumbnailBar();
+    }
+}
+
+async function selectHighlightedPhotoFromInitialMosaic() {
+    if (
+        !document.body.classList.contains(
+            "initial-mosaic-mode"
+        )
+    ) {
+        return false;
+    }
+
+    /*
+    If a selection is already underway, wait for that exact
+    transition instead of starting a competing exit.
+    */
+    while (mosaicSelectionRunning) {
+        await wait(25);
+
+        if (
+            !document.body.classList.contains(
+                "initial-mosaic-mode"
+            )
+        ) {
+            return true;
+        }
     }
 
     const timeoutAt =
         performance.now() + 3000;
 
-    let firstTile = null;
+    let highlightedTile = null;
 
     while (
-        !firstTile &&
+        !highlightedTile &&
         performance.now() < timeoutAt
     ) {
-        firstTile =
+        highlightedTile =
             mosaicGrid.querySelector(
-                '.mosaic-item[data-image-index="0"]'
+                ".mosaic-item.active"
+            ) ||
+            mosaicGrid.querySelector(
+                `.mosaic-item[data-image-index="${current}"]`
+            ) ||
+            mosaicGrid.querySelector(
+                ".mosaic-item"
             );
 
-        if (!firstTile) {
+        if (!highlightedTile) {
             await wait(50);
         }
     }
 
-    if (firstTile) {
-        selectMosaicImage(
-            0,
-            firstTile
+    if (!highlightedTile) {
+        return false;
+    }
+
+    const highlightedIndex =
+        Number(
+            highlightedTile.dataset.imageIndex
+        );
+
+    await selectMosaicImage(
+        Number.isFinite(highlightedIndex)
+            ? highlightedIndex
+            : current,
+        highlightedTile
+    );
+
+    return true;
+}
+
+function setThumbnailBarImageBlackout(enabled) {
+    thumbnailsContainer
+        .querySelectorAll(".thumb")
+        .forEach(thumbnail => {
+            if (enabled) {
+                thumbnail.style.setProperty(
+                    "filter",
+                    "brightness(0)",
+                    "important"
+                );
+
+                thumbnail.style.setProperty(
+                    "opacity",
+                    "1",
+                    "important"
+                );
+
+                thumbnail.style.setProperty(
+                    "background-color",
+                    "black"
+                );
+
+                thumbnail.style.setProperty(
+                    "box-shadow",
+                    "inset 0 0 0 1px " +
+                    "rgba(255, 255, 255, 0.28)"
+                );
+
+                thumbnail.style.setProperty(
+                    "transition",
+                    "none",
+                    "important"
+                );
+            } else {
+                thumbnail.style.removeProperty(
+                    "filter"
+                );
+
+                thumbnail.style.removeProperty(
+                    "opacity"
+                );
+
+                thumbnail.style.removeProperty(
+                    "background-color"
+                );
+
+                thumbnail.style.removeProperty(
+                    "box-shadow"
+                );
+
+                thumbnail.style.removeProperty(
+                    "transition"
+                );
+            }
+        });
+}
+
+function cancelExpandedMosaicEntry() {
+    expandedMosaicEntryToken += 1;
+
+    expandedMosaicAnimations.forEach(
+        animation => {
+            try {
+                animation.cancel();
+            } catch (error) {
+                /*
+                A completed animation may already have
+                released its target.
+                */
+            }
+        }
+    );
+
+    expandedMosaicAnimations = [];
+
+    mosaicGrid
+        .querySelectorAll(
+            ".expanded-mosaic-entering"
+        )
+        .forEach(tile => {
+            tile.classList.remove(
+                "expanded-mosaic-entering"
+            );
+
+            tile.style.removeProperty(
+                "opacity"
+            );
+
+            tile.style.removeProperty(
+                "transform"
+            );
+
+            tile.style.removeProperty(
+                "pointer-events"
+            );
+        });
+
+    document.body.classList.remove(
+        "expanded-mosaic-entry-active"
+    );
+}
+
+function seededBarFraction(
+    imageIndex,
+    tilePosition
+) {
+    const seed =
+        (
+            (
+                imageIndex +
+                1
+            ) *
+            104729 +
+            (
+                tilePosition +
+                1
+            ) *
+            13007
+        ) %
+        1009;
+
+    return seed / 1008;
+}
+
+async function animateExpandedMosaicFromThumbnailBar() {
+    if (
+        document.body.classList.contains(
+            "initial-mosaic-mode"
+        ) ||
+        !filmstripExpanded
+    ) {
+        return;
+    }
+
+    cancelExpandedMosaicEntry();
+
+    const animationToken =
+        expandedMosaicEntryToken;
+
+    /*
+    Let the overlay and mosaic panel establish their visible
+    geometry before measuring destination positions.
+    */
+    await waitForTwoFrames();
+
+    if (
+        !filmstripExpanded ||
+        animationToken !==
+            expandedMosaicEntryToken
+    ) {
+        return;
+    }
+
+    const tiles =
+        Array.from(
+            mosaicGrid.querySelectorAll(
+                ".mosaic-item"
+            )
+        );
+
+    if (tiles.length === 0) {
+        return;
+    }
+
+    document.body.classList.add(
+        "expanded-mosaic-entry-active"
+    );
+
+    const barRect =
+        thumbnailsContainer.getBoundingClientRect();
+
+    const reducedMotion =
+        window.matchMedia(
+            "(prefers-reduced-motion: reduce)"
+        ).matches;
+
+    const tileAnimations =
+        tiles.map(
+            async (tile, tilePosition) => {
+                const image =
+                    tile.querySelector("img");
+
+                if (
+                    image &&
+                    !image.complete
+                ) {
+                    tile.style.opacity = "0";
+
+                    await new Promise(resolve => {
+                        image.addEventListener(
+                            "load",
+                            resolve,
+                            {
+                                once: true
+                            }
+                        );
+
+                        image.addEventListener(
+                            "error",
+                            resolve,
+                            {
+                                once: true
+                            }
+                        );
+                    });
+                }
+
+                if (
+                    !filmstripExpanded ||
+                    animationToken !==
+                        expandedMosaicEntryToken
+                ) {
+                    return;
+                }
+
+                const destinationRect =
+                    tile.getBoundingClientRect();
+
+                const destinationCenterX =
+                    destinationRect.left +
+                    destinationRect.width / 2;
+
+                const destinationCenterY =
+                    destinationRect.top +
+                    destinationRect.height / 2;
+
+                const gridRect =
+                    mosaicGrid.getBoundingClientRect();
+
+                const gridCenterX =
+                    gridRect.left +
+                    gridRect.width / 2;
+
+                const gridCenterY =
+                    gridRect.top +
+                    gridRect.height / 2;
+
+                const fromCenterX =
+                    destinationCenterX -
+                    gridCenterX;
+
+                const fromCenterY =
+                    destinationCenterY -
+                    gridCenterY;
+
+                const distanceFromCenter =
+                    Math.hypot(
+                        fromCenterX,
+                        fromCenterY
+                    );
+
+                const maximumGridDistance =
+                    Math.max(
+                        1,
+                        Math.hypot(
+                            gridRect.width / 2,
+                            gridRect.height / 2
+                        )
+                    );
+
+                const normalizedDistance =
+                    Math.min(
+                        1,
+                        distanceFromCenter /
+                        maximumGridDistance
+                    );
+
+                /*
+                Tiles begin inward, toward the mosaic center.
+                Center tiles move about 10 px; edge tiles move
+                up to 80 px.
+                */
+                const inwardDistance =
+                    10 +
+                    normalizedDistance *
+                    70;
+
+                const directionX =
+                    distanceFromCenter > 0
+                        ? fromCenterX /
+                            distanceFromCenter
+                        : 0;
+
+                const directionY =
+                    distanceFromCenter > 0
+                        ? fromCenterY /
+                            distanceFromCenter
+                        : -1;
+
+                const offsetX =
+                    -directionX *
+                    inwardDistance;
+
+                const offsetY =
+                    -directionY *
+                    inwardDistance;
+
+                /*
+                Scaling follows the same distance profile:
+                subtle near the center and stronger near the
+                outside of the grid.
+                */
+                const startScale =
+                    0.94 -
+                    normalizedDistance *
+                    0.16;
+
+                const finalOpacity =
+                    tile.classList.contains(
+                        "active"
+                    )
+                        ? 1
+                        : 0.96;
+
+                tile.classList.add(
+                    "expanded-mosaic-entering"
+                );
+
+                /*
+                Do not use !important here. Important inline
+                declarations would override the Web
+                Animations API and prevent visible motion.
+                */
+                tile.style.opacity = "0";
+
+                tile.style.transform =
+                    `translate3d(` +
+                    `${offsetX.toFixed(1)}px, ` +
+                    `${offsetY.toFixed(1)}px, 0) ` +
+                    `scale(${startScale.toFixed(4)})`;
+
+                tile.style.pointerEvents =
+                    "none";
+
+                void tile.getBoundingClientRect();
+
+                if (reducedMotion) {
+                    tile.classList.remove(
+                        "expanded-mosaic-entering"
+                    );
+
+                    tile.style.removeProperty(
+                        "opacity"
+                    );
+
+                    tile.style.removeProperty(
+                        "transform"
+                    );
+
+                    tile.style.removeProperty(
+                        "pointer-events"
+                    );
+
+                    return;
+                }
+
+                /*
+                Match the first-view population timing:
+                movement 1.3 s, opacity 1.2 s.
+                */
+                const movement =
+                    tile.animate(
+                        [
+                            {
+                                transform:
+                                    `translate3d(` +
+                                    `${offsetX.toFixed(1)}px, ` +
+                                    `${offsetY.toFixed(1)}px, 0) ` +
+                                    `scale(${startScale.toFixed(4)})`
+                            },
+                            {
+                                transform:
+                                    "translate3d(0, 0, 0) " +
+                                    "scale(1)"
+                            }
+                        ],
+                        {
+                            duration: 700,
+                            easing:
+                                "cubic-bezier(" +
+                                "0.25, 0.75, " +
+                                "0.45, 1)",
+                            fill: "forwards"
+                        }
+                    );
+
+                const fade =
+                    tile.animate(
+                        [
+                            {
+                                opacity: 0
+                            },
+                            {
+                                opacity:
+                                    finalOpacity
+                            }
+                        ],
+                        {
+                            duration: 700,
+                            easing:
+                                "cubic-bezier(" +
+                                "0.25, 0.75, " +
+                                "0.45, 1)",
+                            fill: "forwards"
+                        }
+                    );
+
+                expandedMosaicAnimations.push(
+                    movement,
+                    fade
+                );
+
+                await Promise.all([
+                    movement.finished
+                        .catch(() => undefined),
+                    fade.finished
+                        .catch(() => undefined)
+                ]);
+
+                if (
+                    animationToken !==
+                        expandedMosaicEntryToken
+                ) {
+                    return;
+                }
+
+                tile.classList.remove(
+                    "expanded-mosaic-entering"
+                );
+
+                tile.style.removeProperty(
+                    "opacity"
+                );
+
+                tile.style.removeProperty(
+                    "transform"
+                );
+
+                tile.style.removeProperty(
+                    "pointer-events"
+                );
+
+                try {
+                    movement.cancel();
+                    fade.cancel();
+                } catch (error) {
+                    /*
+                    The final mosaic CSS state is already
+                    active.
+                    */
+                }
+            }
+        );
+
+    await Promise.all(
+        tileAnimations
+    );
+
+    if (
+        animationToken ===
+            expandedMosaicEntryToken
+    ) {
+        expandedMosaicAnimations = [];
+
+        document.body.classList.remove(
+            "expanded-mosaic-entry-active"
+        );
+    }
+}
+
+function positionFilmstripButtonBesideMosaic() {
+    const defaultLeft = 20;
+    const defaultBottom = 16;
+
+    if (!filmstripExpanded) {
+        filmstripButton.style.left =
+            `${defaultLeft}px`;
+
+        filmstripButton.style.bottom =
+            `${defaultBottom}px`;
+
+        filmstripButton.style.top =
+            "auto";
+
+        positionMosaicReshuffleButton();
+
+        return;
+    }
+
+    const panelRect =
+        mosaicPanel.getBoundingClientRect();
+
+    const shuffleWidth =
+        mosaicReshuffleButton.offsetWidth ||
+        48;
+
+    const panelGap = 28;
+    const verticalInset = 12;
+
+    /*
+    Match the media-control panel's 58 px center-to-center
+    spacing: 48 px circular buttons with a 10 px gap.
+    */
+    const verticalButtonStep = 58;
+
+    const buttonLeft =
+        Math.max(
+            12,
+            panelRect.left -
+            shuffleWidth -
+            panelGap
+        );
+
+    const isInitialMosaic =
+        document.body.classList.contains(
+            "initial-mosaic-mode"
+        );
+
+    const bottom =
+        Math.max(
+            12,
+            window.innerHeight -
+            panelRect.bottom +
+            verticalInset
+        );
+
+    /*
+    The initial mosaic still shows only the collapse button.
+    In the normal mosaic, collapse takes the old shuffle
+    position and shuffle stacks directly above it.
+    */
+    filmstripButton.style.left =
+        `${buttonLeft.toFixed(1)}px`;
+
+    filmstripButton.style.bottom =
+        `${bottom.toFixed(1)}px`;
+
+    filmstripButton.style.top =
+        "auto";
+
+    if (!isInitialMosaic) {
+        mosaicReshuffleButton.style.left =
+            `${buttonLeft.toFixed(1)}px`;
+
+        mosaicReshuffleButton.style.bottom =
+            `${(
+                bottom +
+                verticalButtonStep
+            ).toFixed(1)}px`;
+    }
+
+    if (isInitialMosaic) {
+        initialMosaicFullscreenButton.style.left =
+            `${(
+                panelRect.left +
+                panelRect.width / 2
+            ).toFixed(1)}px`;
+
+        initialMosaicFullscreenButton.style.top =
+            `${(
+                panelRect.bottom +
+                14
+            ).toFixed(1)}px`;
+    }
+}
+
+function scheduleFilmstripButtonPosition() {
+    const positioningInitialMosaic =
+        filmstripExpanded &&
+        document.body.classList.contains(
+            "initial-mosaic-mode"
+        );
+
+    if (positioningInitialMosaic) {
+        document.body.classList.remove(
+            "initial-mosaic-controls-ready"
+        );
+    }
+
+    window.requestAnimationFrame(
+        function () {
+            window.requestAnimationFrame(
+                function () {
+                    positionFilmstripButtonBesideMosaic();
+
+                    if (
+                        filmstripExpanded &&
+                        document.body.classList.contains(
+                            "initial-mosaic-mode"
+                        )
+                    ) {
+                        document.body.classList.add(
+                            "initial-mosaic-controls-ready"
+                        );
+
+                        if (
+                            initialMosaicChromeRevealRequested
+                        ) {
+                            document.body.classList.add(
+                                "initial-mosaic-chrome-visible"
+                            );
+                        }
+                    }
+                }
+            );
+        }
+    );
+}
+
+function createSeededRandom(seed) {
+    let value = seed >>> 0;
+
+    return function () {
+        value += 0x6D2B79F5;
+
+        let result = value;
+
+        result =
+            Math.imul(
+                result ^ result >>> 15,
+                result | 1
+            );
+
+        result ^=
+            result +
+            Math.imul(
+                result ^ result >>> 7,
+                result | 61
+            );
+
+        return (
+            (
+                result ^
+                result >>> 14
+            ) >>> 0
+        ) / 4294967296;
+    };
+}
+
+function createShuffledImageOrder(
+    imageCount,
+    seed
+) {
+    const order =
+        Array.from(
+            {
+                length: imageCount
+            },
+            (
+                _,
+                index
+            ) => index
+        );
+
+    const random =
+        createSeededRandom(seed);
+
+    for (
+        let index =
+            order.length - 1;
+        index > 0;
+        index--
+    ) {
+        const swapIndex =
+            Math.floor(
+                random() *
+                (
+                    index +
+                    1
+                )
+            );
+
+        [
+            order[index],
+            order[swapIndex]
+        ] = [
+            order[swapIndex],
+            order[index]
+        ];
+    }
+
+    return order;
+}
+
+function remapShuffledLayout(
+    shuffledLayout,
+    shuffledOrder
+) {
+    return shuffledLayout.map(tile => ({
+        ...tile,
+        imageIndex:
+            shuffledOrder[
+                tile.imageIndex
+            ]
+    }));
+}
+
+function generateMosaicLayoutFromOrder(
+    aspectRatios,
+    canvasWidth,
+    canvasHeight,
+    imageOrder
+) {
+    if (
+        !Array.isArray(imageOrder) ||
+        imageOrder.length !==
+            aspectRatios.length
+    ) {
+        return [];
+    }
+
+    const orderedRatios =
+        imageOrder.map(
+            imageIndex =>
+                aspectRatios[
+                    imageIndex
+                ]
+        );
+
+    return remapShuffledLayout(
+        generateJustifiedMosaicLayout(
+            orderedRatios,
+            canvasWidth,
+            canvasHeight
+        ),
+        imageOrder
+    );
+}
+
+function measureLayoutDifference(
+    firstLayout,
+    secondLayout
+) {
+    if (
+        firstLayout.length === 0 ||
+        firstLayout.length !==
+            secondLayout.length
+    ) {
+        return Infinity;
+    }
+
+    const secondByImage =
+        new Map(
+            secondLayout.map(
+                tile => [
+                    tile.imageIndex,
+                    tile
+                ]
+            )
+        );
+
+    let totalDifference = 0;
+
+    firstLayout.forEach(tile => {
+        const other =
+            secondByImage.get(
+                tile.imageIndex
+            );
+
+        if (!other) {
+            totalDifference += 1000;
+            return;
+        }
+
+        totalDifference +=
+            Math.hypot(
+                tile.x - other.x,
+                tile.y - other.y
+            ) +
+            Math.abs(
+                tile.width -
+                other.width
+            ) *
+            0.5 +
+            Math.abs(
+                tile.height -
+                other.height
+            ) *
+            0.5;
+    });
+
+    return (
+        totalDifference /
+        firstLayout.length
+    );
+}
+
+function generateReshuffledMosaicLayout(
+    aspectRatios,
+    canvasWidth,
+    canvasHeight
+) {
+    let bestCandidate = null;
+    let bestOrder = null;
+    let bestDifference = -Infinity;
+
+    for (
+        let attempt = 0;
+        attempt < 8;
+        attempt++
+    ) {
+        mosaicReshuffleSeed += 1;
+
+        const order =
+            createShuffledImageOrder(
+                aspectRatios.length,
+                (
+                    mosaicReshuffleSeed *
+                    2654435761
+                ) >>> 0
+            );
+
+        const shuffledRatios =
+            order.map(
+                imageIndex =>
+                    aspectRatios[
+                        imageIndex
+                    ]
+            );
+
+        const candidate =
+            remapShuffledLayout(
+                generateJustifiedMosaicLayout(
+                    shuffledRatios,
+                    canvasWidth,
+                    canvasHeight
+                ),
+                order
+            );
+
+        const difference =
+            measureLayoutDifference(
+                currentMosaicLayout,
+                candidate
+            );
+
+        if (
+            difference >
+            bestDifference
+        ) {
+            bestDifference =
+                difference;
+
+            bestCandidate =
+                candidate;
+
+            bestOrder =
+                order.slice();
+        }
+
+        if (difference >= 70) {
+            break;
+        }
+    }
+
+    return {
+        layout:
+            bestCandidate || [],
+        order:
+            bestOrder || []
+    };
+}
+
+async function reshuffleMosaic() {
+    if (
+        !filmstripExpanded ||
+        mosaicSelectionRunning ||
+        mosaicReshuffleRunning ||
+        document.body.classList.contains(
+            "initial-mosaic-mode"
+        )
+    ) {
+        return;
+    }
+
+    const tiles =
+        Array.from(
+            mosaicGrid.querySelectorAll(
+                ".mosaic-item"
+            )
+        );
+
+    if (tiles.length === 0) {
+        return;
+    }
+
+    mosaicReshuffleRunning = true;
+
+    mosaicGrid.classList.add(
+        "reshuffling"
+    );
+
+    mosaicReshuffleButton.classList.add(
+        "reshuffling"
+    );
+
+    resetMosaicRepulsion(true);
+
+    const activeAnimations = [];
+
+    try {
+        const aspectRatios =
+            await getThumbnailAspectRatios();
+
+        if (!filmstripExpanded) {
+            return;
+        }
+
+        const reshuffleResult =
+            generateReshuffledMosaicLayout(
+                aspectRatios,
+                mosaicBaseWidth,
+                mosaicBaseHeight
+            );
+
+        const newLayout =
+            reshuffleResult.layout;
+
+        if (
+            newLayout.length !==
+            tiles.length
+        ) {
+            return;
+        }
+
+        const oldLayoutByImage =
+            new Map(
+                currentMosaicLayout.map(
+                    tile => [
+                        tile.imageIndex,
+                        tile
+                    ]
+                )
+            );
+
+        const newLayoutByImage =
+            new Map(
+                newLayout.map(
+                    tile => [
+                        tile.imageIndex,
+                        tile
+                    ]
+                )
+            );
+
+        /*
+        Forward-transform animation:
+
+        The tiles keep their existing left, top, width, and
+        height for the entire animation. Therefore the first
+        animation frame is exactly the currently displayed
+        grid: translate 0 and scale 1.
+
+        Only after every animation reaches its target do we
+        commit the new layout values and remove the finished
+        transforms in the same JavaScript task.
+        */
+        const animationRecords =
+            tiles.map(tile => {
+                const imageIndex =
+                    Number(
+                        tile.dataset.imageIndex
+                    );
+
+                const oldLayout =
+                    oldLayoutByImage.get(
+                        imageIndex
+                    );
+
+                const newTileLayout =
+                    newLayoutByImage.get(
+                        imageIndex
+                    );
+
+                if (
+                    !oldLayout ||
+                    !newTileLayout
+                ) {
+                    return null;
+                }
+
+                const oldCenterX =
+                    oldLayout.x +
+                    oldLayout.width / 2;
+
+                const oldCenterY =
+                    oldLayout.y +
+                    oldLayout.height / 2;
+
+                const newCenterX =
+                    newTileLayout.x +
+                    newTileLayout.width / 2;
+
+                const newCenterY =
+                    newTileLayout.y +
+                    newTileLayout.height / 2;
+
+                const targetTranslateX =
+                    newCenterX -
+                    oldCenterX;
+
+                const targetTranslateY =
+                    newCenterY -
+                    oldCenterY;
+
+                const targetScaleX =
+                    newTileLayout.width /
+                    Math.max(
+                        1,
+                        oldLayout.width
+                    );
+
+                const targetScaleY =
+                    newTileLayout.height /
+                    Math.max(
+                        1,
+                        oldLayout.height
+                    );
+
+                const verticalCenter =
+                    newTileLayout.y +
+                    newTileLayout.height / 2;
+
+                const verticalProgress =
+                    Math.max(
+                        0,
+                        Math.min(
+                            1,
+                            verticalCenter /
+                            Math.max(
+                                1,
+                                mosaicBaseHeight
+                            )
+                        )
+                    );
+
+                /*
+                Preserve the existing depth pulse. The pulse
+                is expressed relative to the final target
+                size because the underlying tile still has
+                its old width and height during animation.
+                */
+                const middleDepthScale =
+                    1.36 -
+                    verticalProgress *
+                    0.72;
+
+                const middleScaleX =
+                    targetScaleX *
+                    middleDepthScale;
+
+                const middleScaleY =
+                    targetScaleY *
+                    middleDepthScale;
+
+                const transitionZIndex =
+                    Math.round(
+                        (
+                            1 -
+                            verticalProgress
+                        ) *
+                        20
+                    ) +
+                    2;
+
+                tile.style.zIndex =
+                    String(
+                        transitionZIndex
+                    );
+
+                const movementAnimation =
+                    tile.animate(
+                        [
+                            {
+                                translate:
+                                    "0px 0px"
+                            },
+                            {
+                                translate:
+                                    `${targetTranslateX}px ` +
+                                    `${targetTranslateY}px`
+                            }
+                        ],
+                        {
+                            duration: 2400,
+                            easing:
+                                "cubic-bezier(" +
+                                "0.65, 0, " +
+                                "0.35, 1)",
+                            fill: "both"
+                        }
+                    );
+
+                const scaleAnimation =
+                    tile.animate(
+                        [
+                            {
+                                scale:
+                                    "1 1"
+                            },
+                            {
+                                offset: 0.20,
+                                scale:
+                                    `${middleScaleX.toFixed(4)} ` +
+                                    `${middleScaleY.toFixed(4)}`
+                            },
+                            {
+                                scale:
+                                    `${targetScaleX.toFixed(4)} ` +
+                                    `${targetScaleY.toFixed(4)}`
+                            }
+                        ],
+                        {
+                            duration: 2400,
+                            easing:
+                                "cubic-bezier(" +
+                                "0.42, 0, " +
+                                "0.58, 1)",
+                            fill: "both"
+                        }
+                    );
+
+                activeAnimations.push(
+                    movementAnimation,
+                    scaleAnimation
+                );
+
+                return {
+                    tile,
+                    newTileLayout,
+                    movementAnimation,
+                    scaleAnimation
+                };
+            })
+            .filter(Boolean);
+
+        if (
+            animationRecords.length !==
+            tiles.length
+        ) {
+            return;
+        }
+
+        await Promise.all(
+            animationRecords.flatMap(
+                record => [
+                    record.movementAnimation
+                        .finished
+                        .catch(
+                            () => undefined
+                        ),
+                    record.scaleAnimation
+                        .finished
+                        .catch(
+                            () => undefined
+                        )
+                ]
+            )
+        );
+
+        /*
+        At this instant, each transformed old tile visually
+        matches its new rectangle exactly. Commit the new box
+        geometry and cancel the transforms synchronously so
+        the browser never paints an intermediate state.
+        */
+        animationRecords.forEach(
+            function ({
+                tile,
+                newTileLayout,
+                movementAnimation,
+                scaleAnimation
+            }) {
+                tile.style.left =
+                    `${newTileLayout.x.toFixed(1)}px`;
+
+                tile.style.top =
+                    `${newTileLayout.y.toFixed(1)}px`;
+
+                tile.style.width =
+                    `${newTileLayout.width.toFixed(1)}px`;
+
+                tile.style.height =
+                    `${newTileLayout.height.toFixed(1)}px`;
+
+                try {
+                    movementAnimation.cancel();
+                    scaleAnimation.cancel();
+                } catch (error) {
+                    /*
+                    The final geometry is already committed.
+                    */
+                }
+
+                tile.style.removeProperty(
+                    "z-index"
+                );
+            }
+        );
+
+        currentMosaicLayout =
+            newLayout.map(tile => ({
+                ...tile
+            }));
+
+        savedMosaicOrder =
+            reshuffleResult.order.slice();
+    } finally {
+        activeAnimations.forEach(
+            animation => {
+                try {
+                    animation.cancel();
+                } catch (error) {
+                    /* Animation may already be cancelled. */
+                }
+            }
+        );
+
+        mosaicGrid.classList.remove(
+            "reshuffling"
+        );
+
+        mosaicReshuffleButton.classList.remove(
+            "reshuffling"
+        );
+
+        mosaicReshuffleRunning = false;
+    }
+}
+
+function stopAutomaticMosaicReshuffle(
+    showStoppedToast = false
+) {
+    const wasActive =
+        mosaicAutoReshuffleActive;
+
+    if (
+        mosaicAutoReshuffleTimer !==
+        null
+    ) {
+        window.clearInterval(
+            mosaicAutoReshuffleTimer
+        );
+
+        mosaicAutoReshuffleTimer =
+            null;
+    }
+
+    mosaicAutoReshuffleActive =
+        false;
+
+    document.body.classList.remove(
+        "mosaic-shuffle-mode-active"
+    );
+
+    /*
+    Once automatic reshuffling has been stopped, keep the
+    current-photo border hidden for the rest of this page
+    session rather than restoring it immediately.
+    */
+    if (wasActive) {
+        document.body.classList.add(
+            "mosaic-current-border-hidden"
+        );
+    }
+
+    mosaicReshuffleButton.classList.remove(
+        "active"
+    );
+
+    mosaicReshuffleButton.setAttribute(
+        "aria-pressed",
+        "false"
+    );
+
+    mosaicReshuffleButton.setAttribute(
+        "aria-label",
+        "Start automatic mosaic reshuffling"
+    );
+
+    if (
+        wasActive &&
+        showStoppedToast
+    ) {
+        showModeToast(
+            "Auto Shuffle Stopped"
+        );
+    }
+}
+
+function startAutomaticMosaicReshuffle() {
+    stopAutomaticMosaicReshuffle();
+
+    if (
+        !filmstripExpanded ||
+        document.body.classList.contains(
+            "initial-mosaic-mode"
+        )
+    ) {
+        return;
+    }
+
+    mosaicAutoReshuffleActive =
+        true;
+
+    document.body.classList.add(
+        "mosaic-shuffle-mode-active"
+    );
+
+    mosaicReshuffleButton.classList.add(
+        "active"
+    );
+
+    mosaicReshuffleButton.setAttribute(
+        "aria-pressed",
+        "true"
+    );
+
+    mosaicReshuffleButton.setAttribute(
+        "aria-label",
+        "Stop automatic mosaic reshuffling"
+    );
+
+    showModeToast(
+        "Auto Shuffle Started"
+    );
+
+    /*
+    Run one immediately, then continue every five seconds.
+    The animation itself lasts 2.4 seconds.
+    */
+    reshuffleMosaic();
+
+    mosaicAutoReshuffleTimer =
+        window.setInterval(
+            function () {
+                reshuffleMosaic();
+            },
+            5000
+        );
+}
+
+function toggleAutomaticMosaicReshuffle() {
+    if (mosaicAutoReshuffleActive) {
+        stopAutomaticMosaicReshuffle(
+            true
+        );
+    } else {
+        startAutomaticMosaicReshuffle();
+    }
+}
+
+function positionMosaicReshuffleButton() {
+    if (
+        !filmstripExpanded ||
+        document.body.classList.contains(
+            "initial-mosaic-mode"
+        )
+    ) {
+        mosaicReshuffleButton.style.removeProperty(
+            "left"
+        );
+
+        mosaicReshuffleButton.style.removeProperty(
+            "bottom"
         );
     }
 }
@@ -4888,9 +6732,53 @@ function setFilmstripExpanded(
     );
 
     if (filmstripExpanded) {
+        const isInitialMosaic =
+            document.body.classList.contains(
+                "initial-mosaic-mode"
+            );
+
+        /*
+        The reshuffle control exists only in the later,
+        expanded mosaic. The hidden attribute is the source
+        of truth, so CSS state changes cannot expose it.
+        */
+        mosaicReshuffleButton.hidden =
+            isInitialMosaic;
+
+        if (isInitialMosaic) {
+            initialMosaicChromeRevealRequested = false;
+
+            document.body.classList.remove(
+                "initial-mosaic-controls-ready",
+                "initial-mosaic-chrome-visible"
+            );
+        }
+
         buildSeededMosaic();
+        scheduleFilmstripButtonPosition();
     } else {
         mosaicBuildToken += 1;
+        mosaicReshuffleRunning = false;
+
+        stopAutomaticMosaicReshuffle();
+
+        mosaicReshuffleButton.hidden = true;
+        mosaicReshuffleButton.style.removeProperty(
+            "left"
+        );
+        mosaicReshuffleButton.style.removeProperty(
+            "bottom"
+        );
+
+        if (!mosaicSelectionRunning) {
+            positionFilmstripButtonBesideMosaic();
+        }
+
+        cancelExpandedMosaicEntry();
+
+        setThumbnailBarImageBlackout(
+            false
+        );
 
         if (!preserveContent) {
             mosaicGrid.innerHTML = "";
@@ -4943,42 +6831,12 @@ function shouldKeepInterfaceVisible() {
 function scheduleInterfaceIdle() {
     clearInterfaceIdleTimer();
 
-    if (shouldKeepInterfaceVisible()) {
-        return;
-    }
-
-    const protectionRemaining =
-        Math.max(
-            0,
-            initialUiProtectionUntil -
-            performance.now()
-        );
-
-    const delay =
-        Math.max(
-            interfaceIdleDelay,
-            protectionRemaining
-        );
-
-    idleInterfaceTimer = window.setTimeout(
-        function () {
-            if (shouldKeepInterfaceVisible()) {
-                return;
-            }
-
-            if (
-                performance.now() <
-                initialUiProtectionUntil
-            ) {
-                scheduleInterfaceIdle();
-                return;
-            }
-
-            document.body.classList.add(
-                "ui-idle"
-            );
-        },
-        delay
+    /*
+    Gallery UI now remains visible regardless of cursor
+    inactivity. Explicit Hide mode still works normally.
+    */
+    document.body.classList.remove(
+        "ui-idle"
     );
 }
 
@@ -5002,11 +6860,66 @@ function keepInterfaceVisibleWhileHovered(element) {
     );
 }
 
-function toggleFullscreen() {
+async function activateFirstPhotoForMode() {
+    if (
+        !document.body.classList.contains(
+            "initial-mosaic-mode"
+        )
+    ) {
+        return;
+    }
+
+    /*
+    Mode keys and buttons now leave the startup mosaic by
+    selecting the highlighted photograph through the same
+    function used by an ordinary photo click.
+    */
+    await selectHighlightedPhotoFromInitialMosaic();
+}
+
+function updateInitialMosaicFullscreenButton() {
+    const isFullscreen =
+        Boolean(
+            document.fullscreenElement
+        );
+
+    initialMosaicFullscreenButton.classList.toggle(
+        "active",
+        isFullscreen
+    );
+
+    initialMosaicFullscreenButton.setAttribute(
+        "aria-pressed",
+        String(isFullscreen)
+    );
+}
+
+async function toggleInitialMosaicFullscreen() {
+    try {
+        if (!document.fullscreenElement) {
+            await document.documentElement
+                .requestFullscreen();
+        } else {
+            await document.exitFullscreen();
+        }
+    } catch (error) {
+        console.error(
+            "Unable to toggle initial mosaic fullscreen:",
+            error
+        );
+    }
+
+    updateInitialMosaicFullscreenButton();
+    scheduleFilmstripButtonPosition();
+}
+
+async function toggleFullscreen() {
     if (!document.fullscreenElement) {
         document.documentElement
             .requestFullscreen()
-            .then(function () {
+            .then(async function () {
+                await activateFirstPhotoForMode();
+
                 showModeToast(
                     "Full Screen Mode"
                 );
@@ -5128,7 +7041,7 @@ function hideHelp() {
     scheduleInterfaceIdle();
 }
 
-function toggleHelp() {
+async function toggleHelp() {
     if (
         helpOverlay.classList.contains(
             "visible"
@@ -5136,6 +7049,8 @@ function toggleHelp() {
     ) {
         hideHelp();
     } else {
+        await activateFirstPhotoForMode();
+
         showHelp();
         showModeToast("Help Mode");
     }
@@ -5165,7 +7080,6 @@ async function enterHideMode(
     toastMessage = "Hide Mode"
 ) {
     hideHelp();
-    setFilmstripExpanded(false);
 
     if (!document.fullscreenElement) {
         try {
@@ -5178,6 +7092,10 @@ async function enterHideMode(
             );
         }
     }
+
+    await activateFirstPhotoForMode();
+
+    setFilmstripExpanded(false);
 
     clearInterfaceIdleTimer();
     document.body.classList.remove("ui-idle");
@@ -5207,9 +7125,121 @@ function toggleUI() {
     }
 }
 
+async function restoreDefaultGalleryView(
+    event
+) {
+    const isInitialMosaic =
+        document.body.classList.contains(
+            "initial-mosaic-mode"
+        );
+
+    const isMosaicOpen =
+        document.body.classList.contains(
+            "mosaic-open"
+        );
+
+    const isHideOrPlayMode =
+        document.body.classList.contains(
+            "ui-hidden"
+        ) ||
+        document.body.classList.contains(
+            "autoplay-active"
+        );
+
+    /*
+    The startup Back link still returns to Collections.
+    */
+    if (isInitialMosaic) {
+        return;
+    }
+
+    /*
+    Any later expanded mosaic closes first, including when
+    the browser is currently fullscreen.
+    */
+    if (isMosaicOpen) {
+        event.preventDefault();
+        setFilmstripExpanded(false);
+        return;
+    }
+
+    /*
+    Ordinary fullscreen Back navigation returns to
+    Collections.
+    */
+    if (
+        document.fullscreenElement &&
+        !isHideOrPlayMode
+    ) {
+        return;
+    }
+
+    /*
+    Hide and autoplay modes restore the default gallery
+    rather than navigating away.
+    */
+    if (!isHideOrPlayMode) {
+        return;
+    }
+
+    event.preventDefault();
+
+    stopAutoplay();
+    showUI();
+    setFilmstripExpanded(false);
+
+    if (document.fullscreenElement) {
+        try {
+            await document.exitFullscreen();
+        } catch (error) {
+            console.error(
+                "Unable to exit fullscreen:",
+                error
+            );
+        }
+    }
+}
+
+backLink.addEventListener(
+    "click",
+    restoreDefaultGalleryView
+);
+
 filmstripButton.addEventListener(
     "click",
-    toggleFilmstrip
+    function () {
+        if (
+            document.body.classList.contains(
+                "initial-mosaic-mode"
+            )
+        ) {
+            selectHighlightedPhotoFromInitialMosaic();
+            return;
+        }
+
+        toggleFilmstrip();
+    }
+);
+
+mosaicReshuffleButton.addEventListener(
+    "click",
+    toggleAutomaticMosaicReshuffle
+);
+
+initialMosaicFullscreenButton.addEventListener(
+    "click",
+    toggleInitialMosaicFullscreen
+);
+
+document.addEventListener(
+    "fullscreenchange",
+    function () {
+        updateInitialMosaicFullscreenButton();
+
+        if (filmstripExpanded) {
+            scheduleFilmstripButtonPosition();
+        }
+    }
 );
 
 thumbnailScrollLeft.addEventListener(
@@ -5264,7 +7294,7 @@ mosaicOverlay.addEventListener(
                 "initial-mosaic-mode"
             )
         ) {
-            selectFirstPhotoFromInitialMosaic();
+            selectHighlightedPhotoFromInitialMosaic();
             return;
         }
 
@@ -5278,6 +7308,14 @@ window.addEventListener(
         positionPhotoNavigationIndicators();
         updateThumbnailScrollButtons();
 
+        /*
+        Recalculate the zoom boundaries after viewport or
+        fullscreen dimensions change.
+        */
+        if (zoomLevel > minimumZoom) {
+            updateZoom();
+        }
+
         if (!filmstripExpanded) {
             return;
         }
@@ -5288,7 +7326,10 @@ window.addEventListener(
 
         mosaicResizeTimer =
             window.setTimeout(
-                scaleExistingMosaicToPanel,
+                function () {
+                    scaleExistingMosaicToPanel();
+                    positionFilmstripButtonBesideMosaic();
+                },
                 80
             );
     }
@@ -5738,7 +7779,7 @@ document.addEventListener(
                 )
             ) {
                 event.preventDefault();
-                selectFirstPhotoFromInitialMosaic();
+                selectHighlightedPhotoFromInitialMosaic();
                 return;
             }
 

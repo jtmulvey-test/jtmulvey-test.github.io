@@ -16,7 +16,7 @@
         href="collections.html"
         aria-label="Back to collections"
     >
-        <span id="backSymbol" aria-hidden="true">&lt;</span>
+        <span id="backSymbol" aria-hidden="true">‹</span>
         <span>Back</span>
     </a>
 
@@ -163,11 +163,22 @@
         </button>
 
         <button
+            id="mosaicReshuffleButton"
+            type="button"
+            hidden
+            aria-label="Start automatic mosaic reshuffling"
+            aria-pressed="false"
+            title="Automatic mosaic reshuffle"
+        >
+            ↻
+        </button>
+
+        <button
             id="thumbnailScrollLeft"
             class="thumbnail-scroll-button"
             type="button"
             aria-label="Scroll thumbnails left"
-        >‹</button>
+        ><span aria-hidden="true">‹</span></button>
 
         <div id="thumbnails"></div>
 
@@ -176,7 +187,7 @@
             class="thumbnail-scroll-button"
             type="button"
             aria-label="Scroll thumbnails right"
-        >›</button>
+        ><span aria-hidden="true">›</span></button>
     </div>
 
     <div
@@ -191,6 +202,15 @@
         >
             <div id="mosaicGrid"></div>
         </div>
+
+        <button
+            id="initialMosaicFullscreenButton"
+            type="button"
+            aria-label="Toggle full screen"
+            aria-pressed="false"
+        >
+            Full Screen
+        </button>
     </div>
 
     <div id="helpOverlay" aria-hidden="true">

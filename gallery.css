@@ -262,15 +262,17 @@ body {
     opacity: 1;
     transform: none;
     transform-origin: center;
+    filter: none;
     user-select: none;
     -webkit-user-drag: none;
     pointer-events: none;
     visibility: visible;
-    transition: opacity 0.58s ease;
+    transition: none;
 }
 
 #viewer.mosaic-photo-blackout #photo {
-    opacity: 0;
+    opacity: 1;
+    filter: none;
     transition: none;
 }
 
@@ -281,11 +283,12 @@ body {
     background: black;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.34s ease-in-out;
+    transition: opacity 0.7s ease-in-out;
 }
 
 #fadeOverlay.visible {
     opacity: 1;
+    transition-duration: 0.44s;
 }
 
 #bottomZoomControls {
@@ -823,14 +826,12 @@ body.ui-hidden.autoplay-active #autoplayProgress {
 }
 
 #photo {
-    transition:
-        opacity 0.2s ease,
-        filter 0.2s ease;
+    transition: none;
 }
 
 #viewer.loading #photo {
-    opacity: 0.62;
-    filter: blur(3px);
+    opacity: 1;
+    filter: none;
 }
 
 #loadingIndicator {
@@ -1509,7 +1510,6 @@ On the first page view, show only the mosaic. The initial
 body class is removed when a mosaic photograph is selected,
 allowing the photo and UI to fade in together.
 */
-body.initial-mosaic-mode #photo,
 body.initial-mosaic-mode #backLink,
 body.initial-mosaic-mode #controlArea,
 body.initial-mosaic-mode #counter,
@@ -1521,10 +1521,6 @@ body.initial-mosaic-mode #bottomZoomControls,
 body.initial-mosaic-mode #loadingIndicator {
     opacity: 0 !important;
     pointer-events: none !important;
-}
-
-body.initial-mosaic-mode #photo {
-    transition: opacity 0.58s ease;
 }
 
 body.initial-mosaic-mode #backLink,
@@ -1550,7 +1546,6 @@ body.initial-mosaic-mode.mosaic-open #controlArea {
 Use a slower transition only for the first reveal after
 the startup mosaic. Later gallery transitions are unchanged.
 */
-body.initial-gallery-reveal #photo,
 body.initial-gallery-reveal #backLink,
 body.initial-gallery-reveal #controlArea,
 body.initial-gallery-reveal #counter,
@@ -1799,10 +1794,10 @@ overshoot. Only opacity and transform are animated.
     display: flex;
     align-items: center;
     justify-content: center;
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: none;
     transform-origin: center center;
-    will-change: transform;
-    transition: transform 0.45s ease;
+    will-change: auto;
+    transition: none;
 }
 
 #photoMotionLayer.autoplay-pan-active {
@@ -1837,13 +1832,13 @@ body.autoplay-active:not(.autoplay-playing)
 @keyframes autoplay-pan-0 {
     from {
         transform:
-            translate3d(-8px, -4px, 0)
+            translate(-8px, -4px)
             scale(1.018);
     }
 
     to {
         transform:
-            translate3d(8px, 4px, 0)
+            translate(8px, 4px)
             scale(1.032);
     }
 }
@@ -1851,13 +1846,13 @@ body.autoplay-active:not(.autoplay-playing)
 @keyframes autoplay-pan-1 {
     from {
         transform:
-            translate3d(8px, -5px, 0)
+            translate(8px, -5px)
             scale(1.020);
     }
 
     to {
         transform:
-            translate3d(-8px, 5px, 0)
+            translate(-8px, 5px)
             scale(1.034);
     }
 }
@@ -1865,13 +1860,13 @@ body.autoplay-active:not(.autoplay-playing)
 @keyframes autoplay-pan-2 {
     from {
         transform:
-            translate3d(-7px, 5px, 0)
+            translate(-7px, 5px)
             scale(1.019);
     }
 
     to {
         transform:
-            translate3d(7px, -5px, 0)
+            translate(7px, -5px)
             scale(1.033);
     }
 }
@@ -1879,13 +1874,13 @@ body.autoplay-active:not(.autoplay-playing)
 @keyframes autoplay-pan-3 {
     from {
         transform:
-            translate3d(7px, 4px, 0)
+            translate(7px, 4px)
             scale(1.018);
     }
 
     to {
         transform:
-            translate3d(-7px, -4px, 0)
+            translate(-7px, -4px)
             scale(1.032);
     }
 }
@@ -2548,3 +2543,1473 @@ Faster standard photo navigation:
   navigation, and autoplay
 - mosaic selection keeps its separate blackout transition
 */
+
+
+/* Consolidated mosaic-selection transitions: v1.5.4 */
+
+/*
+Both initial and later selections share the same visual
+pipeline:
+- remove non-selected thumbnails rapidly
+- hide the previous large image
+- load the selected large image in parallel
+- move, shrink, darken, and fade the selected thumbnail
+- reveal the loaded image underneath while the mosaic closes
+*/
+body.mosaic-selection-active
+#viewer.mosaic-photo-blackout
+#photo,
+body.normal-mosaic-selection
+#viewer:not(.mosaic-photo-blackout)
+#photo,
+body.initial-mosaic-selection
+#viewer:not(.mosaic-photo-blackout)
+#photo {
+    opacity: 1;
+    filter: none;
+    transition: none !important;
+}
+
+body.mosaic-selection-active
+#mosaicOverlay {
+    background: rgba(0, 0, 0, 0);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    transition:
+        opacity 0.24s ease,
+        background-color 0.12s ease;
+}
+
+body.initial-mosaic-selection
+#mosaicOverlay {
+    transition:
+        opacity 0.3s ease,
+        background-color 0.12s ease;
+}
+
+body.mosaic-selection-active
+#mosaicOverlay.selecting
+#mosaicPanel {
+    background: rgba(0, 0, 0, 0);
+    border-color: transparent;
+    box-shadow: none;
+    transition:
+        background-color 0.12s ease,
+        border-color 0.12s ease,
+        box-shadow 0.12s ease;
+}
+
+body.mosaic-selection-active
+#mosaicOverlay.selecting
+.mosaic-item:not(.mosaic-selected) {
+    opacity: 0;
+    transform: scale(0.97);
+    pointer-events: none;
+    transition:
+        opacity 0.12s ease,
+        transform 0.12s ease !important;
+}
+
+body.mosaic-selection-active
+#mosaicOverlay.priority-selection.selecting
+.mosaic-item.mosaic-selected {
+    z-index: 10;
+    opacity: 0;
+    transform:
+        translate(
+            var(
+                --mosaic-center-shift-x,
+                0px
+            ),
+            var(
+                --mosaic-center-shift-y,
+                0px
+            )
+        )
+        scale(0.84);
+}
+
+body.normal-mosaic-selection
+#mosaicOverlay.priority-selection.selecting
+.mosaic-item.mosaic-selected {
+    transition:
+        opacity 0.7s ease,
+        transform 0.7s
+        cubic-bezier(
+            0.22,
+            0.61,
+            0.36,
+            1
+        ) !important;
+}
+
+body.initial-mosaic-selection
+#mosaicOverlay.priority-selection.selecting
+.mosaic-item.mosaic-selected {
+    transition:
+        opacity 1.05s ease,
+        transform 0.72s ease !important;
+}
+
+body.mosaic-selection-active
+#mosaicOverlay.priority-selection.selecting
+.mosaic-item.mosaic-selected img {
+    filter: brightness(0);
+}
+
+body.normal-mosaic-selection
+#mosaicOverlay.priority-selection.selecting
+.mosaic-item.mosaic-selected img {
+    transition:
+        filter 0.7s ease !important;
+}
+
+body.initial-mosaic-selection
+#mosaicOverlay.priority-selection.selecting
+.mosaic-item.mosaic-selected img {
+    transition:
+        filter 1.05s ease !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.mosaic-selection-active
+    #viewer.mosaic-photo-blackout
+    #photo,
+    body.mosaic-selection-active
+    #viewer:not(.mosaic-photo-blackout)
+    #photo,
+    body.mosaic-selection-active
+    #mosaicOverlay.selecting
+    .mosaic-item {
+        transition-duration: 0.01ms !important;
+    }
+}
+
+
+/* Gallery experience updates: v1.5.1 */
+
+/*
+Back-button state hierarchy:
+- hide/autoplay: 0.3 white, restore default gallery
+- any mosaic: full white
+- later mosaic: close mosaic
+- startup mosaic: return to Collections
+- ordinary fullscreen: return to Collections
+*/
+body.ui-hidden #backLink,
+body.autoplay-active #backLink {
+    color: rgba(255, 255, 255, 0.3) !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+body.mosaic-open:not(.ui-hidden):not(.autoplay-active)
+#backLink,
+:fullscreen:not(.ui-hidden):not(.autoplay-active)
+#backLink {
+    color: rgba(255, 255, 255, 1) !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+/* Keep Back above the mosaic overlay so it remains usable. */
+body.mosaic-open #backLink {
+    z-index: 90;
+}
+
+
+/* Gallery experience updates: v1.5.2 */
+
+/*
+Back behavior:
+- pure fullscreen: full opacity, returns to collections
+- normal mosaic: 0.3 opacity, closes mosaic
+- first-view mosaic: full opacity, returns to collections
+*/
+
+
+/* Gallery experience updates: v1.5.3 */
+
+/*
+Opening any mode from the initial mosaic now first converts
+the page into the same loaded state as selecting image 1.
+This temporary class prevents the default interface from
+flashing before the requested mode takes over.
+*/
+body.mode-entry-from-initial #backLink,
+body.mode-entry-from-initial #controlArea,
+body.mode-entry-from-initial #counter,
+body.mode-entry-from-initial #thumbnailBar,
+body.mode-entry-from-initial .photo-nav-indicator,
+body.mode-entry-from-initial #bottomZoomControls {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/*
+Fade the media controls out while the expanded mosaic is
+open. Back remains independently available under its
+existing mosaic rules.
+*/
+#controlArea {
+    transition:
+        opacity 0.24s ease,
+        transform 0.24s ease;
+}
+
+body.mosaic-open #controlArea {
+    opacity: 0;
+    transform: translateY(-8px);
+    pointer-events: none;
+}
+
+
+/* Gallery experience updates: v1.5.4 */
+
+/*
+- Back is full opacity in the expanded mosaic.
+- The startup selection now uses the same consolidated
+  transition pipeline as later selections.
+- Startup retains its slower 900 ms minimum, 300 ms mosaic
+  close, 1.05 s selected-tile fade, and 1.3 s image reveal.
+*/
+
+
+/* Gallery experience updates: v1.5.5 */
+
+/*
+First-view mosaic selection:
+- minimum delay before the main image begins fading in:
+  1300 ms
+- main-image fade-in duration: 1300 ms
+- image loading continues in parallel with the minimum delay
+*/
+
+
+/* Gallery experience updates: v1.6.6 */
+
+/*
+First-view mosaic selection:
+- main-image fade-in begins after a 1000 ms minimum
+  instead of 1300 ms
+- main-image fade-in lasts 1600 ms instead of 1300 ms
+*/
+
+
+/* Gallery experience updates: v1.6.10 */
+
+/*
+The expanded mosaic uses the same 1.3-second movement and
+1.2-second fade rhythm as the first-view mosaic. JavaScript
+sets each tile's starting center inside the thumbnail bar
+and animates the actual mosaic tile into its final position.
+*/
+.mosaic-item.expanded-mosaic-entering {
+    will-change:
+        transform,
+        opacity;
+}
+
+
+
+/*
+Critical v1.6.10 flight fix:
+The first-view animation only moves tiles 50–100 px, so the
+existing overflow clipping is not obvious. A flight from the
+thumbnail bar is much farther and was completely clipped by
+#mosaicPanel and #mosaicGrid. Overflow is temporarily opened
+only while the expanded-mosaic entrance runs.
+*/
+body.expanded-mosaic-entry-active
+#mosaicPanel,
+body.expanded-mosaic-entry-active
+#mosaicGrid {
+    overflow: visible !important;
+}
+
+
+/* Gallery experience updates: v1.6.11 */
+
+/*
+Expanded mosaic entry:
+- starting points moved lower, near the bottom edge of the
+  thumbnail bar
+- starting mosaic tiles are much smaller before rising into
+  their final positions
+*/
+
+
+/* Gallery experience updates: v1.6.12 */
+
+/*
+Every expanded-mosaic tile now shares one origin:
+the bottom-center of the thumbnail bar.
+*/
+
+
+/* Gallery experience updates: v1.6.13 */
+
+/*
+Expanded mosaic population:
+- total movement duration reduced from 1.3 s to 1.1 s
+- opacity duration set to 1.1 s
+- easing changed to cubic-bezier(0.25, 0.75, 0.45, 1)
+  so the final approach settles more quickly
+*/
+
+
+/* Gallery experience updates: v1.6.14 */
+
+/*
+Expanded mosaic entry:
+- total duration: 0.7 s
+- tiles begin displaced toward the grid center
+- displacement varies from roughly 10 px near the center
+  to a maximum of 80 px near the outer edge
+- starting scale varies from 0.94 near the center to 0.78
+  near the outer edge
+- thumbnail bar no longer blacks out
+*/
+
+
+/* Gallery experience updates: v1.6.15 */
+
+/*
+Disable the old cursor-inactivity fade behavior completely.
+These safeguards also restore the UI if an old ui-idle class
+is still present during a cached page transition.
+*/
+body.ui-idle:not(.ui-hidden) #backLink,
+body.ui-idle:not(.ui-hidden) #controlArea,
+body.ui-idle:not(.ui-hidden) #counter {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+body.ui-idle:not(.ui-hidden) #thumbnailBar,
+body.ui-idle:not(.ui-hidden)
+#thumbnailBar.thumbnails-ready {
+    opacity: 1 !important;
+    transform: none !important;
+    pointer-events: auto !important;
+}
+
+body.ui-idle:not(.ui-hidden)
+#bottomZoomControls.visible {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+/*
+When the expanded mosaic is open, fade away the visible
+thumbnail strip while leaving its collapse button available.
+*/
+#thumbnailBar,
+#thumbnails,
+.thumbnail-scroll-button {
+    transition:
+        opacity 0.28s ease,
+        background-color 0.28s ease,
+        border-color 0.28s ease;
+}
+
+body.mosaic-open:not(.initial-mosaic-mode)
+#thumbnailBar {
+    background: transparent;
+}
+
+body.mosaic-open:not(.initial-mosaic-mode)
+#thumbnails,
+body.mosaic-open:not(.initial-mosaic-mode)
+.thumbnail-scroll-button {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/*
+Keep the mosaic collapse button outside the mosaic panel at
+the lower-left corner of the viewport.
+*/
+body.mosaic-open:not(.initial-mosaic-mode)
+#filmstripButton {
+    position: fixed;
+    left: 20px;
+    bottom: 20px;
+    z-index: 92;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+
+/* Gallery experience updates: v1.6.16 */
+
+/*
+In expanded mosaic mode, JavaScript places the collapse
+button immediately outside the mosaic panel's lower-left
+corner. Its bottom edge sits 12 px above the panel bottom.
+*/
+body.mosaic-open:not(.initial-mosaic-mode)
+#filmstripButton {
+    position: fixed;
+    z-index: 92;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+
+/* Gallery experience updates: v1.6.17 */
+
+/*
+The mosaic button now sits farther left of the mosaic box
+and smoothly travels between its default-gallery and
+expanded-mosaic positions.
+*/
+#filmstripButton {
+    transition:
+        left 0.36s cubic-bezier(0.25, 0.75, 0.45, 1),
+        bottom 0.36s cubic-bezier(0.25, 0.75, 0.45, 1),
+        color 0.2s ease,
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.25s ease;
+}
+
+
+/* Gallery experience updates: v1.6.18 */
+
+/*
+Reshuffle control shown beside the collapse button in the
+expanded mosaic view.
+*/
+#mosaicReshuffleButton {
+    position: fixed;
+    left: 80px;
+    bottom: 16px;
+    z-index: 92;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid white;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 26px;
+    line-height: 1;
+    opacity: 0;
+    transform: rotate(0deg);
+    transition:
+        left 0.36s cubic-bezier(0.25, 0.75, 0.45, 1),
+        bottom 0.36s cubic-bezier(0.25, 0.75, 0.45, 1),
+        color 0.2s ease,
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        opacity 0.24s ease,
+        transform 0.25s ease;
+}
+
+body.mosaic-open:not(.initial-mosaic-mode)
+#mosaicReshuffleButton {
+    display: flex;
+    opacity: 1;
+}
+
+#mosaicReshuffleButton:hover:not(:disabled) {
+    color: black;
+    background: white;
+    border-color: white;
+    transform: rotate(24deg) scale(0.94);
+}
+
+#mosaicReshuffleButton:focus-visible {
+    outline: 1px solid white;
+    outline-offset: 4px;
+}
+
+#mosaicReshuffleButton:disabled {
+    opacity: 0.38;
+    cursor: default;
+}
+
+#mosaicGrid.reshuffling {
+    pointer-events: none;
+}
+
+#mosaicGrid.reshuffling .mosaic-item {
+    will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #mosaicReshuffleButton {
+        transition-duration: 0.01ms;
+    }
+}
+
+
+/* Gallery experience updates: v1.6.19 */
+
+/*
+Automatic reshuffle:
+- toggles on/off
+- reshuffles every 5 seconds
+- each transition lasts 2.4 seconds
+- the button sits immediately left of the collapse button
+*/
+#mosaicReshuffleButton.active {
+    color: black;
+    background: white;
+    border-color: white;
+}
+
+#mosaicReshuffleButton.active {
+    animation:
+        mosaic-reshuffle-spin
+        1.4s
+        linear
+        infinite;
+}
+
+#mosaicReshuffleButton.active:hover {
+    color: black;
+    background: white;
+    border-color: white;
+}
+
+@keyframes mosaic-reshuffle-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/*
+The button remains clickable while a reshuffle is in
+progress so automatic mode can always be turned off.
+*/
+#mosaicReshuffleButton:disabled {
+    opacity: 1;
+    cursor: pointer;
+}
+
+
+/* Gallery experience updates: v1.6.20 */
+
+/*
+Reshuffle depth now follows vertical position:
+- top tiles grow up to about 1.18x
+- center tiles stay near 1.0x
+- bottom tiles shrink to about 0.82x
+- temporary stacking is also based on vertical position
+- the previous cubic-bezier(0.25, 0.75, 0.45, 1)
+  acceleration curve is retained
+*/
+
+
+/* Gallery experience updates: v1.6.21 */
+
+/*
+Reshuffle motion and depth are animated independently:
+- movement keeps the prior acceleration curve continuously
+  for the full 2.4 seconds
+- scaling uses a smooth ease-in-out pulse
+- this removes the abrupt midpoint slowdown
+- top tiles now grow to about 1.36x
+- bottom tiles now shrink to about 0.64x
+*/
+
+
+/* Gallery experience updates: v1.6.22 */
+
+/*
+The maximum growth/shrink point now occurs at 40% of the
+2.4-second reshuffle animation instead of 50%.
+*/
+
+
+/* Gallery experience updates: v1.6.23 */
+
+/*
+The maximum growth/shrink point now occurs at 25% of the
+2.4-second reshuffle animation.
+*/
+
+
+/* Gallery experience updates: v1.6.24 */
+
+/*
+The maximum growth/shrink point now occurs at 15% of the
+2.4-second reshuffle animation.
+*/
+
+
+/* Gallery experience updates: v1.6.25 */
+
+/* Back remains at 30% gray in Hide and Play modes. */
+body.ui-hidden #backLink,
+body.autoplay-active #backLink {
+    color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/*
+The toggle stays solid while automatic reshuffling is on,
+but it spins only during an actual photo rearrangement.
+*/
+#mosaicReshuffleButton.active {
+    animation: none;
+}
+
+#mosaicReshuffleButton.reshuffling {
+    animation:
+        mosaic-reshuffle-spin
+        1.4s
+        linear
+        infinite;
+}
+
+#mosaicReshuffleButton.active.reshuffling {
+    color: black;
+    background: white;
+    border-color: white;
+}
+
+
+/* Gallery experience updates: v1.6.26 */
+
+/*
+In Hide and Play modes, preserve the full Back click box but
+show only the arrow at 30% white.
+*/
+body.ui-hidden #backLink > span:last-child,
+body.autoplay-active #backLink > span:last-child {
+    visibility: hidden;
+}
+
+body.ui-hidden #backSymbol,
+body.autoplay-active #backSymbol {
+    color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/*
+During each 2.4-second rearrangement, the shuffle button
+makes exactly two rotations using the same fast-start,
+slow-finish curve as the photo movement.
+*/
+#mosaicReshuffleButton.reshuffling {
+    animation:
+        mosaic-reshuffle-two-turns
+        2.4s
+        cubic-bezier(0.25, 0.75, 0.45, 1)
+        1
+        both;
+}
+
+@keyframes mosaic-reshuffle-two-turns {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(720deg);
+    }
+}
+
+/* Gallery experience updates: v1.6.33 */
+
+/* Hidden is authoritative even when legacy display rules match. */
+[hidden] {
+    display: none !important;
+}
+
+/* Modern Back chevron, aligned to the word Back. */
+#backSymbol {
+    display: inline-flex;
+    width: 20px;
+    height: 28px;
+    align-items: center;
+    justify-content: center;
+    font-size: 42px;
+    line-height: 1;
+    transform: translateY(-1px);
+}
+
+/* Roughly 20% larger Back click target without menu overlap. */
+#backLink {
+    margin-top: -5px;
+    margin-left: -8px;
+    padding: 5px 8px;
+    box-sizing: border-box;
+}
+
+body.ui-hidden #backLink,
+body.autoplay-active #backLink {
+    min-height: 0;
+    margin-top: -7px;
+    margin-left: -10px;
+    padding: 7px 10px;
+}
+
+body.ui-hidden #backLink > span:last-child,
+body.autoplay-active #backLink > span:last-child {
+    visibility: hidden;
+}
+
+body.ui-hidden #backSymbol,
+body.autoplay-active #backSymbol {
+    color: rgba(255, 255, 255, 0.4) !important;
+    font-size: 52px;
+}
+
+/* First-view mosaic controls. */
+body.initial-mosaic-mode #thumbnailBar {
+    opacity: 1 !important;
+    transform: none !important;
+    pointer-events: none !important;
+    background: transparent !important;
+}
+
+body.initial-mosaic-mode #filmstripButton,
+body.initial-mosaic-mode #initialMosaicFullscreenButton {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: none !important;
+}
+
+body.initial-mosaic-mode.initial-mosaic-controls-ready
+#filmstripButton,
+body.initial-mosaic-mode.initial-mosaic-controls-ready
+#initialMosaicFullscreenButton {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+body.initial-mosaic-mode #thumbnails,
+body.initial-mosaic-mode .thumbnail-scroll-button,
+body.initial-mosaic-mode #mosaicReshuffleButton {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* Fast exit for first-view controls after a photo click. */
+body.initial-mosaic-controls-exiting
+#filmstripButton,
+body.initial-mosaic-controls-exiting
+#initialMosaicFullscreenButton {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity 0.12s ease !important;
+}
+
+
+/*
+Hold all player UI at zero until the restored mosaic button
+is at its default coordinates. Removing this class starts the
+same 1.3-second reveal for the thumbnail bar and menu button.
+*/
+body.initial-player-ui-held #backLink,
+body.initial-player-ui-held #controlArea,
+body.initial-player-ui-held #counter,
+body.initial-player-ui-held #thumbnailBar,
+body.initial-player-ui-held .photo-nav-indicator,
+body.initial-player-ui-held #autoplayStatus,
+body.initial-player-ui-held #autoplayProgress,
+body.initial-player-ui-held #bottomZoomControls {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* Expanded mosaic photo selection hides both buttons instantly. */
+body.mosaic-selection-buttons-hidden
+#filmstripButton,
+body.mosaic-selection-buttons-hidden
+#mosaicReshuffleButton {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition:
+        opacity 0s linear,
+        left 0s linear,
+        bottom 0s linear !important;
+}
+
+/* Old attention cue is disabled. */
+#filmstripButton.first-load-attention {
+    animation: none !important;
+}
+
+/* First-view fullscreen control. */
+#initialMosaicFullscreenButton {
+    position: fixed;
+    z-index: 92;
+    min-width: 132px;
+    height: 42px;
+    padding: 0 20px;
+    display: none;
+    color: rgba(255, 255, 255, 0.5);
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 21px;
+    cursor: pointer;
+    font-size: 15px;
+    transform: translateX(-50%);
+    transition:
+        color 0.2s ease,
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+body.initial-mosaic-mode #initialMosaicFullscreenButton {
+    display: block;
+}
+
+#initialMosaicFullscreenButton:hover,
+#initialMosaicFullscreenButton.active {
+    color: black;
+    background: white;
+    border-color: white;
+}
+
+#initialMosaicFullscreenButton:hover {
+    transform: translateX(-50%) scale(0.97);
+}
+
+#initialMosaicFullscreenButton:focus-visible {
+    outline: 1px solid white;
+    outline-offset: 4px;
+}
+
+
+/* Gallery experience updates: v1.6.34 */
+
+/*
+When a photograph is selected from the normal expanded
+mosaic, the expand button and thumbnail strip now begin
+their return together and use the same 0.28-second fade.
+*/
+body.normal-mosaic-selection
+#filmstripButton {
+    transition:
+        opacity 0.28s ease,
+        left 0s linear,
+        bottom 0s linear,
+        color 0.2s ease,
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.25s ease !important;
+}
+
+
+/* Gallery experience updates: v1.6.35 */
+
+/*
+When the normal mosaic closes after selecting a photo, force
+the expand arrow into its upright state before the button
+starts fading in. This prevents the previous 180-degree
+collapse rotation from being visible during the fade.
+*/
+body.normal-mosaic-selection
+#filmstripArrow {
+    transform: translateY(-3px) rotate(0deg) !important;
+    transition: none !important;
+}
+
+
+/* Gallery experience updates: v1.6.36 */
+
+/*
+First-view chrome now enters with the first thumbnail using
+the same 1.2-second easing.
+*/
+body.initial-mosaic-mode #filmstripButton,
+body.initial-mosaic-mode #initialMosaicFullscreenButton {
+    opacity: 0 !important;
+    transition:
+        opacity 1.2s
+        cubic-bezier(0.22, 0.61, 0.36, 1)
+        !important;
+}
+
+body.initial-mosaic-mode.initial-mosaic-controls-ready.initial-mosaic-chrome-visible
+#filmstripButton,
+body.initial-mosaic-mode.initial-mosaic-controls-ready.initial-mosaic-chrome-visible
+#initialMosaicFullscreenButton {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+/*
+Fade the frame itself without applying parent opacity to the
+thumbnail images.
+*/
+body.initial-mosaic-mode #mosaicPanel {
+    background: rgba(4, 4, 4, 0);
+    border-color: rgba(255, 255, 255, 0);
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0);
+    transition:
+        transform 0.28s ease,
+        background-color 1.2s
+        cubic-bezier(0.22, 0.61, 0.36, 1),
+        border-color 1.2s
+        cubic-bezier(0.22, 0.61, 0.36, 1),
+        box-shadow 1.2s
+        cubic-bezier(0.22, 0.61, 0.36, 1)
+        !important;
+}
+
+body.initial-mosaic-mode.initial-mosaic-chrome-visible
+#mosaicPanel {
+    background: rgba(4, 4, 4, 0.72);
+    border-color: rgba(255, 255, 255, 0.18);
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.62);
+}
+
+
+/* Gallery experience updates: v1.6.37 */
+
+/*
+During a first-view photo selection, keep the collapse arrow
+upright for the entire button fade-out. The active-state
+rotation is disabled before opacity begins changing.
+*/
+body.initial-mosaic-controls-exiting
+#filmstripArrow {
+    transform: translateY(-3px) rotate(0deg) !important;
+    transition: none !important;
+}
+
+
+/* Gallery experience updates: v1.6.38 */
+
+/*
+During the first-view fade-out, keep the mosaic arrow in its
+expanded/downward orientation until the button is fully gone.
+The arrow can reset only after the button has been unloaded.
+*/
+body.initial-mosaic-controls-exiting
+#filmstripArrow {
+    transform: translateY(1px) rotate(180deg) !important;
+    transition: none !important;
+}
+
+/*
+Refine the Back label:
+- smaller modern chevron
+- tighter spacing between chevron and text
+- shift the complete label 10px left
+*/
+#backLink {
+    left: 10px;
+    gap: 2px;
+}
+
+#backSymbol {
+    font-size: 28px;
+    line-height: 0.8;
+    transform: translateY(-1px);
+}
+
+body.ui-hidden #backSymbol,
+body.autoplay-active #backSymbol {
+    font-size: 40px;
+}
+
+
+/* Gallery experience updates: v1.6.39 */
+
+/*
+On first-view photo selection, fade the collapse button,
+mosaic frame, and Full Screen button out together over
+0.5 seconds.
+*/
+body.initial-mosaic-controls-exiting
+#filmstripButton,
+body.initial-mosaic-controls-exiting
+#initialMosaicFullscreenButton {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition:
+        opacity 0.5s ease !important;
+}
+
+body.initial-mosaic-controls-exiting
+#mosaicPanel {
+    background: rgba(4, 4, 4, 0) !important;
+    border-color: rgba(255, 255, 255, 0) !important;
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0) !important;
+    transition:
+        background-color 0.5s ease,
+        border-color 0.5s ease,
+        box-shadow 0.5s ease !important;
+}
+
+/*
+Back-label refinements:
+- move the chevron up 3px
+- move Back 7px left
+- reduce the chevron-to-text spacing by 20%
+*/
+#backLink {
+    gap: 1.6px;
+}
+
+#backSymbol {
+    transform: translateY(-4px);
+}
+
+#backLink > span:last-child {
+    transform: translateX(-7px);
+}
+
+
+/* Gallery experience updates: v1.6.40 */
+
+/*
+Match the first-view chrome fade-out to the selected
+thumbnail's existing 1.05-second opacity fade.
+*/
+body.initial-mosaic-controls-exiting
+#filmstripButton,
+body.initial-mosaic-controls-exiting
+#initialMosaicFullscreenButton {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition:
+        opacity 1.05s ease !important;
+}
+
+body.initial-mosaic-controls-exiting
+#mosaicPanel {
+    background: rgba(4, 4, 4, 0) !important;
+    border-color: rgba(255, 255, 255, 0) !important;
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0) !important;
+    transition:
+        background-color 1.05s ease,
+        border-color 1.05s ease,
+        box-shadow 1.05s ease !important;
+}
+
+/*
+Relax the Back-label spacing and move the chevron down 1px
+relative to the previous position.
+*/
+#backLink {
+    gap: 3px;
+}
+
+#backSymbol {
+    transform: translateY(-3px);
+}
+
+#backLink > span:last-child {
+    transform: translateX(-3px);
+}
+
+
+/* Gallery experience updates: v1.6.41 */
+
+/*
+First-view photo selection uses one uninterrupted 1.05-second
+fade for the collapse button and Full Screen button. Neither
+element is hidden or removed until this transition finishes.
+*/
+body.initial-mosaic-controls-exiting
+#filmstripButton,
+body.initial-mosaic-controls-exiting
+#initialMosaicFullscreenButton {
+    display: block !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition:
+        opacity 1.05s ease !important;
+}
+
+/*
+Keep the first-view controls above the closing mosaic layers
+for the complete fade.
+*/
+body.initial-mosaic-controls-exiting
+#filmstripButton,
+body.initial-mosaic-controls-exiting
+#initialMosaicFullscreenButton {
+    visibility: visible !important;
+}
+
+
+/* Gallery experience updates: v1.6.42 */
+
+/*
+The visible first-view rules use several body-state classes,
+so the earlier fade selectors were not specific enough to
+override them. These selectors deliberately match that full
+state and fade the chrome to black with the selected photo.
+*/
+body.initial-mosaic-mode.initial-mosaic-controls-ready.initial-mosaic-chrome-visible.initial-mosaic-controls-exiting
+#filmstripButton,
+body.initial-mosaic-mode.initial-mosaic-controls-ready.initial-mosaic-chrome-visible.initial-mosaic-controls-exiting
+#initialMosaicFullscreenButton {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition:
+        opacity 1.05s ease !important;
+}
+
+body.initial-mosaic-mode.initial-mosaic-chrome-visible.initial-mosaic-controls-exiting
+#mosaicPanel {
+    background: rgba(4, 4, 4, 0) !important;
+    border-color: rgba(255, 255, 255, 0) !important;
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0) !important;
+    transition:
+        background-color 1.05s ease,
+        border-color 1.05s ease,
+        box-shadow 1.05s ease !important;
+}
+
+/*
+Keep the collapse arrow pointing downward while the button
+itself fades to black.
+*/
+body.initial-mosaic-mode.initial-mosaic-controls-ready.initial-mosaic-chrome-visible.initial-mosaic-controls-exiting
+#filmstripArrow {
+    transform: translateY(1px) rotate(180deg) !important;
+    transition: none !important;
+}
+
+
+/* Gallery experience updates: v1.6.43 */
+
+/*
+In Hide and Play modes, brighten the Back chevron to a
+0.7 white level while the preserved click target is hovered.
+*/
+body.ui-hidden #backLink:hover #backSymbol,
+body.autoplay-active #backLink:hover #backSymbol {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/*
+Automatic shuffle mode removes the current-photo white
+selection frame in the normal expanded mosaic.
+*/
+body.mosaic-shuffle-mode-active
+#mosaicGrid
+.mosaic-item.active::after {
+    content: none !important;
+    border: 0 !important;
+}
+
+/*
+Move the thumbnail-bar chevrons upward by 1px while
+preserving their hover scaling.
+*/
+.thumbnail-scroll-button {
+    transform: translateY(-1px);
+}
+
+.thumbnail-scroll-button:hover:not(:disabled) {
+    transform: translateY(-1px) scale(0.94);
+}
+
+.thumbnail-scroll-button:disabled {
+    transform: translateY(-1px);
+}
+
+
+/* Gallery experience updates: v1.6.44 */
+
+/*
+Move only the thumbnail-scroll chevrons upward. The circular
+buttons remain in their existing positions.
+*/
+.thumbnail-scroll-button {
+    transform: none;
+}
+
+.thumbnail-scroll-button:hover:not(:disabled) {
+    transform: scale(0.94);
+}
+
+.thumbnail-scroll-button:disabled {
+    transform: none;
+}
+
+.thumbnail-scroll-button > span {
+    display: inline-block;
+    transform: translateY(-1px);
+    line-height: 1;
+}
+
+/*
+In Hide and Play modes, extend the Back-chevron click target
+downward by roughly 60% of its existing total height without
+moving the visible chevron.
+*/
+body.ui-hidden #backLink,
+body.autoplay-active #backLink {
+    padding-top: 7px;
+    padding-right: 10px;
+    padding-bottom: 32px;
+    padding-left: 10px;
+}
+
+
+/* Gallery experience updates: v1.6.45 */
+
+/*
+While the player UI is being held invisible after the first
+mosaic selection, keep the restored expand button rendered.
+This lets the thumbnail bar's parent opacity animate both
+together during the reveal.
+*/
+body.initial-player-ui-held #filmstripButton {
+    display: block !important;
+}
+
+
+/* Gallery experience updates: v1.6.46 */
+
+/*
+The fixed-position expand button does not reliably follow the
+thumbnail bar's composited opacity transition. During the
+first player reveal, keep the bar container fully rendered
+and fade its visible contents independently. This gives the
+expand button, thumbnails, scroll buttons, bar background,
+and media controls the same 1.3-second entrance.
+*/
+body.initial-gallery-reveal #thumbnailBar {
+    opacity: 1 !important;
+    transition:
+        background-color 1.3s ease !important;
+}
+
+body.initial-gallery-reveal.initial-player-ui-held
+#thumbnailBar {
+    opacity: 1 !important;
+    background-color: rgba(0, 0, 0, 0) !important;
+}
+
+body.initial-gallery-reveal #filmstripButton,
+body.initial-gallery-reveal #thumbnails,
+body.initial-gallery-reveal .thumbnail-scroll-button {
+    transition:
+        opacity 1.3s ease !important;
+}
+
+body.initial-gallery-reveal.initial-player-ui-held
+#filmstripButton,
+body.initial-gallery-reveal.initial-player-ui-held
+#thumbnails,
+body.initial-gallery-reveal.initial-player-ui-held
+.thumbnail-scroll-button {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+
+/* Gallery experience updates: v1.6.47 */
+
+/*
+The startup collapse control, overlay dismissal, Escape key,
+and mode-entry actions all use the same highlighted-photo
+selection path as clicking that photo directly.
+*/
+
+
+/* Gallery experience updates: v1.6.48 */
+
+/* Move only the Back text 5px farther left. */
+#backLink > span:last-child {
+    transform: translateX(-8px);
+}
+
+
+/* Gallery experience updates: v1.6.49 */
+
+/*
+Move the Back chevron 5px left only while the Back text is
+visible. Hide and Autoplay modes keep the chevron in its
+existing position.
+*/
+body:not(.ui-hidden):not(.autoplay-active)
+#backSymbol {
+    transform:
+        translateX(-5px)
+        translateY(-3px);
+}
+
+
+/* Gallery experience updates: v1.6.50 */
+
+/* Move the visible Back chevron and text 1px to the right. */
+body:not(.ui-hidden):not(.autoplay-active)
+#backSymbol {
+    transform:
+        translateX(-4px)
+        translateY(-3px);
+}
+
+#backLink > span:last-child {
+    transform: translateX(-7px);
+}
+
+
+/* Gallery experience updates: v1.6.51 */
+
+/*
+GPU seam prevention:
+The full-resolution photograph remains fully opaque and
+static for every load and transition. Only this solid black
+rectangle changes opacity while image sources are swapped.
+*/
+#fadeOverlay {
+    background: #000;
+    will-change: auto;
+}
+
+#viewer #fadeOverlay.instant-black {
+    opacity: 1 !important;
+    transition: none !important;
+}
+
+body.normal-mosaic-selection
+#fadeOverlay {
+    transition-duration: 0.7s !important;
+    transition-timing-function: ease !important;
+}
+
+body.initial-mosaic-selection
+#fadeOverlay {
+    transition-duration: 1.6s !important;
+    transition-timing-function: ease !important;
+}
+
+
+/* Gallery experience updates: v1.6.52 */
+
+/*
+Zoom panning is clamped in JavaScript to the scaled image
+edges, preventing the photograph from being dragged beyond
+the visible stage.
+*/
+
+
+/* Gallery experience updates: v1.6.53 */
+
+/*
+Zoom boundaries now use the smallest display-aspect-ratio
+rectangle that encloses the photograph. This preserves useful
+side-to-side motion for portrait images and vertical motion
+for landscape images.
+*/
+
+
+/* Gallery experience updates: v1.6.54 */
+
+/*
+The most recently completed reshuffle becomes the normal
+mosaic order for the remainder of the current page session.
+No browser storage is used.
+*/
+
+
+/* Gallery experience updates: v1.6.55 */
+
+/*
+Starting automatic reshuffle now uses the existing bottom
+toast system. The shuffle depth pulse reaches its maximum
+or minimum size 20% into the 2.4-second animation.
+*/
+
+
+/* Gallery experience updates: v1.6.56 */
+
+/*
+The automatic-shuffle toast enters upward from below the
+viewport. Other mode toasts retain their existing top entry.
+*/
+#modeToast.bottom-entry {
+    top: auto;
+    bottom: 12vh;
+    transform:
+        translate(-50%, calc(50% + 140px))
+        scale(0.95);
+}
+
+#modeToast.bottom-entry.visible {
+    transform:
+        translate(-50%, 50%)
+        scale(1);
+}
+
+#modeToast.bottom-entry.leaving {
+    transform:
+        translate(-50%, 50%)
+        scale(1);
+}
+
+
+/* Gallery experience updates: v1.6.57 */
+
+/*
+Reshuffle movement now uses a strongly symmetric ease-in-out
+curve: very low velocity at both ends, with maximum velocity
+near the midpoint of the 2.4-second movement.
+*/
+
+
+/* Gallery experience updates: v1.6.58 */
+
+/*
+The reshuffle FLIP animation now applies each tile's inverse
+position and scale before the next browser paint, eliminating
+the one-frame jump to the new grid before motion begins.
+*/
+
+
+/* Gallery experience updates: v1.6.59 */
+
+/*
+Reshuffling now animates forward from the existing grid.
+The old box geometry remains untouched until motion ends, so
+the first animation frame is exactly the previous layout.
+*/
+
+
+/* Gallery experience updates: v1.6.60 */
+
+/* Move the Auto Shuffle Started toast 50px lower. */
+#modeToast.bottom-entry {
+    bottom: calc(12vh - 50px);
+}
+
+
+/* Gallery experience updates: v1.6.61 */
+
+/*
+After automatic reshuffling is stopped, preserve the
+borderless mosaic state for the remainder of the page
+session.
+*/
+body.mosaic-current-border-hidden
+#mosaicGrid
+.mosaic-item.active::after {
+    content: none !important;
+    border: 0 !important;
+}
+
+
+/* Gallery experience updates: v1.6.62 */
+
+/*
+Move both automatic-shuffle toast messages 20px upward from
+their v1.6.60/v1.6.61 position.
+*/
+#modeToast.bottom-entry {
+    bottom: calc(12vh - 30px);
+}
