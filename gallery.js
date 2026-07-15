@@ -1,4 +1,4 @@
-const version = "v1.5.80";
+const version = "v1.5.81";
 document.getElementById("version").textContent = version;
 
 const params = new URLSearchParams(window.location.search);
@@ -83,6 +83,7 @@ let initialMediaControlsExpanded = false;
 
 let transitionRunning = false;
 let pendingImageIndex = null;
+let pendingPhotoFadeOutPromise = null;
 
 let autoplayActive = false;
 let autoplayPlaying = false;
@@ -399,6 +400,32 @@ function waitForOverlayTransition() {
     });
 }
 
+function beginPhotoFadeOut() {
+    if (
+        displayedIndex === -1 ||
+        mosaicSelectionRunning
+    ) {
+        return Promise.resolve();
+    }
+
+    if (fadeOverlay.classList.contains("visible")) {
+        return (
+            pendingPhotoFadeOutPromise ||
+            Promise.resolve()
+        );
+    }
+
+    fadeOverlay.classList.add("visible");
+
+    pendingPhotoFadeOutPromise =
+        waitForOverlayTransition()
+            .finally(function () {
+                pendingPhotoFadeOutPromise = null;
+            });
+
+    return pendingPhotoFadeOutPromise;
+}
+
 function getCachedImage(src, decodeImage) {
     let cacheEntry = imageCache.get(src);
 
@@ -564,10 +591,28 @@ async function transitionToImage(index) {
 
     showLoadingIndicator();
 
+    const shouldUseNormalFade =
+        displayedIndex !== -1 &&
+        displayedIndex !== index &&
+        !mosaicSelectionRunning;
+
+    const fadeOutPromise =
+        shouldUseNormalFade
+            ? beginPhotoFadeOut()
+            : Promise.resolve();
+
     try {
-        loadedImage =
-            await getCachedImage(src, true);
+        [
+            loadedImage
+        ] = await Promise.all([
+            getCachedImage(src, true),
+            fadeOutPromise
+        ]);
     } catch (error) {
+        if (shouldUseNormalFade) {
+            fadeOverlay.classList.remove("visible");
+        }
+
         hideLoadingIndicator();
         console.error(error);
         return;
@@ -645,9 +690,11 @@ async function transitionToImage(index) {
         return;
     }
 
-    fadeOverlay.classList.add("visible");
-
-    await waitForOverlayTransition();
+    /*
+    The fade-out started as soon as navigation was requested
+    and ran in parallel with the full-size image download and
+    decode. At this point both are complete.
+    */
     await waitForTwoFrames();
 
     photo.style.visibility = "hidden";
@@ -717,6 +764,14 @@ function requestImageChange(
 
     resetZoom();
     updateCounter();
+
+    if (
+        displayedIndex !== -1 &&
+        current !== displayedIndex &&
+        !mosaicSelectionRunning
+    ) {
+        beginPhotoFadeOut();
+    }
 
     if (updateThumbnailImmediately) {
         updateThumbnails(

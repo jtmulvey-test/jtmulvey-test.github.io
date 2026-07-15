@@ -2534,3 +2534,17 @@ Photo filename sequence update:
   instead of 1.jpg, 2.jpg, 3.jpg...
 - thumbnail and original image paths use the same sequence
 */
+
+
+/* Gallery experience updates: v1.5.81 */
+
+/*
+Faster standard photo navigation:
+- fade-out begins immediately when a photo change is requested
+- full-size image loading/decoding runs in parallel with fade-out
+- fade-in begins as soon as the new image is ready and the
+  fade-out has completed
+- applies to thumbnail clicks, side navigation, keyboard
+  navigation, and autoplay
+- mosaic selection keeps its separate blackout transition
+*/
