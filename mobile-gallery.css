@@ -1,0 +1,1094 @@
+/*
+Lightweight mobile gallery v2.4.1
+Aspect-ratio-preserving justified mosaic.
+*/
+
+:root {
+    color-scheme: dark;
+    --mobile-page-spacer-height: 68px;
+    --mobile-control-offset: 8px;
+    background: #000;
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    min-height: 100%;
+    background: #000;
+}
+
+body {
+    min-width: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+    margin: 0;
+    overflow-x: hidden;
+    color: #fff;
+    background: #000;
+    -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a {
+    font: inherit;
+}
+
+#mobileTopSpacer,
+#mobileBottomSpacer {
+    width: 100%;
+    flex: 0 0 auto;
+    background: #000;
+}
+
+#mobileTopSpacer {
+    position: relative;
+    height:
+        calc(
+            env(safe-area-inset-top, 0px) +
+            var(--mobile-page-spacer-height)
+        );
+}
+
+#mobileVersion {
+    position: absolute;
+    left: 50%;
+    bottom: 10px;
+    transform: translateX(-50%);
+    color: rgba(255, 255, 255, 0.58);
+    font-size: 13px;
+    line-height: 1;
+    letter-spacing: 0.03em;
+}
+
+#mobileBottomSpacer {
+    height:
+        calc(
+            env(safe-area-inset-bottom, 0px) +
+            var(--mobile-page-spacer-height)
+        );
+}
+
+#mobileBack {
+    position: fixed;
+    left:
+        calc(
+            env(safe-area-inset-left, 0px) +
+            8px
+        );
+    bottom:
+        calc(
+            env(safe-area-inset-bottom, 0px) +
+            var(--mobile-control-offset)
+        );
+    z-index: 30;
+    width: 53px;
+    height: 53px;
+    min-height: 53px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.40);
+    border: 1px solid rgba(255, 255, 255, 0.48);
+    border-radius: 50%;
+    text-decoration: none;
+    line-height: 1;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+#mobileBack > span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 43px;
+    line-height: 0.7;
+    transform: translateY(-2px);
+}
+
+#mobileLandscape,
+#mobileFullscreen,
+#mobileMenu {
+    position: fixed;
+    bottom:
+        calc(
+            env(safe-area-inset-bottom, 0px) +
+            var(--mobile-control-offset)
+        );
+    z-index: 30;
+    width: 53px;
+    height: 53px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.40);
+    border: 1px solid rgba(255, 255, 255, 0.48);
+    border-radius: 50%;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+#mobileLandscape {
+    left:
+        calc(
+            50% -
+            86px
+        );
+    width: auto;
+    min-width: 100px;
+    padding: 0 16px;
+    border-radius: 999px;
+    font-size: 16px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+#mobileLandscape.locked {
+    width: 53px;
+    min-width: 53px;
+    padding: 0;
+    border-radius: 50%;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.40);
+    border-color: rgba(255, 255, 255, 0.48);
+}
+
+#mobileLandscape:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+#mobileFullscreen {
+    left: 50%;
+    width: auto;
+    min-width: 115px;
+    padding: 0 18px;
+    border-radius: 999px;
+    transform: translateX(-50%);
+    font-size: 16px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+#mobileFullscreen[hidden] {
+    display: none !important;
+}
+
+#mobileFullscreen.active {
+    color: #000;
+    background: #fff;
+    border-color: #fff;
+}
+
+#mobileFullscreen:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+#mobileMenu {
+    right:
+        calc(
+            env(safe-area-inset-right, 0px) +
+            8px
+        );
+    flex-direction: column;
+    gap: 4px;
+}
+
+#mobileMenu span {
+    width: 21px;
+    height: 3px;
+    display: block;
+    background: currentColor;
+    border-radius: 999px;
+}
+
+#mobileBack,
+#mobileLandscape,
+#mobileFullscreen,
+#mobileMenu {
+    transition:
+        color 0.2s ease,
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        opacity 0.2s ease,
+        transform 0.36s
+        cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/*
+Temporarily lift all controls after entering browser
+fullscreen so Chrome's fullscreen notification does not
+sit directly on top of them.
+*/
+body.fullscreen-controls-lifted
+#mobileBack,
+body.fullscreen-controls-lifted
+#mobileLandscape,
+body.fullscreen-controls-lifted
+#mobileMenu {
+    transform: translateY(-70px);
+}
+
+body.fullscreen-controls-lifted
+#mobileFullscreen {
+    transform:
+        translateX(-50%)
+        translateY(-70px);
+}
+
+
+#mobileMenuPanel {
+    position: fixed;
+    right:
+        calc(
+            env(safe-area-inset-right, 0px) +
+            8px
+        );
+    bottom:
+        calc(
+            env(safe-area-inset-bottom, 0px) +
+            69px
+        );
+    z-index: 40;
+    width: min(325px, calc(100vw - 24px));
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.40);
+    border: 1px solid rgba(255, 255, 255, 0.32);
+    border-radius: 12px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+#mobileMenuPanel[hidden] {
+    display: none;
+}
+
+#mobileMenuPanel button {
+    width: 100%;
+    min-height: 60px;
+    display: block;
+    padding: 15px 20px;
+    font-size: 20px;
+    color: #fff;
+    background: transparent;
+    border: 0;
+    text-align: left;
+    cursor: pointer;
+}
+
+#mobileMenuPanel button + button {
+    border-top: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+#mobileMenuPanel button:active {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+#mobileMenuPanel button:disabled {
+    color: rgba(255, 255, 255, 0.38);
+    cursor: default;
+}
+
+#mobileGallery {
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding-right: env(safe-area-inset-right, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+}
+
+#mobileGrid {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    overflow: hidden;
+    background: #000;
+}
+
+.mobile-mosaic-row {
+    width: 100%;
+    display: flex;
+    gap: 3px;
+    align-items: stretch;
+    justify-content: flex-start;
+    overflow: hidden;
+}
+
+.mobile-mosaic-row.loose {
+    justify-content: center;
+}
+
+.mobile-grid-item {
+    position: relative;
+    min-width: 0;
+    height: 100%;
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background:
+        linear-gradient(
+            115deg,
+            #111 0%,
+            #191919 45%,
+            #111 100%
+        );
+    border: 0;
+    border-radius: 0;
+    cursor: pointer;
+}
+
+.mobile-grid-item img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+    opacity: 0;
+    transform: scale(1.012);
+    transition:
+        opacity 0.18s ease,
+        transform 0.24s ease;
+    user-select: none;
+    -webkit-user-drag: none;
+    pointer-events: none;
+}
+
+.mobile-grid-item img.loaded {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.mobile-grid-item:active img {
+    opacity: 0.72;
+}
+
+#mobileStatus {
+    min-height: 24px;
+    margin: 0;
+    padding: 24px 20px;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 14px;
+    line-height: 1.4;
+    text-align: center;
+}
+
+#mobileStatus:empty {
+    display: none;
+}
+
+
+
+#mobileDownloadToast {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    z-index: 60;
+    max-width: calc(100vw - 40px);
+    padding: 13px 18px;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.42);
+    border-radius: 999px;
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    white-space: nowrap;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    pointer-events: none;
+}
+
+#mobileDownloadToast[hidden] {
+    display: none;
+}
+
+
+#mobileBoundaryToast {
+    position: fixed;
+    top: 50%;
+    z-index: 100;
+    max-width: calc(100vw - 40px);
+    padding: 13px 18px;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.40);
+    border: 1px solid rgba(255, 255, 255, 0.48);
+    border-radius: 999px;
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    pointer-events: none;
+    will-change:
+        opacity,
+        transform;
+}
+
+#mobileBoundaryToast.from-right {
+    right:
+        calc(
+            env(safe-area-inset-right, 0px) +
+            14px
+        );
+    left: auto;
+    transform:
+        translate3d(
+            calc(100% + 34px),
+            -50%,
+            0
+        );
+}
+
+#mobileBoundaryToast.from-left {
+    left:
+        calc(
+            env(safe-area-inset-left, 0px) +
+            14px
+        );
+    right: auto;
+    transform:
+        translate3d(
+            calc(-100% - 34px),
+            -50%,
+            0
+        );
+}
+
+#mobileBoundaryToast.show.from-right {
+    visibility: visible;
+    animation:
+        mobile-boundary-toast-right
+        1.55s
+        cubic-bezier(0.22, 0.61, 0.36, 1)
+        both;
+}
+
+#mobileBoundaryToast.show.from-left {
+    visibility: visible;
+    animation:
+        mobile-boundary-toast-left
+        1.55s
+        cubic-bezier(0.22, 0.61, 0.36, 1)
+        both;
+}
+
+@keyframes mobile-boundary-toast-right {
+    0% {
+        opacity: 0;
+        transform:
+            translate3d(
+                calc(100% + 34px),
+                -50%,
+                0
+            );
+    }
+
+    16% {
+        opacity: 1;
+        transform:
+            translate3d(
+                0,
+                -50%,
+                0
+            );
+    }
+
+    76% {
+        opacity: 1;
+        transform:
+            translate3d(
+                0,
+                -50%,
+                0
+            );
+    }
+
+    100% {
+        opacity: 0;
+        transform:
+            translate3d(
+                calc(100% + 34px),
+                -50%,
+                0
+            );
+    }
+}
+
+@keyframes mobile-boundary-toast-left {
+    0% {
+        opacity: 0;
+        transform:
+            translate3d(
+                calc(-100% - 34px),
+                -50%,
+                0
+            );
+    }
+
+    16% {
+        opacity: 1;
+        transform:
+            translate3d(
+                0,
+                -50%,
+                0
+            );
+    }
+
+    76% {
+        opacity: 1;
+        transform:
+            translate3d(
+                0,
+                -50%,
+                0
+            );
+    }
+
+    100% {
+        opacity: 0;
+        transform:
+            translate3d(
+                calc(-100% - 34px),
+                -50%,
+                0
+            );
+    }
+}
+
+
+@media (orientation: landscape) {
+    #mobileBoundaryToast.from-right {
+        right:
+            calc(
+                env(safe-area-inset-right, 0px) +
+                92px
+            );
+    }
+}
+
+#mobileViewer {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+    padding:
+        env(safe-area-inset-top, 0px)
+        env(safe-area-inset-right, 0px)
+        env(safe-area-inset-bottom, 0px)
+        env(safe-area-inset-left, 0px);
+    overflow: hidden;
+    background: #000;
+    touch-action: none;
+    overscroll-behavior: none;
+}
+
+#mobileViewer[hidden] {
+    display: none;
+}
+
+#mobileViewerStage {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    background: #000;
+    touch-action: none;
+}
+
+.mobile-viewer-photo {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+    opacity: 1;
+    filter: blur(0);
+    transform:
+        translate3d(0, 0, 0)
+        scale(1);
+    transform-origin: center center;
+    transition:
+        filter 0.22s ease-out;
+    user-select: none;
+    -webkit-user-drag: none;
+    pointer-events: none;
+    will-change:
+        transform,
+        filter;
+}
+
+
+
+
+#mobileViewerImage {
+    z-index: 1;
+    filter: none;
+}
+
+.mobile-viewer-photo.preview {
+    z-index: 2;
+    opacity: 0;
+    visibility: hidden;
+    filter: blur(12px);
+    transition:
+        opacity 0.22s ease-out,
+        filter 0.22s ease-out;
+}
+
+.mobile-viewer-photo.preview.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.mobile-viewer-photo.preview.ready-image {
+    filter: blur(0);
+}
+
+.mobile-viewer-photo.preview.resolving {
+    opacity: 0;
+    filter: blur(0);
+}
+
+.mobile-viewer-photo.animating {
+    transition:
+        transform 0.20s
+        cubic-bezier(0.22, 0.61, 0.36, 1),
+        opacity 0.22s ease,
+        filter 0.22s ease-out;
+}
+
+body.viewer-open {
+    overflow: hidden;
+}
+
+body.viewer-open #mobileGallery {
+    visibility: hidden;
+}
+
+body.viewer-open #mobileTopSpacer,
+body.viewer-open #mobileBottomSpacer {
+    visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mobile-grid-item img {
+        transition: none;
+    }
+
+    .mobile-viewer-photo.animating {
+        transition-duration: 0.01ms;
+    }
+
+    #mobileBack,
+    #mobileLandscape,
+    #mobileFullscreen,
+    #mobileMenu {
+        transition-duration: 0.01ms;
+    }
+}
+
+
+/*
+The landscape-orientation control exists only in the
+expanded viewer. It is never shown on the mosaic page.
+*/
+#mobileLandscape[hidden] {
+    display: none !important;
+}
+
+body.viewer-open #mobileLandscape:not([hidden]) {
+    display: inline-flex;
+}
+
+/*
+Portrait expanded viewer: keep controls along the bottom.
+The landscape button sits immediately left of fullscreen.
+*/
+@media (orientation: portrait) {
+    body.viewer-open #mobileBack {
+        left:
+            calc(
+                env(safe-area-inset-left, 0px) +
+                8px
+            );
+        right: auto;
+        top: auto;
+        bottom:
+            calc(
+                env(safe-area-inset-bottom, 0px) +
+                var(--mobile-control-offset)
+            );
+        width: 53px;
+        height: 53px;
+        min-height: 53px;
+        padding: 0;
+        border-radius: 50%;
+        transform: none;
+    }
+
+    body.viewer-open #mobileBack > span {
+        transform: translateY(-2px);
+    }
+
+    body.viewer-open #mobileMenu {
+        right:
+            calc(
+                env(safe-area-inset-right, 0px) +
+                8px
+            );
+        left: auto;
+        top: auto;
+        bottom:
+            calc(
+                env(safe-area-inset-bottom, 0px) +
+                var(--mobile-control-offset)
+            );
+        transform: none;
+    }
+
+    /*
+    Four visible controls are spaced with equal edge-to-edge
+    gaps across the viewport:
+      widths = 53 + 115 + 100 + 53
+      available inner width = 100vw - 16px
+      each gap = remaining width / 3
+    */
+    body.viewer-open:not(.fullscreen-active)
+    #mobileFullscreen {
+        left:
+            calc(
+                8px +
+                53px +
+                (
+                    100vw -
+                    337px
+                ) / 3
+            );
+        right: auto;
+        top: auto;
+        bottom:
+            calc(
+                env(safe-area-inset-bottom, 0px) +
+                var(--mobile-control-offset)
+            );
+        transform: none;
+    }
+
+    body.viewer-open:not(.fullscreen-active)
+    #mobileLandscape {
+        left:
+            calc(
+                8px +
+                53px +
+                (
+                    100vw -
+                    337px
+                ) / 3 +
+                115px +
+                (
+                    100vw -
+                    337px
+                ) / 3
+            );
+        right: auto;
+        top: auto;
+        bottom:
+            calc(
+                env(safe-area-inset-bottom, 0px) +
+                var(--mobile-control-offset)
+            );
+        transform: none;
+    }
+
+    body.viewer-open.fullscreen-active
+    #mobileLandscape {
+        left:
+            calc(
+                50% -
+                50px
+            );
+        right: auto;
+        top: auto;
+        bottom:
+            calc(
+                env(safe-area-inset-bottom, 0px) +
+                var(--mobile-control-offset)
+            );
+        transform: none;
+    }
+
+    body.viewer-open.fullscreen-controls-lifted
+    #mobileBack,
+    body.viewer-open.fullscreen-controls-lifted
+    #mobileLandscape,
+    body.viewer-open.fullscreen-controls-lifted
+    #mobileFullscreen,
+    body.viewer-open.fullscreen-controls-lifted
+    #mobileMenu {
+        transform: translateY(-70px);
+    }
+
+    /*
+    Every portrait control moves straight down. No horizontal
+    transform is introduced during the hide animation.
+    */
+    body.viewer-open.viewer-controls-hidden
+    #mobileBack,
+    body.viewer-open.viewer-controls-hidden
+    #mobileLandscape,
+    body.viewer-open.viewer-controls-hidden
+    #mobileFullscreen,
+    body.viewer-open.viewer-controls-hidden
+    #mobileMenu {
+        transform: translateY(120vh);
+        pointer-events: none;
+    }
+}
+
+/*
+Landscape expanded viewer: controls occupy a tighter
+vertical group on the right edge.
+*/
+@media (orientation: landscape) {
+    body.viewer-open #mobileBack,
+    body.viewer-open #mobileLandscape,
+    body.viewer-open #mobileMenu {
+        transition-duration:
+            0.2s,
+            0.2s,
+            0.2s,
+            0.2s,
+            0.72s;
+    }
+
+    body.viewer-open #mobileMenu,
+    body.viewer-open #mobileLandscape,
+    body.viewer-open #mobileFullscreen,
+    body.viewer-open #mobileBack {
+        right:
+            calc(
+                env(safe-area-inset-right, 0px) +
+                10px
+            );
+        left: auto;
+        bottom: auto;
+        transform: none;
+    }
+
+    body.viewer-open #mobileMenu {
+        top:
+            calc(
+                24.656% +
+                8.48px
+            );
+    }
+
+    body.viewer-open #mobileLandscape {
+        top: 50%;
+        width: 53px;
+        min-width: 53px;
+        height: 53px;
+        padding: 0;
+        border-radius: 50%;
+        transform: translateY(-50%);
+    }
+
+    body.viewer-open #mobileLandscape::after {
+        content: "R";
+    }
+
+    body.viewer-open #mobileLandscape {
+        font-size: 0;
+    }
+
+    body.viewer-open #mobileLandscape::after {
+        font-size: 20px;
+        font-weight: 600;
+    }
+
+    body.viewer-open #mobileFullscreen {
+        display: none !important;
+    }
+
+    body.viewer-open #mobileBack {
+        top: auto;
+        bottom:
+            calc(
+                24.656% +
+                8.48px
+            );
+        width: 53px;
+        height: 53px;
+        min-height: 53px;
+        padding: 0;
+        border-radius: 50%;
+    }
+
+    body.viewer-open #mobileBack > span {
+        transform: translateY(-2px);
+    }
+
+    body.viewer-open.fullscreen-controls-lifted
+    #mobileMenu,
+    body.viewer-open.fullscreen-controls-lifted
+    #mobileLandscape,
+    body.viewer-open.fullscreen-controls-lifted
+    #mobileBack {
+        transform: translateX(-70px);
+    }
+
+    body.viewer-open.viewer-controls-hidden
+    #mobileMenu,
+    body.viewer-open.viewer-controls-hidden
+    #mobileLandscape,
+    body.viewer-open.viewer-controls-hidden
+    #mobileBack {
+        transform: translateY(120vh);
+        pointer-events: none;
+    }
+
+    body.viewer-open #mobileMenuPanel {
+        right:
+            calc(
+                env(safe-area-inset-right, 0px) +
+                73px
+            );
+        bottom: auto;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+}
+
+/*
+Unified mobile press feedback. Every primary mobile control uses
+the same brightness, glow, scale, and minimum visible duration.
+*/
+#mobileBack.mobile-control-pressed,
+#mobileLandscape.mobile-control-pressed,
+#mobileFullscreen.mobile-control-pressed,
+#mobileMenu.mobile-control-pressed {
+    background: rgba(255, 255, 255, 0.24) !important;
+    color: #fff !important;
+    border-color: rgba(255, 255, 255, 0.82) !important;
+    box-shadow:
+        0 0 0 4px rgba(255, 255, 255, 0.10),
+        0 8px 22px rgba(0, 0, 0, 0.34) !important;
+}
+
+body:not(.viewer-open)
+#mobileBack.mobile-control-pressed,
+body:not(.viewer-open)
+#mobileLandscape.mobile-control-pressed,
+body:not(.viewer-open)
+#mobileMenu.mobile-control-pressed {
+    transform: scale(1.07);
+}
+
+body:not(.viewer-open)
+#mobileFullscreen.mobile-control-pressed {
+    transform:
+        translateX(-50%)
+        scale(1.07);
+}
+
+@media (orientation: portrait) {
+    body.viewer-open
+    #mobileBack.mobile-control-pressed,
+    body.viewer-open
+    #mobileLandscape.mobile-control-pressed,
+    body.viewer-open
+    #mobileFullscreen.mobile-control-pressed,
+    body.viewer-open
+    #mobileMenu.mobile-control-pressed {
+        transform: scale(1.07);
+    }
+}
+
+@media (orientation: landscape) {
+    body.viewer-open
+    #mobileBack.mobile-control-pressed,
+    body.viewer-open
+    #mobileMenu.mobile-control-pressed {
+        transform: scale(1.07);
+    }
+
+    body.viewer-open
+    #mobileLandscape.mobile-control-pressed {
+        transform:
+            translateY(-50%)
+            scale(1.07);
+    }
+}
+
+/*
+Primary mobile controls reach their full press state before
+their delayed action runs. The action delay is 150 ms; this
+transition completes in 120 ms.
+*/
+#mobileBack.mobile-control-pressed,
+#mobileLandscape.mobile-control-pressed,
+#mobileFullscreen.mobile-control-pressed,
+#mobileMenu.mobile-control-pressed {
+    transition:
+        color 0.12s ease,
+        background-color 0.12s ease,
+        border-color 0.12s ease,
+        box-shadow 0.12s ease,
+        opacity 0.12s ease,
+        transform 0.12s
+        cubic-bezier(0.22, 0.61, 0.36, 1)
+        !important;
+}
+
+
+/*
+Expanded-view Back remains interactive above every photo and
+transition layer, including while swipe animations are settling.
+*/
+body.viewer-open #mobileBack {
+    z-index: 120;
+    pointer-events: auto;
+    touch-action: manipulation;
+}
+
+
+/*
+Back must receive a fresh pointer immediately, even while the
+photo layer is settling from a swipe.
+*/
+body.viewer-open #mobileBack {
+    z-index: 1000;
+    isolation: isolate;
+    pointer-events: auto !important;
+    touch-action: manipulation;
+}

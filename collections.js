@@ -51,8 +51,19 @@ const grid =
 
             card.className = "collection-card";
 
+            const mobileLayout =
+                window.matchMedia(
+                    "(max-width: 820px), " +
+                    "(pointer: coarse) and (max-width: 1100px)"
+                ).matches;
+
+            const galleryPage =
+                mobileLayout
+                    ? "mobile-gallery.html"
+                    : "gallery.html";
+
             card.href =
-                `gallery.html?collection=${
+                `${galleryPage}?collection=${
                     encodeURIComponent(collection.name)
                 }`;
 
