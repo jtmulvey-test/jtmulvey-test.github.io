@@ -1,5 +1,5 @@
 /*
-Lightweight mobile gallery v2.4.7
+Lightweight mobile gallery v2.4.28
 Aspect-ratio-preserving justified mosaic.
 */
 
@@ -91,6 +91,11 @@ const viewerPreview =
         "mobileViewerPreview"
     );
 
+const viewerSwipePreview =
+    document.getElementById(
+        "mobileViewerSwipePreview"
+    );
+
 
 const mosaicGap = 3;
 const maximumImagesPerRow = 2;
@@ -102,6 +107,7 @@ let viewerOpen = false;
 let viewerHistoryActive = false;
 let viewerLoadToken = 0;
 let mosaicRenderTimer = null;
+let mosaicSelectionAnimating = false;
 let fullscreenControlLiftTimer = null;
 let landscapeLockActive = false;
 let landscapeOperationId = 0;
@@ -118,6 +124,7 @@ const activeViewerPointers =
 let viewerGestureMode = "none";
 let viewerGestureAnimating = false;
 let viewerTransitionToken = 0;
+let viewerPreviewGeneration = 0;
 
 let gestureStartX = 0;
 let gestureStartY = 0;
@@ -139,6 +146,13 @@ let pinchStartDistance = 0;
 let pinchStartZoom = 1;
 let pinchFocalX = 0;
 let pinchFocalY = 0;
+
+
+function isViewerLandscape() {
+    return window.matchMedia(
+        "(orientation: landscape)"
+    ).matches;
+}
 
 
 function clamp(value, minimum, maximum) {
@@ -428,7 +442,7 @@ async function showDownloadToast(
         false;
 
     await wait(
-        1000
+        1800
     );
 
     hideDownloadToast();
@@ -1102,6 +1116,11 @@ function setViewerAnimation(active) {
         "animating",
         active
     );
+
+    viewerSwipePreview.classList.toggle(
+        "animating",
+        active
+    );
 }
 
 
@@ -1144,15 +1163,16 @@ function resetViewerTransform(
     viewerPreview.style.transform =
         "translate3d(0, 0, 0) scale(1)";
 
-    viewerPreview.classList.remove(
-        "visible",
-        "thumbnail-blur"
-    );
+    viewerSwipePreview.style.transform =
+        "translate3d(0, 0, 0) scale(1)";
 
-    viewerPreview.removeAttribute(
-        "src"
-    );
-
+    /*
+    Do not clear the preview here. This function is also called
+    by viewport resize handling, and mobile browser chrome can
+    trigger resize events at unpredictable times while an image
+    is loading. Preview lifetime is controlled exclusively by
+    clearSwipePreview().
+    */
     if (animate) {
         window.setTimeout(
             function () {
@@ -1164,17 +1184,39 @@ function resetViewerTransform(
 }
 
 
-function clearSwipePreview() {
+function resetViewerPreviewVisualState() {
+    viewerPreview.classList.remove(
+        "ready-image",
+        "resolving"
+    );
+
+    viewerPreview.style.removeProperty(
+        "filter"
+    );
+
+    viewerPreview.style.removeProperty(
+        "transition"
+    );
+}
+
+
+function clearSwipePreview(
+    invalidateGeneration = true
+) {
+    if (invalidateGeneration) {
+        viewerPreviewGeneration += 1;
+    }
+
     swipeOffsetX = 0;
     swipeDirection = 0;
     swipeTargetIndex = -1;
     swipePreviewStartX = 0;
 
     viewerPreview.classList.remove(
-        "visible",
-        "ready-image",
-        "resolving"
+        "visible"
     );
+
+    resetViewerPreviewVisualState();
 
     viewerPreview.removeAttribute(
         "src"
@@ -1182,6 +1224,21 @@ function clearSwipePreview() {
 
     viewerPreview.style.transform =
         "translate3d(0, 0, 0)";
+}
+
+
+function clearGestureSwipePreview() {
+    viewerSwipePreview.classList.remove(
+        "visible",
+        "preloaded-source"
+    );
+
+    viewerSwipePreview.removeAttribute(
+        "src"
+    );
+
+    viewerSwipePreview.style.transform =
+        "translate3d(0, 0, 0) scale(1)";
 }
 
 
@@ -1197,14 +1254,14 @@ function prepareSwipePreview(
         targetIndex >=
             photographs.length
     ) {
-        clearSwipePreview();
+        clearGestureSwipePreview();
         return false;
     }
 
     if (
         swipeTargetIndex ===
             targetIndex &&
-        viewerPreview.classList.contains(
+        viewerSwipePreview.classList.contains(
             "visible"
         )
     ) {
@@ -1227,79 +1284,50 @@ function prepareSwipePreview(
     const targetPhotograph =
         photographs[targetIndex];
 
-    const targetSource =
-        getViewerImageSource(
-            targetPhotograph
-        );
-
-    const targetRecord =
+    const targetSourceRecord =
         getViewerSourceRecord(
             targetPhotograph
         );
 
-    viewerPreview.classList.remove(
-        "ready-image",
-        "resolving"
+    const targetSourcePreloaded =
+        Boolean(
+            targetSourceRecord &&
+            targetSourceRecord.status ===
+                "ready"
+        );
+
+    /*
+    The gesture preview is a separate, non-padded layer beneath
+    the current full-resolution image. When the target's exact
+    active-resolution source was already preloaded and decoded
+    before the swipe began, use that full-resolution source
+    directly during the slide. Otherwise use the blurred
+    thumbnail loading preview.
+    */
+    viewerSwipePreview.src =
+        targetSourcePreloaded
+            ? getViewerImageSource(
+                targetPhotograph
+            )
+            : targetPhotograph.thumbnail;
+
+    viewerSwipePreview.classList.toggle(
+        "preloaded-source",
+        targetSourcePreloaded
     );
 
-    if (
-        targetRecord &&
-        targetRecord.status ===
-            "ready"
-    ) {
-        viewerPreview.src =
-            targetSource;
+    preloadViewerSource(
+        targetPhotograph
+    );
 
-        viewerPreview.classList.add(
-            "ready-image"
-        );
-    } else {
-        viewerPreview.src =
-            targetPhotograph.thumbnail;
-
-        /*
-        Begin loading and decoding the active-resolution file
-        as soon as the swipe direction is known. If it becomes
-        ready before the gesture finishes, promote the moving
-        preview in place instead of waiting for the final
-        image commit.
-        */
-        preloadViewerSource(
-            targetPhotograph
-        ).then(function (record) {
-            if (
-                !viewerOpen ||
-                swipeTargetIndex !==
-                    targetIndex ||
-                !viewerPreview.classList.contains(
-                    "visible"
-                ) ||
-                record.status !==
-                    "ready" ||
-                getViewerImageSource(
-                    targetPhotograph
-                ) !== targetSource
-            ) {
-                return;
-            }
-
-            viewerPreview.src =
-                targetSource;
-
-            viewerPreview.classList.add(
-                "ready-image"
-            );
-        });
-    }
-
-    viewerPreview.classList.add(
+    viewerSwipePreview.classList.add(
         "visible"
     );
 
-    viewerPreview.style.transform =
+    viewerSwipePreview.style.transform =
         `translate3d(` +
         `${swipePreviewStartX.toFixed(2)}px, ` +
-        `0, 0)`;
+        `0, 0) scale(1)`;
 
     return true;
 }
@@ -1335,13 +1363,13 @@ function updateSwipeTransform(
         `0, 0) scale(1)`;
 
     if (hasTarget) {
-        viewerPreview.style.transform =
+        viewerSwipePreview.style.transform =
             `translate3d(` +
             `${(
                 swipePreviewStartX +
                 swipeOffsetX
             ).toFixed(2)}px, ` +
-            `0, 0)`;
+            `0, 0) scale(1)`;
     }
 }
 
@@ -1401,12 +1429,115 @@ function waitForViewerTransition(
 }
 
 
+function commitPreloadedViewerSwipe(
+    targetIndex
+) {
+    const targetPhotograph =
+        photographs[targetIndex];
+
+    const targetRecord =
+        getViewerSourceRecord(
+            targetPhotograph
+        );
+
+    if (
+        !targetRecord ||
+        targetRecord.status !==
+            "ready"
+    ) {
+        return false;
+    }
+
+    currentIndex =
+        targetIndex;
+
+    viewerLoadToken += 1;
+
+    const loadToken =
+        viewerLoadToken;
+
+    activeViewerPointers.clear();
+
+    viewerGestureMode =
+        "none";
+
+    /*
+    The centered swipe layer is already displaying the exact
+    full-resolution source. Hide and recenter viewerImage below
+    it, prepare the same source there, then swap layers after
+    load/decode and the existing two-frame paint confirmation.
+    */
+    viewerImage.style.opacity =
+        "0";
+
+    resetViewerTransform(false);
+
+    waitForViewerImagePaint(
+        getViewerImageSource(
+            targetPhotograph
+        ),
+        loadToken,
+        targetIndex
+    ).then(function (painted) {
+        if (
+            !painted ||
+            loadToken !== viewerLoadToken ||
+            currentIndex !== targetIndex
+        ) {
+            viewerGestureAnimating =
+                false;
+
+            return;
+        }
+
+        window.requestAnimationFrame(
+            function () {
+                if (
+                    loadToken !== viewerLoadToken ||
+                    currentIndex !== targetIndex
+                ) {
+                    return;
+                }
+
+                viewerImage.style.removeProperty(
+                    "opacity"
+                );
+
+                clearGestureSwipePreview();
+                clearSwipePreview();
+                resetSwipeRequest();
+
+                viewerGestureAnimating =
+                    false;
+            }
+        );
+    });
+
+    viewerImage.alt =
+        `Photograph ${targetIndex + 1}`;
+
+    preloadAdjacentViewerSources(
+        targetIndex
+    );
+
+    if (viewerHistoryActive) {
+        setViewerAddress(
+            targetIndex,
+            "replaceState"
+        );
+    }
+
+    return true;
+}
+
+
 function finishViewerSwipe() {
     if (
         Math.abs(
             swipeRequestedOffsetX
         ) < 1
     ) {
+        clearGestureSwipePreview();
         clearSwipePreview();
         resetSwipeRequest();
         viewerGestureAnimating = false;
@@ -1467,10 +1598,10 @@ function finishViewerSwipe() {
         if (
             swipeTargetIndex >= 0
         ) {
-            viewerPreview.style.transform =
+            viewerSwipePreview.style.transform =
                 `translate3d(` +
                 `${swipePreviewStartX.toFixed(2)}px, ` +
-                `0, 0)`;
+                `0, 0) scale(1)`;
         }
 
         waitForViewerTransition(
@@ -1482,6 +1613,7 @@ function finishViewerSwipe() {
                 no rubber-band transform can remain applied.
                 */
                 resetViewerTransform(false);
+                clearGestureSwipePreview();
                 clearSwipePreview();
                 resetSwipeRequest();
                 viewerGestureAnimating = false;
@@ -1503,17 +1635,31 @@ function finishViewerSwipe() {
         `${outgoingX.toFixed(2)}px, ` +
         `0, 0) scale(1)`;
 
-    viewerPreview.style.transform =
-        "translate3d(0, 0, 0)";
+    viewerSwipePreview.style.transform =
+        "translate3d(0, 0, 0) scale(1)";
 
     waitForViewerTransition(
         function () {
             setViewerAnimation(false);
 
+            if (
+                commitPreloadedViewerSwipe(
+                    targetIndex
+                )
+            ) {
+                return;
+            }
+
+            clearGestureSwipePreview();
+
+            /*
+            Images that were not already preloaded continue
+            through the existing blurred-thumbnail loading path.
+            */
             showViewerImage(
                 targetIndex,
                 true,
-                true
+                false
             );
 
             resetSwipeRequest();
@@ -1531,6 +1677,7 @@ function beginPinchGesture() {
         return;
     }
 
+    clearGestureSwipePreview();
     clearSwipePreview();
 
     /*
@@ -1664,9 +1811,115 @@ function updatePinchGesture() {
 }
 
 
+function waitForViewerImagePaint(
+    source,
+    token,
+    index
+) {
+    return new Promise(resolve => {
+        let completed = false;
+
+        const finish =
+            function () {
+                if (completed) {
+                    return;
+                }
+
+                completed = true;
+
+                viewerImage.removeEventListener(
+                    "load",
+                    handleLoad
+                );
+
+                viewerImage.removeEventListener(
+                    "error",
+                    handleError
+                );
+
+                if (
+                    token !==
+                        viewerLoadToken ||
+                    currentIndex !==
+                        index
+                ) {
+                    resolve(false);
+                    return;
+                }
+
+                const waitForPaint =
+                    function () {
+                        window.requestAnimationFrame(
+                            function () {
+                                window.requestAnimationFrame(
+                                    function () {
+                                        resolve(
+                                            token ===
+                                                viewerLoadToken &&
+                                            currentIndex ===
+                                                index
+                                        );
+                                    }
+                                );
+                            }
+                        );
+                    };
+
+                if (
+                    typeof viewerImage.decode ===
+                        "function"
+                ) {
+                    viewerImage.decode()
+                        .then(waitForPaint)
+                        .catch(waitForPaint);
+                } else {
+                    waitForPaint();
+                }
+            };
+
+        const handleLoad =
+            function () {
+                finish();
+            };
+
+        const handleError =
+            function () {
+                resolve(false);
+            };
+
+        viewerImage.addEventListener(
+            "load",
+            handleLoad,
+            {
+                once: true
+            }
+        );
+
+        viewerImage.addEventListener(
+            "error",
+            handleError,
+            {
+                once: true
+            }
+        );
+
+        viewerImage.src =
+            source;
+
+        if (
+            viewerImage.complete &&
+            viewerImage.naturalWidth > 0
+        ) {
+            finish();
+        }
+    });
+}
+
+
 function loadViewerDisplaySource(
     index,
-    token
+    token,
+    previewGeneration
 ) {
     const photograph =
         photographs[index];
@@ -1674,6 +1927,18 @@ function loadViewerDisplaySource(
     const source =
         getViewerImageSource(
             photograph
+        );
+
+    const existingRecord =
+        getViewerSourceRecord(
+            photograph
+        );
+
+    const skipUnblur =
+        Boolean(
+            existingRecord &&
+            existingRecord.status ===
+                "ready"
         );
 
     preloadViewerSource(
@@ -1687,48 +1952,216 @@ function loadViewerDisplaySource(
             currentIndex !==
                 index
         ) {
+            return false;
+        }
+
+        return waitForViewerImagePaint(
+            source,
+            token,
+            index
+        );
+    }).then(function (painted) {
+        if (
+            !painted ||
+            token !== viewerLoadToken ||
+            currentIndex !== index ||
+            previewGeneration !==
+                viewerPreviewGeneration
+        ) {
             return;
         }
 
         /*
-        The loaded image is placed underneath the single
-        thumbnail overlay. Only then does the overlay perform
-        its one and only deblur/fade transition.
+        When this exact active-resolution source was already
+        preloaded and decoded before the display request began,
+        viewerImage has now also completed its own load/decode
+        and two-frame paint confirmation. Reveal it atomically
+        without running the thumbnail unblur animation.
         */
-        viewerImage.src =
-            source;
+        if (skipUnblur) {
+            window.requestAnimationFrame(
+                function () {
+                    if (
+                        token !== viewerLoadToken ||
+                        currentIndex !== index ||
+                        previewGeneration !==
+                            viewerPreviewGeneration ||
+                        !viewerPreview.classList.contains(
+                            "visible"
+                        )
+                    ) {
+                        return;
+                    }
 
-        window.requestAnimationFrame(
+                    viewerImage.style.removeProperty(
+                        "opacity"
+                    );
+
+                    clearSwipePreview(false);
+                }
+            );
+
+            return;
+        }
+
+        /*
+        Animate by painted frames rather than relying on a CSS
+        transition clock. The progress cannot advance faster
+        than one ninth per rendered frame, so a delayed frame
+        cannot skip the visible 8 px to 2 px unblur.
+        */
+        const unblurDuration =
+            150;
+
+        const minimumPaintedFrames =
+            9;
+
+        const startBlur =
+            8;
+
+        const endBlur =
+            2;
+
+        resetViewerPreviewVisualState();
+
+        viewerPreview.style.setProperty(
+            "transition",
+            "none"
+        );
+
+        viewerPreview.style.setProperty(
+            "filter",
+            `blur(${startBlur}px)`
+        );
+
+        let animationStartTime =
+            null;
+
+        let paintedFrameCount =
+            0;
+
+        const previewStillOwned =
             function () {
+                return (
+                    token === viewerLoadToken &&
+                    currentIndex === index &&
+                    previewGeneration ===
+                        viewerPreviewGeneration &&
+                    viewerPreview.classList.contains(
+                        "visible"
+                    )
+                );
+            };
+
+        const finishUnblur =
+            function () {
+                if (!previewStillOwned()) {
+                    return;
+                }
+
+                /*
+                Leave the final 2 px state on screen for one
+                additional painted frame before removing the
+                thumbnail and revealing the full-resolution
+                image underneath.
+                */
                 window.requestAnimationFrame(
                     function () {
-                        if (
-                            token !==
-                                viewerLoadToken ||
-                            currentIndex !==
-                                index
-                        ) {
+                        if (!previewStillOwned()) {
                             return;
                         }
 
-                        viewerPreview.classList.add(
-                            "resolving"
+                        viewerImage.style.removeProperty(
+                            "opacity"
                         );
 
-                        window.setTimeout(
-                            function () {
-                                if (
-                                    token ===
-                                        viewerLoadToken &&
-                                    currentIndex ===
-                                        index
-                                ) {
-                                    clearSwipePreview();
-                                }
-                            },
-                            240
-                        );
+                        clearSwipePreview(false);
                     }
+                );
+            };
+
+        const animateUnblurFrame =
+            function (timestamp) {
+                if (!previewStillOwned()) {
+                    return;
+                }
+
+                if (
+                    animationStartTime ===
+                        null
+                ) {
+                    animationStartTime =
+                        timestamp;
+
+                    window.requestAnimationFrame(
+                        animateUnblurFrame
+                    );
+
+                    return;
+                }
+
+                paintedFrameCount += 1;
+
+                const elapsedProgress =
+                    Math.min(
+                        1,
+                        (
+                            timestamp -
+                            animationStartTime
+                        ) /
+                        unblurDuration
+                    );
+
+                const frameProgress =
+                    Math.min(
+                        1,
+                        paintedFrameCount /
+                        minimumPaintedFrames
+                    );
+
+                const progress =
+                    Math.min(
+                        elapsedProgress,
+                        frameProgress
+                    );
+
+                const easedProgress =
+                    1 -
+                    Math.pow(
+                        1 - progress,
+                        2
+                    );
+
+                const blur =
+                    startBlur +
+                    (
+                        endBlur -
+                        startBlur
+                    ) *
+                    easedProgress;
+
+                viewerPreview.style.setProperty(
+                    "filter",
+                    `blur(${blur.toFixed(3)}px)`
+                );
+
+                if (progress < 1) {
+                    window.requestAnimationFrame(
+                        animateUnblurFrame
+                    );
+                } else {
+                    finishUnblur();
+                }
+            };
+
+        /*
+        Two initial frames make sure the 8 px thumbnail state
+        is painted before the first smaller blur value.
+        */
+        window.requestAnimationFrame(
+            function () {
+                window.requestAnimationFrame(
+                    animateUnblurFrame
                 );
             }
         );
@@ -1769,47 +2202,66 @@ function showViewerImage(
     const photograph =
         photographs[index];
 
-    const source =
-        getViewerImageSource(
-            photograph
+    /*
+    Always keep a thumbnail overlay visible while the active
+    image is assigned underneath. A preloaded/decoded record is
+    not treated as proof that the browser has painted the image.
+    */
+    if (!preserveOverlay) {
+        clearSwipePreview();
+
+        viewerPreview.src =
+            photograph.thumbnail;
+
+        viewerPreview.classList.add(
+            "visible"
         );
 
-    const record =
-        getViewerSourceRecord(
-            photograph
-        );
+        viewerPreview.style.transform =
+            "translate3d(0, 0, 0)";
 
-    if (
-        record &&
-        record.status ===
-            "ready"
-    ) {
-        viewerImage.src =
-            source;
-
-        if (preserveOverlay) {
-            clearSwipePreview();
+        if (isViewerLandscape()) {
+            viewerImage.style.opacity =
+                "0.001";
+        } else {
+            viewerImage.style.removeProperty(
+                "opacity"
+            );
         }
     } else {
-        if (!preserveOverlay) {
-            clearSwipePreview();
+        resetViewerPreviewVisualState();
 
-            viewerPreview.src =
-                photograph.thumbnail;
+        viewerPreview.src =
+            photograph.thumbnail;
 
-            viewerPreview.classList.add(
-                "visible"
-            );
-
-            viewerPreview.style.transform =
-                "translate3d(0, 0, 0)";
-        }
-
-        loadViewerDisplaySource(
-            index,
-            loadToken
+        viewerPreview.classList.add(
+            "visible"
         );
+
+        viewerPreview.style.transform =
+            "translate3d(0, 0, 0)";
+
+        if (isViewerLandscape()) {
+            viewerImage.style.opacity =
+                "0.001";
+        } else {
+            viewerImage.style.removeProperty(
+                "opacity"
+            );
+        }
     }
+
+    const previewGeneration =
+        viewerPreviewGeneration + 1;
+
+    viewerPreviewGeneration =
+        previewGeneration;
+
+    loadViewerDisplaySource(
+        index,
+        loadToken,
+        previewGeneration
+    );
 
     viewerImage.alt =
         `Photograph ${index + 1}`;
@@ -1830,6 +2282,126 @@ function showViewerImage(
 }
 
 
+function animateExpandedViewerFadeIn() {
+    viewer.classList.remove(
+        "viewer-fade-in"
+    );
+
+    void viewer.offsetWidth;
+
+    viewer.classList.add(
+        "viewer-fade-in"
+    );
+
+    window.setTimeout(
+        function () {
+            viewer.classList.remove(
+                "viewer-fade-in"
+            );
+        },
+        420
+    );
+}
+
+
+function animateFullscreenControlIntoViewer(
+    previousRect
+) {
+    const isLandscape =
+        window.matchMedia(
+            "(orientation: landscape)"
+        ).matches;
+
+    if (isLandscape) {
+        /*
+        The fullscreen control is intentionally hidden in the
+        landscape viewer. Animate a temporary visual copy from
+        its mosaic position so it fades away smoothly instead
+        of disappearing abruptly.
+        */
+        const clone =
+            fullscreenButton.cloneNode(true);
+
+        clone.removeAttribute("id");
+        clone.className =
+            "mobile-fullscreen-transition-clone";
+
+        clone.style.left =
+            `${previousRect.left}px`;
+
+        clone.style.top =
+            `${previousRect.top}px`;
+
+        clone.style.width =
+            `${previousRect.width}px`;
+
+        clone.style.height =
+            `${previousRect.height}px`;
+
+        document.body.appendChild(
+            clone
+        );
+
+        clone.animate(
+            [
+                {
+                    opacity: 1,
+                    transform: "scale(1)"
+                },
+                {
+                    opacity: 0,
+                    transform: "scale(0.94)"
+                }
+            ],
+            {
+                duration: 360,
+                easing:
+                    "cubic-bezier(0.22, 0.61, 0.36, 1)",
+                fill: "forwards"
+            }
+        ).finished.finally(
+            function () {
+                clone.remove();
+            }
+        );
+
+        return;
+    }
+
+    const nextRect =
+        fullscreenButton.getBoundingClientRect();
+
+    const deltaX =
+        previousRect.left -
+        nextRect.left;
+
+    const deltaY =
+        previousRect.top -
+        nextRect.top;
+
+    fullscreenButton.animate(
+        [
+            {
+                opacity: 1,
+                transform:
+                    `translate3d(${deltaX}px, ${deltaY}px, 0)`
+            },
+            {
+                opacity: 1,
+                transform:
+                    "translate3d(0, 0, 0)"
+            }
+        ],
+        {
+            duration: 420,
+            easing:
+                "cubic-bezier(0.22, 0.61, 0.36, 1)",
+            fill: "none"
+        }
+    );
+}
+
+
 function openViewer(index) {
     if (
         index < 0 ||
@@ -1837,6 +2409,9 @@ function openViewer(index) {
     ) {
         return;
     }
+
+    const previousFullscreenRect =
+        fullscreenButton.getBoundingClientRect();
 
     viewerOpen = true;
     viewerHistoryActive = true;
@@ -1870,6 +2445,16 @@ function openViewer(index) {
         index,
         false
     );
+
+    animateExpandedViewerFadeIn();
+
+    window.requestAnimationFrame(
+        function () {
+            animateFullscreenControlIntoViewer(
+                previousFullscreenRect
+            );
+        }
+    );
 }
 
 
@@ -1900,6 +2485,8 @@ function closeViewer() {
     viewerGestureAnimating =
         false;
 
+    clearGestureSwipePreview();
+    clearSwipePreview();
     resetViewerTransform(false);
 
     viewer.hidden = true;
@@ -1911,6 +2498,10 @@ function closeViewer() {
 
     viewerImage.removeAttribute(
         "src"
+    );
+
+    viewerImage.style.removeProperty(
+        "opacity"
     );
 
     viewerImage.classList.remove(
@@ -2398,6 +2989,85 @@ function buildMosaicRows(width) {
 }
 
 
+function animateMosaicSelection(
+    selectedButton,
+    photographIndex
+) {
+    if (mosaicSelectionAnimating) {
+        return;
+    }
+
+    mosaicSelectionAnimating = true;
+
+    const buttons =
+        Array.from(
+            grid.querySelectorAll(
+                ".mobile-grid-item"
+            )
+        );
+
+    grid.classList.add(
+        "mosaic-selection-active"
+    );
+
+    buttons.forEach(function (button) {
+        if (button === selectedButton) {
+            button.classList.add(
+                "mosaic-selected"
+            );
+        } else {
+            button.classList.add(
+                "mosaic-not-selected"
+            );
+        }
+    });
+
+    /*
+    Unselected photographs finish their 0.3-second fade and
+    shrink first. The selected photograph then begins its
+    separate 1.5-second fade and shrink.
+    */
+    window.setTimeout(
+        function () {
+            if (
+                !mosaicSelectionAnimating
+            ) {
+                return;
+            }
+
+            selectedButton.classList.add(
+                "mosaic-selected-running"
+            );
+        },
+        300
+    );
+
+    window.setTimeout(
+        function () {
+            openViewer(
+                photographIndex
+            );
+
+            grid.classList.remove(
+                "mosaic-selection-active"
+            );
+
+            buttons.forEach(function (button) {
+                button.classList.remove(
+                    "mosaic-selected",
+                    "mosaic-selected-running",
+                    "mosaic-not-selected"
+                );
+            });
+
+            mosaicSelectionAnimating =
+                false;
+        },
+        1000
+    );
+}
+
+
 function createMosaicItem(
     photograph,
     width,
@@ -2474,7 +3144,8 @@ function createMosaicItem(
     button.addEventListener(
         "click",
         function () {
-            openViewer(
+            animateMosaicSelection(
+                button,
                 photograph.index
             );
         }
