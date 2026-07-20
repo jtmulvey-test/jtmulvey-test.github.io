@@ -335,6 +335,10 @@ body.fullscreen-controls-lifted
     justify-content: center;
 }
 
+.mobile-mosaic-row.panorama {
+    justify-content: stretch;
+}
+
 .mobile-grid-item {
     position: relative;
     min-width: 0;
@@ -361,18 +365,51 @@ body.fullscreen-controls-lifted
     display: block;
     object-fit: contain;
     opacity: 0;
-    transform: scale(1.012);
-    transition:
-        opacity 0.18s ease,
-        transform 0.24s ease;
+    transform: scale(0.90);
+    transform-origin: center center;
+    transition: none;
     user-select: none;
     -webkit-user-drag: none;
     pointer-events: none;
+    will-change:
+        opacity,
+        transform;
 }
 
-.mobile-grid-item img.loaded {
+/*
+After every thumbnail has settled, rows enter from top to
+bottom. Each row starts 0.2 seconds after the row above it,
+and every thumbnail expands and fades in over 0.5 seconds.
+*/
+#mobileGrid.mosaic-entrance-ready
+.mobile-mosaic-row
+.mobile-grid-item
+img.loaded {
+    animation:
+        mobile-mosaic-thumbnail-enter
+        0.5s
+        cubic-bezier(0.22, 0.61, 0.36, 1)
+        var(--mosaic-row-delay)
+        both;
+}
+
+#mobileGrid.mosaic-entrance-complete
+.mobile-grid-item
+img.loaded {
     opacity: 1;
     transform: scale(1);
+}
+
+@keyframes mobile-mosaic-thumbnail-enter {
+    from {
+        opacity: 0;
+        transform: scale(0.90);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 .mobile-grid-item:active img {
@@ -774,6 +811,13 @@ body.viewer-open #mobileBottomSpacer {
 @media (prefers-reduced-motion: reduce) {
     .mobile-grid-item img {
         transition: none;
+    }
+
+    #mobileGrid.mosaic-entrance-ready
+    .mobile-grid-item
+    img.loaded {
+        animation-duration: 0.01ms;
+        animation-delay: 0s;
     }
 
     .mobile-viewer-photo.animating {

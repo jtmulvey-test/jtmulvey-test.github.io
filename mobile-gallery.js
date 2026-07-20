@@ -1,5 +1,5 @@
 /*
-Lightweight mobile gallery v2.4.37
+Lightweight mobile gallery v2.5.10
 Aspect-ratio-preserving justified mosaic.
 */
 
@@ -123,6 +123,8 @@ let viewerHistoryActive = false;
 let viewerLoadToken = 0;
 let mosaicRenderTimer = null;
 let mosaicSelectionAnimating = false;
+let mosaicEntranceComplete = false;
+let mosaicEntranceGeneration = 0;
 let fullscreenControlLiftTimer = null;
 let landscapeLockActive = false;
 let landscapeOperationId = 0;
@@ -156,6 +158,9 @@ let swipeRequestedDirection = 0;
 let zoomLevel = 1;
 let viewerPanX = 0;
 let viewerPanY = 0;
+
+let finalLetterboxMasksReady = false;
+let finalLetterboxPhotograph = null;
 
 let pinchStartDistance = 0;
 let pinchStartZoom = 1;
@@ -1354,24 +1359,7 @@ function updateFinalLetterboxMasks(
 }
 
 
-function showFinalLetterboxMasks(
-    photograph
-) {
-    updateFinalLetterboxMasks(
-        photograph
-    );
-
-    viewerFinalMaskTop.classList.add(
-        "visible"
-    );
-
-    viewerFinalMaskBottom.classList.add(
-        "visible"
-    );
-}
-
-
-function hideFinalLetterboxMasks() {
+function concealFinalLetterboxMasks() {
     viewerFinalMaskTop.classList.remove(
         "visible"
     );
@@ -1398,6 +1386,83 @@ function hideFinalLetterboxMasks() {
         mask.style.transform =
             "translate3d(0, 0, 0)";
     });
+}
+
+
+function showFinalLetterboxMasks(
+    photograph
+) {
+    finalLetterboxMasksReady =
+        true;
+
+    finalLetterboxPhotograph =
+        photograph;
+
+    /*
+    The masks belong only to the unzoomed image. Keeping them
+    unloaded during zoom prevents them from covering or
+    intercepting the visible zoomed photograph.
+    */
+    if (
+        zoomLevel > 1.001 ||
+        viewerGestureMode ===
+            "pinch"
+    ) {
+        concealFinalLetterboxMasks();
+        return;
+    }
+
+    updateFinalLetterboxMasks(
+        photograph
+    );
+
+    viewerFinalMaskTop.classList.add(
+        "visible"
+    );
+
+    viewerFinalMaskBottom.classList.add(
+        "visible"
+    );
+}
+
+
+function syncFinalLetterboxMasksWithZoom() {
+    if (
+        zoomLevel > 1.001 ||
+        viewerGestureMode ===
+            "pinch"
+    ) {
+        concealFinalLetterboxMasks();
+        return;
+    }
+
+    if (
+        finalLetterboxMasksReady &&
+        finalLetterboxPhotograph
+    ) {
+        updateFinalLetterboxMasks(
+            finalLetterboxPhotograph
+        );
+
+        viewerFinalMaskTop.classList.add(
+            "visible"
+        );
+
+        viewerFinalMaskBottom.classList.add(
+            "visible"
+        );
+    }
+}
+
+
+function hideFinalLetterboxMasks() {
+    finalLetterboxMasksReady =
+        false;
+
+    finalLetterboxPhotograph =
+        null;
+
+    concealFinalLetterboxMasks();
 }
 
 
@@ -1539,6 +1604,8 @@ function applyZoomTransform() {
         `${viewerPanX.toFixed(2)}px, ` +
         `${viewerPanY.toFixed(2)}px, 0) ` +
         `scale(${zoomLevel.toFixed(4)})`;
+
+    syncFinalLetterboxMasksWithZoom();
 }
 
 
@@ -1571,6 +1638,8 @@ function resetViewerTransform(
 
     viewerFinalMaskBottom.style.transform =
         "translate3d(0, 0, 0)";
+
+    syncFinalLetterboxMasksWithZoom();
 
     /*
     Do not clear the preview here. This function is also called
@@ -1983,12 +2052,13 @@ function beginPinchGesture() {
     /*
     A second finger cancels any partial one-finger swipe and
     returns the current photograph to its zoom/pan transform
-    before pinch scaling begins.
+    before pinch scaling begins. Set pinch mode first so the
+    letterbox masks unload immediately.
     */
-    applyZoomTransform();
-
     viewerGestureMode =
         "pinch";
+
+    applyZoomTransform();
 
     pinchStartDistance =
         Math.max(
@@ -3063,194 +3133,646 @@ function measureJustifiedHeight(
 }
 
 
-function chooseRowCount(
-    startIndex,
+function isPortraitPhotograph(
+    photograph
+) {
+    return photograph.ratio < 1;
+}
+
+
+function isFullWidthCandidate(
+    photograph
+) {
+    return photograph.ratio >= 2;
+}
+
+
+function createMosaicRandom(
+    salt = 0
+) {
+    let seed =
+        photographs.reduce(
+            function (
+                value,
+                photograph,
+                index
+            ) {
+                return (
+                    value ^
+                    (
+                        (
+                            photograph.index +
+                            1
+                        ) *
+                        (
+                            index +
+                            17
+                        )
+                    )
+                ) >>> 0;
+            },
+            (
+                0x9e3779b9 ^
+                salt
+            ) >>> 0
+        );
+
+    return function () {
+        seed +=
+            0x6d2b79f5;
+
+        let value =
+            seed;
+
+        value =
+            Math.imul(
+                value ^
+                value >>> 15,
+                value | 1
+            );
+
+        value ^=
+            value +
+            Math.imul(
+                value ^
+                    value >>> 7,
+                value | 61
+            );
+
+        return (
+            (
+                value ^
+                value >>> 14
+            ) >>> 0
+        ) /
+        4294967296;
+    };
+}
+
+
+function shuffleMosaicRows(
+    rows,
+    salt
+) {
+    const shuffled =
+        rows.slice();
+
+    const random =
+        createMosaicRandom(
+            salt
+        );
+
+    for (
+        let index =
+            shuffled.length - 1;
+        index > 0;
+        index -= 1
+    ) {
+        const swapIndex =
+            Math.floor(
+                random() *
+                (
+                    index +
+                    1
+                )
+            );
+
+        [
+            shuffled[index],
+            shuffled[swapIndex]
+        ] = [
+            shuffled[swapIndex],
+            shuffled[index]
+        ];
+    }
+
+    return shuffled;
+}
+
+
+function buildRegularRowData(
+    items,
     width,
     rowIndex
 ) {
-    const remaining =
-        photographs.length -
-        startIndex;
-
-    if (
-        remaining <=
-        maximumImagesPerRow
-    ) {
-        return remaining;
-    }
-
-    const target =
+    const targetHeight =
         getTargetRowHeight(
             width,
             rowIndex
         );
 
-    let bestCount = 2;
-    let bestScore = Infinity;
+    const justifiedHeight =
+        measureJustifiedHeight(
+            items,
+            width
+        );
 
-    for (
-        let count = 2;
-        count <=
-            maximumImagesPerRow;
-        count += 1
-    ) {
-        const candidate =
-            photographs.slice(
-                startIndex,
-                startIndex + count
+    const loose =
+        items.length === 1;
+
+    const height =
+        loose
+            ? clamp(
+                targetHeight,
+                118,
+                220
+            )
+            : clamp(
+                justifiedHeight,
+                88,
+                250
             );
 
-        const height =
-            measureJustifiedHeight(
-                candidate,
-                width
+    const widths =
+        items.map(
+            photograph =>
+                photograph.ratio *
+                height
+        );
+
+    if (!loose) {
+        const availableWidth =
+            width -
+            mosaicGap *
+                Math.max(
+                    0,
+                    items.length - 1
+                );
+
+        const rawWidth =
+            widths.reduce(
+                (sum, value) =>
+                    sum + value,
+                0
             );
 
-        let score =
-            Math.abs(
-                height -
-                target
+        const correction =
+            availableWidth /
+            Math.max(
+                1,
+                rawWidth
             );
 
-        if (height < target * 0.58) {
-            score +=
-                target * 1.2;
-        }
-
-        if (height > target * 1.58) {
-            score +=
-                target * 1.4;
-        }
-
-        /*
-        Slightly favor three-image rows when the two choices
-        are similarly good, while still allowing two-image
-        rows to create a varied desktop-mosaic rhythm.
-        */
-        if (count === 3) {
-            score *= 0.96;
-        }
-
-        if (score < bestScore) {
-            bestScore = score;
-            bestCount = count;
-        }
+        widths.forEach(
+            function (
+                value,
+                index
+            ) {
+                widths[index] =
+                    value *
+                    correction;
+            }
+        );
     }
 
-    return bestCount;
+    return {
+        items,
+        widths,
+        height,
+        loose,
+        panorama: false
+    };
 }
 
 
-function buildMosaicRows(width) {
+function buildFullWidthRowData(
+    photograph,
+    width
+) {
+    const height =
+        clamp(
+            width /
+                Math.max(
+                    0.01,
+                    photograph.ratio
+                ),
+            88,
+            250
+        );
+
+    return {
+        items: [
+            photograph
+        ],
+        widths: [
+            width
+        ],
+        height,
+        loose: false,
+        panorama: true
+    };
+}
+
+
+function makeMixedPairRows(
+    portraits,
+    landscapes,
+    firstPhotograph
+) {
     const rows = [];
-    let startIndex = 0;
-    let rowIndex = 0;
+
+    let tallOnLeft = true;
+
+    /*
+    The first thumbnail always remains the first thumbnail in
+    the first row. Its orientation determines which side the
+    first tall photograph occupies.
+    */
+    if (
+        firstPhotograph &&
+        !isFullWidthCandidate(
+            firstPhotograph
+        )
+    ) {
+        const firstIsPortrait =
+            isPortraitPhotograph(
+                firstPhotograph
+            );
+
+        const oppositePool =
+            firstIsPortrait
+                ? landscapes
+                : portraits;
+
+        const samePool =
+            firstIsPortrait
+                ? portraits
+                : landscapes;
+
+        if (oppositePool.length > 0) {
+            rows.push({
+                items: [
+                    firstPhotograph,
+                    oppositePool.shift()
+                ],
+                panorama: false
+            });
+
+            tallOnLeft =
+                !firstIsPortrait;
+        } else if (samePool.length > 0) {
+            rows.push({
+                items: [
+                    firstPhotograph,
+                    samePool.shift()
+                ],
+                panorama: false
+            });
+        } else {
+            rows.push({
+                items: [
+                    firstPhotograph
+                ],
+                panorama: false
+            });
+        }
+    }
 
     while (
-        startIndex <
-        photographs.length
+        portraits.length > 0 &&
+        landscapes.length > 0
     ) {
-        const count =
-            chooseRowCount(
-                startIndex,
-                width,
-                rowIndex
-            );
+        const portrait =
+            portraits.shift();
 
-        const items =
-            photographs.slice(
-                startIndex,
-                startIndex + count
-            );
-
-        const targetHeight =
-            getTargetRowHeight(
-                width,
-                rowIndex
-            );
-
-        const justifiedHeight =
-            measureJustifiedHeight(
-                items,
-                width
-            );
-
-        const isLastRow =
-            startIndex + count >=
-            photographs.length;
-
-        const loose =
-            isLastRow &&
-            (
-                count === 1 ||
-                justifiedHeight >
-                    targetHeight * 1.34
-            );
-
-        const height =
-            loose
-                ? clamp(
-                    targetHeight,
-                    118,
-                    220
-                )
-                : clamp(
-                    justifiedHeight,
-                    88,
-                    250
-                );
-
-        const widths =
-            items.map(
-                photograph =>
-                    photograph.ratio *
-                    height
-            );
-
-        if (!loose) {
-            const availableWidth =
-                width -
-                mosaicGap *
-                    Math.max(
-                        0,
-                        count - 1
-                    );
-
-            const rawWidth =
-                widths.reduce(
-                    (sum, value) =>
-                        sum + value,
-                    0
-                );
-
-            const correction =
-                availableWidth /
-                Math.max(
-                    1,
-                    rawWidth
-                );
-
-            widths.forEach(
-                (value, index) => {
-                    widths[index] =
-                        value *
-                        correction;
-                }
-            );
-        }
+        const landscape =
+            landscapes.shift();
 
         rows.push({
-            items,
-            widths,
-            height,
-            loose
+            items:
+                tallOnLeft
+                    ? [
+                        portrait,
+                        landscape
+                    ]
+                    : [
+                        landscape,
+                        portrait
+                    ],
+            panorama: false
         });
 
-        startIndex += count;
-        rowIndex += 1;
+        tallOnLeft =
+            !tallOnLeft;
     }
 
     return rows;
+}
+
+
+function makeSameOrientationRows(
+    portraits,
+    landscapes
+) {
+    const rows = [];
+
+    while (landscapes.length >= 2) {
+        rows.push({
+            items: [
+                landscapes.shift(),
+                landscapes.shift()
+            ],
+            panorama: false
+        });
+    }
+
+    while (portraits.length >= 2) {
+        rows.push({
+            items: [
+                portraits.shift(),
+                portraits.shift()
+            ],
+            panorama: false
+        });
+    }
+
+    if (landscapes.length === 1) {
+        rows.push({
+            items: [
+                landscapes.shift()
+            ],
+            panorama: false
+        });
+    }
+
+    if (portraits.length === 1) {
+        rows.push({
+            items: [
+                portraits.shift()
+            ],
+            panorama: false
+        });
+    }
+
+    return shuffleMosaicRows(
+        rows,
+        0x51f15e
+    );
+}
+
+
+function interlaceFullWidthRows(
+    baseRows,
+    fullWidthRows
+) {
+    if (fullWidthRows.length === 0) {
+        return baseRows.slice();
+    }
+
+    if (baseRows.length === 0) {
+        return fullWidthRows.slice();
+    }
+
+    const result =
+        baseRows.slice();
+
+    fullWidthRows.forEach(
+        function (
+            row,
+            index
+        ) {
+            const fraction =
+                (
+                    index +
+                    1
+                ) /
+                (
+                    fullWidthRows.length +
+                    1
+                );
+
+            const position =
+                Math.max(
+                    1,
+                    Math.min(
+                        result.length,
+                        Math.round(
+                            fraction *
+                            result.length
+                        )
+                    )
+                );
+
+            result.splice(
+                position,
+                0,
+                row
+            );
+        }
+    );
+
+    return result;
+}
+
+
+function insertRowsRandomly(
+    baseRows,
+    rowsToInsert
+) {
+    const result =
+        baseRows.slice();
+
+    const random =
+        createMosaicRandom(
+            0x7a11b0
+        );
+
+    rowsToInsert.forEach(
+        function (row) {
+            const minimumPosition =
+                result.length > 0
+                    ? 1
+                    : 0;
+
+            const availablePositions =
+                result.length -
+                minimumPosition +
+                1;
+
+            const position =
+                minimumPosition +
+                Math.floor(
+                    random() *
+                    Math.max(
+                        1,
+                        availablePositions
+                    )
+                );
+
+            result.splice(
+                position,
+                0,
+                row
+            );
+        }
+    );
+
+    return result;
+}
+
+
+function buildMosaicRows(
+    width
+) {
+    if (photographs.length === 0) {
+        return [];
+    }
+
+    const firstPhotograph =
+        photographs[0];
+
+    const portraits = [];
+    const landscapes = [];
+    const fullWidthPhotographs = [];
+
+    photographs
+        .slice(1)
+        .forEach(
+            function (photograph) {
+                if (
+                    isFullWidthCandidate(
+                        photograph
+                    )
+                ) {
+                    fullWidthPhotographs.push(
+                        photograph
+                    );
+                } else if (
+                    isPortraitPhotograph(
+                        photograph
+                    )
+                ) {
+                    portraits.push(
+                        photograph
+                    );
+                } else {
+                    landscapes.push(
+                        photograph
+                    );
+                }
+            }
+        );
+
+    const firstIsFullWidth =
+        isFullWidthCandidate(
+            firstPhotograph
+        );
+
+    const mixedRows =
+        makeMixedPairRows(
+            portraits,
+            landscapes,
+            firstIsFullWidth
+                ? null
+                : firstPhotograph
+        );
+
+    /*
+    Build the mixed tall/wide backbone first. The tall image
+    alternates from the left side to the right side.
+    */
+    let orderedRows =
+        mixedRows;
+
+    /*
+    Next, interlace the dedicated wide single-image rows.
+    The fixed first thumbnail remains first even when it is a
+    full-width image.
+    */
+    const fullWidthRows =
+        fullWidthPhotographs.map(
+            photograph => ({
+                items: [
+                    photograph
+                ],
+                panorama: true
+            })
+        );
+
+    if (firstIsFullWidth) {
+        orderedRows = [
+            {
+                items: [
+                    firstPhotograph
+                ],
+                panorama: true
+            },
+            ...orderedRows
+        ];
+    }
+
+    orderedRows =
+        interlaceFullWidthRows(
+            orderedRows,
+            fullWidthRows
+        );
+
+    /*
+    Finally, place the remaining wide/wide and tall/tall rows
+    at deterministic random positions. This makes the layout
+    organic without changing every time the page resizes.
+    */
+    const sameOrientationRows =
+        makeSameOrientationRows(
+            portraits,
+            landscapes
+        );
+
+    orderedRows =
+        insertRowsRandomly(
+            orderedRows,
+            sameOrientationRows
+        );
+
+    /*
+    Any leftover one-image row that is not a true 2:1-or-wider
+    full-width image belongs at the very end of the mosaic.
+    Panorama rows remain interlaced in their existing positions.
+    */
+    const pairedAndPanoramaRows =
+        orderedRows.filter(
+            function (row) {
+                return (
+                    row.panorama ||
+                    row.items.length >= 2
+                );
+            }
+        );
+
+    const leftoverSingleRows =
+        orderedRows.filter(
+            function (row) {
+                return (
+                    !row.panorama &&
+                    row.items.length === 1
+                );
+            }
+        );
+
+    orderedRows = [
+        ...pairedAndPanoramaRows,
+        ...leftoverSingleRows
+    ];
+
+    return orderedRows.map(
+        function (
+            row,
+            rowIndex
+        ) {
+            if (row.panorama) {
+                return buildFullWidthRowData(
+                    row.items[0],
+                    width
+                );
+            }
+
+            return buildRegularRowData(
+                row.items,
+                width,
+                rowIndex
+            );
+        }
+    );
 }
 
 
@@ -3371,40 +3893,58 @@ function createMosaicItem(
 
     image.alt = "";
     image.decoding = "async";
+    image.loading = "eager";
 
-    image.loading =
-        photograph.index < 8
-            ? "eager"
-            : "lazy";
+    button.thumbnailReadyPromise =
+        new Promise(resolve => {
+            let settled = false;
 
-    const markLoaded =
-        function () {
-            image.classList.add(
-                "loaded"
+            const finish =
+                function (loaded) {
+                    if (settled) {
+                        return;
+                    }
+
+                    settled = true;
+
+                    if (loaded) {
+                        image.classList.add(
+                            "loaded"
+                        );
+                    } else {
+                        button.hidden = true;
+                    }
+
+                    resolve();
+                };
+
+            image.addEventListener(
+                "load",
+                function () {
+                    finish(true);
+                },
+                {
+                    once: true
+                }
             );
-        };
 
-    if (image.complete) {
-        markLoaded();
-    } else {
-        image.addEventListener(
-            "load",
-            markLoaded,
-            {
-                once: true
+            image.addEventListener(
+                "error",
+                function () {
+                    finish(false);
+                },
+                {
+                    once: true
+                }
+            );
+
+            if (
+                image.complete &&
+                image.naturalWidth > 0
+            ) {
+                finish(true);
             }
-        );
-    }
-
-    image.addEventListener(
-        "error",
-        function () {
-            button.hidden = true;
-        },
-        {
-            once: true
-        }
-    );
+        });
 
     button.addEventListener(
         "click",
@@ -3427,6 +3967,11 @@ function renderMosaic() {
         return;
     }
 
+    mosaicEntranceGeneration += 1;
+
+    const renderGeneration =
+        mosaicEntranceGeneration;
+
     const width =
         Math.max(
             1,
@@ -3440,47 +3985,175 @@ function renderMosaic() {
     const fragment =
         document.createDocumentFragment();
 
-    rows.forEach(rowData => {
-        const row =
-            document.createElement(
-                "div"
+    const thumbnailPromises = [];
+
+    grid.classList.remove(
+        "mosaic-entrance-ready",
+        "mosaic-entrance-complete"
+    );
+
+    rows.forEach(
+        function (
+            rowData,
+            rowIndex
+        ) {
+            const row =
+                document.createElement(
+                    "div"
+                );
+
+            row.className =
+                "mobile-mosaic-row";
+
+            row.style.setProperty(
+                "--mosaic-row-delay",
+                `${(
+                    rowIndex *
+                    0.2
+                ).toFixed(1)}s`
             );
 
-        row.className =
-            "mobile-mosaic-row";
-
-        if (rowData.loose) {
-            row.classList.add(
-                "loose"
-            );
-        }
-
-        row.style.height =
-            `${rowData.height.toFixed(2)}px`;
-
-        rowData.items.forEach(
-            (photograph, index) => {
-                row.appendChild(
-                    createMosaicItem(
-                        photograph,
-                        rowData.widths[index],
-                        rowData.height
-                    )
+            if (rowData.loose) {
+                row.classList.add(
+                    "loose"
                 );
             }
-        );
 
-        fragment.appendChild(row);
-    });
+            if (rowData.panorama) {
+                row.classList.add(
+                    "panorama"
+                );
+            }
 
-    grid.replaceChildren(fragment);
+            row.style.height =
+                `${rowData.height.toFixed(2)}px`;
+
+            rowData.items.forEach(
+                function (
+                    photograph,
+                    index
+                ) {
+                    const item =
+                        createMosaicItem(
+                            photograph,
+                            rowData.widths[
+                                index
+                            ],
+                            rowData.height
+                        );
+
+                    thumbnailPromises.push(
+                        item.thumbnailReadyPromise
+                    );
+
+                    row.appendChild(
+                        item
+                    );
+                }
+            );
+
+            fragment.appendChild(
+                row
+            );
+        }
+    );
+
+    grid.replaceChildren(
+        fragment
+    );
 
     grid.setAttribute(
         "aria-busy",
-        "false"
+        "true"
     );
 
-    setStatus("");
+    if (mosaicEntranceComplete) {
+        grid.classList.add(
+            "mosaic-entrance-complete"
+        );
+
+        grid.setAttribute(
+            "aria-busy",
+            "false"
+        );
+
+        setStatus("");
+
+        return;
+    }
+
+    Promise.all(
+        thumbnailPromises
+    ).then(function () {
+        if (
+            renderGeneration !==
+                mosaicEntranceGeneration
+        ) {
+            return;
+        }
+
+        /*
+        All thumbnails are now settled. Two animation frames
+        ensure the hidden starting state is painted before the
+        top-to-bottom row cascade begins.
+        */
+        window.requestAnimationFrame(
+            function () {
+                window.requestAnimationFrame(
+                    function () {
+                        if (
+                            renderGeneration !==
+                                mosaicEntranceGeneration
+                        ) {
+                            return;
+                        }
+
+                        grid.classList.add(
+                            "mosaic-entrance-ready"
+                        );
+
+                        const totalDuration =
+                            500 +
+                            Math.max(
+                                0,
+                                rows.length - 1
+                            ) *
+                            200;
+
+                        window.setTimeout(
+                            function () {
+                                if (
+                                    renderGeneration !==
+                                        mosaicEntranceGeneration
+                                ) {
+                                    return;
+                                }
+
+                                mosaicEntranceComplete =
+                                    true;
+
+                                grid.classList.remove(
+                                    "mosaic-entrance-ready"
+                                );
+
+                                grid.classList.add(
+                                    "mosaic-entrance-complete"
+                                );
+                            },
+                            totalDuration
+                        );
+
+                        grid.setAttribute(
+                            "aria-busy",
+                            "false"
+                        );
+
+                        setStatus("");
+                    }
+                );
+            }
+        );
+    });
 }
 
 
@@ -4311,6 +4984,8 @@ function finishViewerPointer(
                     ? "pan"
                     : "swipe";
 
+            syncFinalLetterboxMasksWithZoom();
+
             return;
         }
 
@@ -4454,6 +5129,8 @@ viewerStage.addEventListener(
         ) {
             viewerGestureMode =
                 "none";
+
+            syncFinalLetterboxMasksWithZoom();
 
             if (
                 Math.abs(
