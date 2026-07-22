@@ -1,5 +1,5 @@
 /*
-Lightweight mobile gallery v2.5.10
+Lightweight mobile gallery v2.5.18
 Aspect-ratio-preserving justified mosaic.
 */
 
@@ -116,6 +116,11 @@ const mosaicGap = 3;
 const maximumImagesPerRow = 2;
 const ratioLoadConcurrency = 6;
 
+const isIPhoneFamily =
+    /iPhone|iPod/i.test(
+        navigator.userAgent
+    );
+
 let photographs = [];
 let currentIndex = -1;
 let viewerOpen = false;
@@ -126,6 +131,11 @@ let mosaicSelectionAnimating = false;
 let mosaicEntranceComplete = false;
 let mosaicEntranceGeneration = 0;
 let fullscreenControlLiftTimer = null;
+let fullscreenEntryAnimationRequested = false;
+let fullscreenViewerEntryAnimation = null;
+let fullscreenMenuEntryRequested = false;
+let fullscreenMenuFadeClone = null;
+let fullscreenExitFadeTimer = null;
 let landscapeLockActive = false;
 let landscapeOperationId = 0;
 let fullResolutionEnabled = false;
@@ -161,6 +171,7 @@ let viewerPanY = 0;
 
 let finalLetterboxMasksReady = false;
 let finalLetterboxPhotograph = null;
+let finalLetterboxGeometryGeneration = 0;
 
 let pinchStartDistance = 0;
 let pinchStartZoom = 1;
@@ -598,6 +609,36 @@ function liftFullscreenControls() {
 }
 
 
+function updateMenuItemVisibility() {
+    /*
+    iPhone browsers do not reliably support page fullscreen or
+    forced orientation, so remove those controls everywhere.
+    Download remains an expanded-view action and is therefore
+    hidden from the mosaic menu.
+    */
+    exitFullscreenButton.hidden =
+        isIPhoneFamily;
+
+    downloadPhotoButton.hidden =
+        !viewerOpen;
+}
+
+
+function applyIPhoneControlVisibility() {
+    if (!isIPhoneFamily) {
+        return;
+    }
+
+    fullscreenButton.hidden = true;
+    landscapeButton.hidden = true;
+    exitFullscreenButton.hidden = true;
+
+    document.body.classList.add(
+        "iphone-limited-controls"
+    );
+}
+
+
 function closeMobileMenu() {
     menuPanel.hidden = true;
 
@@ -612,6 +653,10 @@ function toggleMobileMenu() {
     const willOpen =
         menuPanel.hidden;
 
+    if (willOpen) {
+        updateMenuItemVisibility();
+    }
+
     menuPanel.hidden =
         !willOpen;
 
@@ -622,7 +667,9 @@ function toggleMobileMenu() {
 }
 
 
-function updateFullscreenButton() {
+function updateFullscreenButton(
+    keepVisibleDuringEntry = false
+) {
     if (fullscreenButton.disabled) {
         fullscreenButton.classList.remove(
             "active"
@@ -669,7 +716,11 @@ function updateFullscreenButton() {
     );
 
     fullscreenButton.hidden =
-        active;
+        isIPhoneFamily ||
+        (
+            active &&
+            !keepVisibleDuringEntry
+        );
 
     fullscreenButton.setAttribute(
         "aria-pressed",
@@ -798,7 +849,10 @@ function requestLandscapeLock() {
 
 
 function toggleLandscapeMode() {
-    if (!viewerOpen) {
+    if (
+        isIPhoneFamily ||
+        !viewerOpen
+    ) {
         return;
     }
 
@@ -843,6 +897,9 @@ function toggleLandscapeMode() {
         return;
     }
 
+    fullscreenEntryAnimationRequested =
+        false;
+
     page.requestFullscreen({
         navigationUI: "hide"
     })
@@ -858,8 +915,188 @@ function toggleLandscapeMode() {
 }
 
 
-function togglePageFullscreen() {
+function clearMenuFullscreenFade(
+    restoreButton = false
+) {
+    if (fullscreenMenuFadeClone) {
+        fullscreenMenuFadeClone.remove();
+        fullscreenMenuFadeClone = null;
+    }
+
+    if (restoreButton) {
+        fullscreenButton.style.removeProperty(
+            "visibility"
+        );
+    }
+}
+
+
+function fadeFullscreenButtonFromCurrentPosition() {
+    clearMenuFullscreenFade(false);
+
+    const rect =
+        fullscreenButton.getBoundingClientRect();
+
+    const clone =
+        fullscreenButton.cloneNode(
+            true
+        );
+
+    clone.removeAttribute(
+        "id"
+    );
+
+    clone.removeAttribute(
+        "hidden"
+    );
+
+    clone.className =
+        "mobile-fullscreen-transition-clone " +
+        "mobile-fullscreen-menu-fade-clone";
+
+    clone.classList.remove(
+        "active",
+        "mobile-control-pressed"
+    );
+
+    clone.style.left =
+        `${rect.left}px`;
+
+    clone.style.top =
+        `${rect.top}px`;
+
+    clone.style.width =
+        `${rect.width}px`;
+
+    clone.style.height =
+        `${rect.height}px`;
+
+    clone.style.transform =
+        "translate3d(0, 0, 0)";
+
+    fullscreenButton.style.setProperty(
+        "visibility",
+        "hidden",
+        "important"
+    );
+
+    document.body.appendChild(
+        clone
+    );
+
+    fullscreenMenuFadeClone =
+        clone;
+
+    const animation =
+        clone.animate(
+            [
+                {
+                    opacity: 1
+                },
+                {
+                    opacity: 0
+                }
+            ],
+            {
+                duration: 160,
+                easing: "ease-out",
+                fill: "forwards"
+            }
+        );
+
+    animation.finished
+        .catch(function () {
+            /*
+            Cancellation still completes the menu fade cleanup.
+            */
+        })
+        .finally(function () {
+            if (
+                fullscreenMenuFadeClone ===
+                    clone
+            ) {
+                fullscreenMenuFadeClone =
+                    null;
+            }
+
+            clone.remove();
+        });
+}
+
+
+function fadeFullscreenButtonInAfterExit() {
+    window.clearTimeout(
+        fullscreenExitFadeTimer
+    );
+
+    fullscreenButton.classList.remove(
+        "fullscreen-exit-fade-in"
+    );
+
+    /*
+    Freeze the button while fullscreen-active is removed. This
+    lets CSS place it directly at its expanded-view endpoint
+    without animating from an obsolete fullscreen position.
+    */
+    fullscreenButton.style.setProperty(
+        "transition",
+        "none",
+        "important"
+    );
+
+    fullscreenButton.style.setProperty(
+        "visibility",
+        "hidden",
+        "important"
+    );
+
+    updateFullscreenButton();
+
+    void fullscreenButton.offsetWidth;
+
+    fullscreenButton.classList.add(
+        "fullscreen-exit-fade-in"
+    );
+
+    fullscreenButton.style.removeProperty(
+        "visibility"
+    );
+
+    fullscreenExitFadeTimer =
+        window.setTimeout(
+            function () {
+                fullscreenButton.classList.remove(
+                    "fullscreen-exit-fade-in"
+                );
+
+                fullscreenButton.style.removeProperty(
+                    "transition"
+                );
+
+                fullscreenExitFadeTimer =
+                    null;
+            },
+            190
+        );
+}
+
+
+function togglePageFullscreen(
+    entrySource = "button"
+) {
+    if (isIPhoneFamily) {
+        return;
+    }
+
     if (document.fullscreenElement) {
+        fullscreenEntryAnimationRequested =
+            false;
+
+        fullscreenMenuEntryRequested =
+            false;
+
+        clearMenuFullscreenFade(false);
+
         if (
             typeof document.exitFullscreen ===
             "function"
@@ -893,6 +1130,17 @@ function togglePageFullscreen() {
         return;
     }
 
+    fullscreenMenuEntryRequested =
+        entrySource ===
+        "menu";
+
+    fullscreenEntryAnimationRequested =
+        !fullscreenMenuEntryRequested &&
+        viewerOpen &&
+        !window.matchMedia(
+            "(orientation: landscape)"
+        ).matches;
+
     page.requestFullscreen({
         navigationUI: "hide"
     })
@@ -900,6 +1148,16 @@ function togglePageFullscreen() {
             liftFullscreenControls();
         })
         .catch(function () {
+            fullscreenEntryAnimationRequested =
+                false;
+
+            fullscreenMenuEntryRequested =
+                false;
+
+            clearMenuFullscreenFade(
+                true
+            );
+
             /*
             Chrome may reject fullscreen in some embedded or
             restricted contexts. The gallery remains usable
@@ -1462,7 +1720,72 @@ function hideFinalLetterboxMasks() {
     finalLetterboxPhotograph =
         null;
 
+    finalLetterboxGeometryGeneration += 1;
+
     concealFinalLetterboxMasks();
+}
+
+
+function resettleFinalLetterboxMasksAfterViewportChange() {
+    finalLetterboxGeometryGeneration += 1;
+
+    const generation =
+        finalLetterboxGeometryGeneration;
+
+    /*
+    Fullscreen entry and exit change the usable viewer rectangle
+    across multiple frames. Remove the old masks immediately so
+    stale dimensions cannot overlap the photograph.
+    */
+    concealFinalLetterboxMasks();
+
+    const restore =
+        function () {
+            if (
+                generation !==
+                    finalLetterboxGeometryGeneration ||
+                !viewerOpen ||
+                zoomLevel > 1.001 ||
+                viewerGestureMode ===
+                    "pinch" ||
+                !finalLetterboxMasksReady ||
+                !finalLetterboxPhotograph
+            ) {
+                return;
+            }
+
+            updateFinalLetterboxMasks(
+                finalLetterboxPhotograph
+            );
+
+            viewerFinalMaskTop.classList.add(
+                "visible"
+            );
+
+            viewerFinalMaskBottom.classList.add(
+                "visible"
+            );
+        };
+
+    window.requestAnimationFrame(
+        function () {
+            window.requestAnimationFrame(
+                function () {
+                    restore();
+
+                    /*
+                    Android browsers may finish resizing after
+                    fullscreenchange. Recheck after the browser
+                    chrome has settled.
+                    */
+                    window.setTimeout(
+                        restore,
+                        160
+                    );
+                }
+            );
+        }
+    );
 }
 
 
@@ -2636,6 +2959,96 @@ function animateExpandedViewerFadeIn() {
 }
 
 
+function animateFullscreenButtonIntoBrowserFullscreen(
+    startRect,
+    targetRect
+) {
+    const clone =
+        fullscreenButton.cloneNode(
+            true
+        );
+
+    clone.removeAttribute(
+        "id"
+    );
+
+    clone.removeAttribute(
+        "hidden"
+    );
+
+    clone.className =
+        "mobile-fullscreen-transition-clone " +
+        "mobile-fullscreen-entry-clone";
+
+    clone.classList.remove(
+        "active",
+        "mobile-control-pressed"
+    );
+
+    clone.style.left =
+        `${startRect.left}px`;
+
+    clone.style.top =
+        `${startRect.top}px`;
+
+    clone.style.width =
+        `${startRect.width}px`;
+
+    clone.style.height =
+        `${startRect.height}px`;
+
+    clone.style.transform =
+        "translate3d(0, 0, 0)";
+
+    document.body.appendChild(
+        clone
+    );
+
+    const deltaX =
+        targetRect.left -
+        startRect.left;
+
+    const deltaY =
+        targetRect.top -
+        startRect.top;
+
+    clone.animate(
+        [
+            {
+                opacity: 1,
+                transform:
+                    "translate3d(0, 0, 0)"
+            },
+            {
+                opacity: 1,
+                offset: 0.78,
+                transform:
+                    `translate3d(` +
+                    `${deltaX.toFixed(2)}px, ` +
+                    `${deltaY.toFixed(2)}px, 0)`
+            },
+            {
+                opacity: 0,
+                transform:
+                    `translate3d(` +
+                    `${deltaX.toFixed(2)}px, ` +
+                    `${deltaY.toFixed(2)}px, 0)`
+            }
+        ],
+        {
+            duration: 420,
+            easing:
+                "cubic-bezier(0.22, 0.61, 0.36, 1)",
+            fill: "forwards"
+        }
+    ).finished.finally(
+        function () {
+            clone.remove();
+        }
+    );
+}
+
+
 function animateFullscreenControlIntoViewer(
     previousRect
 ) {
@@ -2646,15 +3059,18 @@ function animateFullscreenControlIntoViewer(
 
     if (isLandscape) {
         /*
-        The fullscreen control is intentionally hidden in the
-        landscape viewer. Animate a temporary visual copy from
-        its mosaic position so it fades away smoothly instead
-        of disappearing abruptly.
+        Landscape expanded view does not show the fullscreen
+        control. Fade a temporary copy from its mosaic position.
         */
         const clone =
-            fullscreenButton.cloneNode(true);
+            fullscreenButton.cloneNode(
+                true
+            );
 
-        clone.removeAttribute("id");
+        clone.removeAttribute(
+            "id"
+        );
+
         clone.className =
             "mobile-fullscreen-transition-clone";
 
@@ -2678,11 +3094,13 @@ function animateFullscreenControlIntoViewer(
             [
                 {
                     opacity: 1,
-                    transform: "scale(1)"
+                    transform:
+                        "scale(1)"
                 },
                 {
                     opacity: 0,
-                    transform: "scale(0.94)"
+                    transform:
+                        "scale(0.94)"
                 }
             ],
             {
@@ -2694,12 +3112,31 @@ function animateFullscreenControlIntoViewer(
         ).finished.finally(
             function () {
                 clone.remove();
+
+                fullscreenButton.style.removeProperty(
+                    "transition"
+                );
+
+                fullscreenButton.style.removeProperty(
+                    "visibility"
+                );
             }
         );
 
         return;
     }
 
+    /*
+    viewer-open has already assigned the final expanded-view
+    position. Because the real control remained hidden and its
+    CSS transition was disabled during that layout change, it
+    cannot jump to an intermediate position.
+
+    The animation starts at the exact center-bottom mosaic
+    rectangle captured before opening and ends at the exact
+    expanded-view rectangle. These are the same two endpoints
+    used when leaving expanded view, in reverse order.
+    */
     const nextRect =
         fullscreenButton.getBoundingClientRect();
 
@@ -2711,26 +3148,70 @@ function animateFullscreenControlIntoViewer(
         previousRect.top -
         nextRect.top;
 
-    fullscreenButton.animate(
-        [
+    const animation =
+        fullscreenButton.animate(
+            [
+                {
+                    opacity: 1,
+                    transform:
+                        `translate3d(` +
+                        `${deltaX.toFixed(2)}px, ` +
+                        `${deltaY.toFixed(2)}px, 0)`
+                },
+                {
+                    opacity: 1,
+                    transform:
+                        "translate3d(0, 0, 0)"
+                }
+            ],
             {
-                opacity: 1,
-                transform:
-                    `translate3d(${deltaX}px, ${deltaY}px, 0)`
-            },
-            {
-                opacity: 1,
-                transform:
-                    "translate3d(0, 0, 0)"
+                duration: 420,
+                easing:
+                    "cubic-bezier(0.22, 0.61, 0.36, 1)",
+                fill: "both"
             }
-        ],
-        {
-            duration: 420,
-            easing:
-                "cubic-bezier(0.22, 0.61, 0.36, 1)",
-            fill: "none"
-        }
+        );
+
+    fullscreenViewerEntryAnimation =
+        animation;
+
+    /*
+    Make the control visible only after the starting transform
+    is active, so the first visible frame is the mosaic
+    center-bottom position rather than the expanded position.
+    */
+    fullscreenButton.style.removeProperty(
+        "visibility"
     );
+
+    animation.finished
+        .catch(function () {
+            /*
+            The entry may be cancelled by an immediate Back
+            action. Exit cleanup handles the final layout.
+            */
+        })
+        .finally(function () {
+            if (
+                fullscreenViewerEntryAnimation ===
+                    animation
+            ) {
+                fullscreenViewerEntryAnimation =
+                    null;
+            }
+
+            /*
+            Remove the Web Animations fill so it cannot override
+            the mosaic transform: translateX(-50%) when expanded
+            view closes. The viewer-open CSS already owns the
+            final expanded position.
+            */
+            animation.cancel();
+
+            fullscreenButton.style.removeProperty(
+                "transition"
+            );
+        });
 }
 
 
@@ -2745,12 +3226,25 @@ function openViewer(index) {
     const previousFullscreenRect =
         fullscreenButton.getBoundingClientRect();
 
+    fullscreenButton.style.setProperty(
+        "transition",
+        "none",
+        "important"
+    );
+
+    fullscreenButton.style.setProperty(
+        "visibility",
+        "hidden",
+        "important"
+    );
+
     viewerOpen = true;
     viewerHistoryActive = true;
 
     closeMobileMenu();
     setViewerControlsHidden(false);
-    landscapeButton.hidden = false;
+    landscapeButton.hidden =
+        isIPhoneFamily;
 
     viewer.hidden = false;
 
@@ -2762,6 +3256,8 @@ function openViewer(index) {
     document.body.classList.add(
         "viewer-open"
     );
+
+    updateMenuItemVisibility();
 
     backLink.setAttribute(
         "aria-label",
@@ -2804,6 +3300,54 @@ function closeViewer() {
     closeMobileMenu();
     hideDownloadToast();
     hideBoundaryToast();
+
+    if (fullscreenViewerEntryAnimation) {
+        fullscreenViewerEntryAnimation.cancel();
+
+        fullscreenViewerEntryAnimation =
+            null;
+    }
+
+    /*
+    Defensive cleanup: no Web Animation may retain ownership of
+    transform while the button returns to its mosaic position.
+    */
+    fullscreenButton
+        .getAnimations()
+        .forEach(function (animation) {
+            animation.cancel();
+        });
+
+    fullscreenButton.style.removeProperty(
+        "transition"
+    );
+
+    clearMenuFullscreenFade(
+        false
+    );
+
+    window.clearTimeout(
+        fullscreenExitFadeTimer
+    );
+
+    fullscreenExitFadeTimer =
+        null;
+
+    fullscreenButton.classList.remove(
+        "fullscreen-exit-fade-in"
+    );
+
+    fullscreenMenuEntryRequested =
+        false;
+
+    fullscreenButton.style.removeProperty(
+        "visibility"
+    );
+
+    fullscreenButton.style.removeProperty(
+        "transform"
+    );
+
     resetSwipeRequest();
     setViewerControlsHidden(false);
 
@@ -2849,6 +3393,8 @@ function closeViewer() {
     document.body.classList.remove(
         "viewer-open"
     );
+
+    updateMenuItemVisibility();
 
     backLink.setAttribute(
         "aria-label",
@@ -4567,8 +5113,20 @@ menuButton.addEventListener(
 exitFullscreenButton.addEventListener(
     "click",
     function () {
+        const enteringFromMenu =
+            !document.fullscreenElement;
+
+        if (enteringFromMenu) {
+            fadeFullscreenButtonFromCurrentPosition();
+        }
+
         closeMobileMenu();
-        togglePageFullscreen();
+
+        togglePageFullscreen(
+            enteringFromMenu
+                ? "menu"
+                : "button"
+        );
     }
 );
 
@@ -5157,18 +5715,10 @@ window.addEventListener(
             }
 
             if (
-                currentIndex >= 0 &&
-                currentIndex <
-                    photographs.length &&
-                viewerFinalMaskTop.classList.contains(
-                    "visible"
-                )
+                finalLetterboxMasksReady &&
+                finalLetterboxPhotograph
             ) {
-                updateFinalLetterboxMasks(
-                    photographs[
-                        currentIndex
-                    ]
-                );
+                resettleFinalLetterboxMasksAfterViewportChange();
             }
         }
     }
@@ -5178,7 +5728,104 @@ window.addEventListener(
 document.addEventListener(
     "fullscreenchange",
     function () {
-        updateFullscreenButton();
+        const enteringFullscreen =
+            Boolean(
+                document.fullscreenElement
+            );
+
+        const menuFadeEntry =
+            enteringFullscreen &&
+            fullscreenMenuEntryRequested;
+
+        const animateEntry =
+            enteringFullscreen &&
+            fullscreenEntryAnimationRequested &&
+            viewerOpen &&
+            !window.matchMedia(
+                "(orientation: landscape)"
+            ).matches &&
+            !fullscreenButton.hidden;
+
+        if (
+            !enteringFullscreen &&
+            viewerOpen
+        ) {
+            fadeFullscreenButtonInAfterExit();
+        } else if (menuFadeEntry) {
+            /*
+            The fixed clone is already fading at the fullscreen
+            button's expanded-view position. Update fullscreen
+            state without measuring or moving the real button.
+            */
+            updateFullscreenButton();
+
+            fullscreenButton.style.removeProperty(
+                "visibility"
+            );
+        } else if (animateEntry) {
+            const startRect =
+                fullscreenButton.getBoundingClientRect();
+
+            /*
+            Keep the real control invisible but measurable while
+            fullscreen-active moves it to the normal mosaic
+            fullscreen position. The visible copy then follows
+            those exact coordinates, making entry the reverse of
+            the existing exit movement.
+            */
+            fullscreenButton.style.setProperty(
+                "transition",
+                "none",
+                "important"
+            );
+
+            fullscreenButton.style.setProperty(
+                "visibility",
+                "hidden",
+                "important"
+            );
+
+            updateFullscreenButton(
+                true
+            );
+
+            void fullscreenButton.offsetWidth;
+
+            const targetRect =
+                fullscreenButton.getBoundingClientRect();
+
+            fullscreenButton.hidden =
+                true;
+
+            fullscreenButton.style.removeProperty(
+                "transition"
+            );
+
+            fullscreenButton.style.removeProperty(
+                "visibility"
+            );
+
+            animateFullscreenButtonIntoBrowserFullscreen(
+                startRect,
+                targetRect
+            );
+        } else {
+            updateFullscreenButton();
+        }
+
+        fullscreenEntryAnimationRequested =
+            false;
+
+        fullscreenMenuEntryRequested =
+            false;
+
+        if (
+            viewerOpen &&
+            finalLetterboxMasksReady &&
+            finalLetterboxPhotograph
+        ) {
+            resettleFinalLetterboxMasksAfterViewportChange();
+        }
 
         if (
             !document.fullscreenElement &&
@@ -5251,6 +5898,9 @@ if (
 
 updateLandscapeButton();
 updateResolutionButton();
+
+applyIPhoneControlVisibility();
+updateMenuItemVisibility();
 
 
 if (!collection) {
