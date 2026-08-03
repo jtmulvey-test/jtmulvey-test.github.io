@@ -9,7 +9,7 @@ import shutil
 # Base folder
 # ==========================
 
-base_folder = r"C:\Users\jm1\Pictures\JM_Photos"
+base_folder = r"C:\Users\Han Solo\OneDrive - UC Irvine\Pictures\photography\JM_Photos"
 
 pcloud_base_url = (
     "https://filedn.com/"
@@ -346,7 +346,10 @@ def create_half_resolution_image(
 def create_or_update_title_thumbnail(
     collection_path
 ):
-    """Create the square collection title thumbnail when supplied."""
+    """
+    Preserve the source title image as original.<extension> and update the
+    generated collection thumbnail only when the source is newer.
+    """
 
     title_folder = os.path.join(
         collection_path,
@@ -362,31 +365,105 @@ def create_or_update_title_thumbnail(
 
         return
 
-    title_images = [
-        filename
-        for filename in os.listdir(
-            title_folder
-        )
-        if (
-            filename.lower().endswith(
-                image_extensions
-            ) and
-            filename !=
-                title_output_filename
-        )
-    ]
+    title_images = sorted(
+        [
+            filename
+            for filename in os.listdir(
+                title_folder
+            )
+            if (
+                filename.lower().endswith(
+                    image_extensions
+                ) and
+                filename.casefold() !=
+                    title_output_filename.casefold()
+            )
+        ],
+        key=natural_sort_key
+    )
 
     if not title_images:
+        print(
+            "  No original title image found"
+        )
+
         return
+
+    original_candidates = [
+        filename
+        for filename in title_images
+        if os.path.splitext(
+            filename
+        )[0].casefold() == "original"
+    ]
+
+    if original_candidates:
+        original_filename = original_candidates[0]
+    else:
+        source_filename = title_images[0]
+
+        extension = os.path.splitext(
+            source_filename
+        )[1].lower()
+
+        original_filename = (
+            "original" +
+            extension
+        )
+
+        source_path = os.path.join(
+            title_folder,
+            source_filename
+        )
+
+        original_path = os.path.join(
+            title_folder,
+            original_filename
+        )
+
+        if os.path.abspath(source_path) != os.path.abspath(original_path):
+            if os.path.exists(original_path):
+                os.remove(original_path)
+
+            os.rename(
+                source_path,
+                original_path
+            )
+
+            print(
+                "  Renamed title source to "
+                f"{original_filename}"
+            )
 
     input_file = os.path.join(
         title_folder,
-        title_images[0]
+        original_filename
     )
 
     output_file = os.path.join(
         title_folder,
         title_output_filename
+    )
+
+    if os.path.exists(output_file):
+        source_modified = os.stat(
+            input_file
+        ).st_mtime_ns
+
+        output_modified = os.stat(
+            output_file
+        ).st_mtime_ns
+
+        if source_modified <= output_modified:
+            print(
+                "  Collection thumbnail current"
+            )
+
+            return
+
+    temporary_output = (
+        output_file +
+        ".tmp"
     )
 
     try:
@@ -421,17 +498,19 @@ def create_or_update_title_thumbnail(
                 )
 
             image.save(
-                output_file,
+                temporary_output,
+                format="JPEG",
                 quality=title_thumbnail_quality,
                 optimize=True
             )
 
-        os.remove(
-            input_file
+        os.replace(
+            temporary_output,
+            output_file
         )
 
         print(
-            "  Created collection_thumbnail.jpg"
+            "  Updated collection_thumbnail.jpg"
         )
 
     except Exception as error:
@@ -439,6 +518,14 @@ def create_or_update_title_thumbnail(
             "  Error processing title thumbnail: "
             f"{error}"
         )
+
+    finally:
+        if os.path.exists(
+            temporary_output
+        ):
+            os.remove(
+                temporary_output
+            )
 
 
 def process_collection(
