@@ -117,7 +117,7 @@ Everything below is filler, labelled as such in the corner of each image:
 - **`content/TOC_images/`** — four filler TOC figures.
 - **`data/links.json`** — email, LinkedIn and Scholar are real. Add GitHub or
   ORCID rows if she wants them.
-- **Site URL** — `eshanabethur.github.io` is a guess. Search the HTML files
-  for it once the real repo name is known; it appears in the canonical and
-  Open Graph tags.
-- **`assets/img/site/og-image.png`** — generated placeholder.
+- **Site URL** — the canonical and Open Graph tags point at
+  `jtmulvey-test.github.io`. Search both HTML files for that string when the
+  site moves to its permanent home, and regenerate the link-preview card so
+  the URL printed on it matches.
