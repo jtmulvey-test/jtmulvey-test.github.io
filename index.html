@@ -1,268 +1,123 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Justin Mulvey Photography Collections</title>
-
-    <link rel="icon" type="image/png" href="data/favicon.png">
-
-    <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <style>
-        html,
-        body {
-            min-height: 100%;
-            margin: 0;
-            background: black;
-            color: white;
-            font-family: Arial, Helvetica, sans-serif;
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        a {
-            color: inherit;
-        }
-
-        #topLeftLogo {
-            position: fixed;
-            top: 15px;
-            left: 20px;
-            z-index: 50;
-            display: block;
-            height: 87px;
-            text-decoration: none;
-        }
-
-        #topLeftLogo img {
-            display: block;
-            width: auto;
-            height: 100%;
-            object-fit: contain;
-            user-select: none;
-            -webkit-user-drag: none;
-            transition:
-                opacity 0.2s ease,
-                transform 0.25s ease;
-        }
-
-        #topLeftLogo:hover img {
-            opacity: 0.75;
-            transform: scale(1.025);
-        }
-
-        #topLeftLogo:focus-visible {
-            outline: 1px solid white;
-            outline-offset: 5px;
-        }
-
-        #version {
-            position: fixed;
-            top: 107px;
-            left: 20px;
-            z-index: 50;
-            color: red;
-            font-size: 12px;
-            line-height: 1;
-            opacity: 0.85;
-        }
-
-        nav {
-            position: fixed;
-            top: 15px;
-            right: 20px;
-            z-index: 50;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 8px;
-        }
-
-        nav a {
-            color: white;
-            font-size: 22.4px;
-            line-height: 1.1;
-            text-decoration: none;
-            transition:
-                opacity 0.2s ease,
-                transform 0.2s ease;
-        }
-
-        nav a:hover {
-            opacity: 0.65;
-            transform: translateX(-3px);
-        }
-
-        nav a:focus-visible {
-            outline: 1px solid white;
-            outline-offset: 5px;
-            border-radius: 2px;
-        }
-
-        #page {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 140px 28px 80px;
-            text-align: center;
-        }
-
-        #hero {
-            max-width: 980px;
-        }
-
-        h1 {
-            margin: 0;
-            font-size: clamp(44px, 8vw, 102px);
-            font-weight: 500;
-            line-height: 0.96;
-            letter-spacing: -0.055em;
-        }
-
-        #heroLinks {
-            display: flex;
-            justify-content: center;
-            gap: 14px;
-            flex-wrap: wrap;
-            margin-top: 42px;
-        }
-
-        .hero-button {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 150px;
-            padding: 13px 20px;
-            color: white;
-            border: 1px solid white;
-            border-radius: 999px;
-            text-decoration: none;
-            font-size: 15px;
-            letter-spacing: 0.04em;
-            transition:
-                color 0.22s ease,
-                background-color 0.22s ease,
-                transform 0.22s ease;
-        }
-
-        .hero-button:hover {
-            color: black;
-            background: white;
-            transform: translateY(-2px);
-        }
-
-        .hero-button:focus-visible {
-            outline: 1px solid white;
-            outline-offset: 5px;
-        }
-
-        @media (max-width: 820px) {
-            #topLeftLogo,
-            #version,
-            nav {
-                position: absolute;
-            }
-
-            #topLeftLogo {
-                height: 70px;
-            }
-
-            #version {
-                top: 90px;
-            }
-
-            #page {
-                padding-top: 155px;
-            }
-
-            #hero {
-                max-width: 720px;
-            }
-        }
-
-        @media (max-width: 520px) {
-            #topLeftLogo {
-                top: 14px;
-                left: 14px;
-                height: 56px;
-            }
-
-            #version {
-                top: 75px;
-                left: 14px;
-            }
-
-            nav {
-                right: 14px;
-            }
-
-            nav a {
-                font-size: 18px;
-            }
-
-            #page {
-                padding-top: 145px;
-            }
-
-            h1 {
-                font-size: clamp(40px, 12vw, 58px);
-            }
-
-            .hero-button {
-                width: 100%;
-                max-width: 260px;
-            }
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+(function () {
+  try {
+    var stored = localStorage.getItem('theme');
+    var theme = stored || 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+  } catch (e) {}
+})();
+</script>
+<title>Eshana Bethur — Research</title>
+<meta name="description" content="DNA nanostructures, metal nanoclusters, and cryogenic electron microscopy.">
+<link rel="icon" href="assets/img/site/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/layout.css">
+<link rel="stylesheet" href="assets/css/cards.css">
+<link rel="stylesheet" href="assets/css/mobile.css">
+<link rel="canonical" href="https://eshanabethur.github.io/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Eshana Bethur">
+<meta property="og:url" content="https://eshanabethur.github.io/">
+<meta property="og:title" content="Eshana Bethur — Research">
+<meta property="og:description" content="DNA nanostructures, metal nanoclusters, and cryogenic electron microscopy.">
+<meta property="og:image" content="https://eshanabethur.github.io/assets/img/site/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Eshana Bethur — DNA nanostructures, metal nanoclusters, cryo-EM.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Eshana Bethur — Research">
+<meta name="twitter:description" content="DNA nanostructures, metal nanoclusters, and cryogenic electron microscopy.">
+<meta name="twitter:image" content="https://eshanabethur.github.io/assets/img/site/og-image.png">
 </head>
-
 <body>
-    <a
-        id="topLeftLogo"
-        href="index.html"
-        aria-label="JM Photography home"
-    >
-        <img
-            src="data/logo.png"
-            alt="JM Photography"
-        >
-    </a>
 
-    <div id="version">v2.5.20</div>
+<a class="skip-link" href="#main">Skip to content</a>
 
-    <nav aria-label="Main navigation">
-        <a href="index.html">Home</a>
-        <a href="collections.html">Collections</a>
-        <a href="about.html">About</a>
+<header class="site-header">
+  <div class="wrap site-header__inner">
+    <div class="site-header__brand">
+      <a class="site-header__name" href="index.html">Eshana Bethur</a>
+      <div class="theme-switch">
+        <span class="theme-switch__label theme-switch__label--light">Light</span>
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark mode" aria-pressed="true">
+          <span class="theme-toggle__thumb"></span>
+        </button>
+        <span class="theme-switch__label theme-switch__label--dark">Dark</span>
+      </div>
+    </div>
+    <nav class="site-nav" aria-label="Main">
+      <a href="index.html" aria-current="page">Research</a>
+      <a href="contact.html">Contact</a>
     </nav>
+  </div>
+</header>
 
-    <main id="page">
-        <section id="hero">
-            <h1>Justin Mulvey Photography Collections</h1>
+<main id="main">
 
-            <div id="heroLinks">
-                <a
-                    class="hero-button"
-                    href="collections.html"
-                >
-                    View Collections
-                </a>
+  <section class="hero hero--photo">
+    <div class="wrap">
+      <img class="hero__photo" src="assets/img/site/headshot.jpg" alt="Portrait of Eshana Bethur" width="256" height="256">
+      <h1 class="hero__title">Eshana Bethur, PhD</h1>
+      <p class="hero__tagline">
+        Designing DNA-templated metal nanoclusters and resolving how they
+        assemble with electron microscopy.
+      </p>
+    </div>
+  </section>
 
-                <a
-                    class="hero-button"
-                    href="about.html"
-                >
-                    About
-                </a>
-            </div>
-        </section>
-    </main>
+  <div class="wrap">
+    <div id="cards" class="cards" aria-live="polite">
+      <p id="cards-loading" class="cards__loading" hidden>
+        <span class="spinner" aria-hidden="true"></span>
+        <span class="cards__loading-text">Loading research…</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- Publications live at the foot of the research page: the journal cards
+       first, then the complete citation list. There is no separate
+       publications page on this site. -->
+  <div class="wrap page">
+    <h2 class="page__title">Publications</h2>
+    <p class="page__lead">
+      Reverse chronological. A complete list is on <a id="scholar-link" href="https://scholar.google.com/citations?user=vF1LHhwAAAAJ&amp;hl=en" target="_blank" rel="noopener">Google Scholar</a>.
+    </p>
+
+    <div id="publications" class="pub-grid">
+      <p class="cards__loading">Loading publications…</p>
+    </div>
+
+    <section class="cv-pubs">
+      <h2 class="cv-pubs__title">Full Publication List</h2>
+
+      <ol class="cv-pubs__list">
+        <li>R Guha, <strong>E Bethur</strong>, N Chim, MK Gupta, IH Lin, RE Taylor, JC Chaput, SM Copp. Xeno-nucleic acids support formation of Ag(I)-mediated duplexes and silver nanoclusters. <em class="cv-pubs__journal">Nucleic Acids Research</em> 54(4), gkag132 (2026). <a href="https://doi.org/10.1093/nar/gkag132" target="_blank" rel="noopener">doi.org/10.1093/nar/gkag132</a></li>
+        <li><strong>E Bethur</strong>, Z Zhao, R Guha, H Zeng, SM Copp. Assembly and solution phase properties of Ag<sup>+</sup>-mediated adenine–thymine DNA duplexes. <em class="cv-pubs__journal">Inorganic Chemistry Frontiers</em> 13(2), 484–492 (2026). <a href="https://doi.org/10.1039/D5QI01833A" target="_blank" rel="noopener">doi.org/10.1039/D5QI01833A</a> — <em>first author</em></li>
+        <li><strong>E Bethur</strong>, R Guha, Z Zhao, BB Katz, PD Ashby, H Zeng, SM Copp. Formation and nanomechanical properties of silver-mediated guanine DNA duplexes in aqueous solution. <em class="cv-pubs__journal">ACS Nano</em> 18(4), 3002 (2024). <a href="https://doi.org/10.1021/acsnano.3c08008" target="_blank" rel="noopener">doi.org/10.1021/acsnano.3c08008</a> — <em>first author</em></li>
+        <li>CM Carter, KM Gwynne, R Leil, Z Shen, Z Cheng, N Javed, C Kumah, <strong>E Bethur</strong>, et al. Photostability of blue phosphorescent films on plasmonic surfaces. <em class="cv-pubs__journal">The Journal of Chemical Physics</em> 158(17) (2023). <a href="https://pubs.aip.org/aip/jcp/article/158/17/174704/2887570/Photostability-of-blue-phosphorescent-films-on" target="_blank" rel="noopener">pubs.aip.org/aip/jcp/article/158/17/174704</a></li>
+      </ol>
+    </section>
+  </div>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>&copy; <span id="year"></span> Eshana Bethur</p>
+    <nav class="site-footer__links" id="footer-links" aria-label="Elsewhere"></nav>
+  </div>
+</footer>
+
+<script src="assets/js/lazy-load.js"></script>
+<script src="assets/js/card-gallery.js"></script>
+<script src="assets/js/render-cards.js"></script>
+<script src="assets/js/render-publications.js"></script>
+<script src="assets/js/main.js"></script>
+<script src="assets/js/theme.js"></script>
 </body>
 </html>

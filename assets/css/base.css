@@ -1,0 +1,184 @@
+/* ------------------------------------------------------------------
+   base.css — design tokens, reset, typography
+   Change the palette and type scale here; nothing else hardcodes them.
+   ------------------------------------------------------------------ */
+
+:root {
+  /* palette */
+  --ink:        #14181c;   /* body text */
+  --ink-soft:   #55606b;   /* secondary text, captions */
+  --ink-faint:  #8b96a1;   /* metadata, counters */
+  --paper:      #ffffff;   /* page background */
+  --paper-alt:  #f5f6f8;   /* card background */
+  --line:       #e2e6ea;   /* hairlines, borders */
+  --accent:     #1f6f6b;   /* links, active states */
+  --accent-dim: #e6f0ef;   /* accent background wash */
+  --header-bg:  rgba(255, 255, 255, 0.88);
+  --card-border: rgba(0, 0, 0, 0.85);
+
+  /* type */
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+               Roboto, Helvetica, Arial, sans-serif;
+  --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+
+  --step--1: clamp(0.83rem, 0.8rem + 0.15vw, 0.9rem);
+  --step-0:  clamp(1rem, 0.96rem + 0.2vw, 1.08rem);
+  --step-1:  clamp(1.2rem, 1.1rem + 0.5vw, 1.4rem);
+  --step-2:  clamp(1.5rem, 1.3rem + 1vw, 2rem);
+  --step-3:  clamp(2rem, 1.6rem + 2vw, 3rem);
+
+  /* space + shape */
+  --gap:      1.5rem;
+  --radius:   18px;
+  --radius-sm: 10px;
+  --wrap:     1180px;
+  --header-h: 64px;
+
+  --shadow: 0 1px 2px rgba(20, 24, 28, 0.04),
+            0 8px 24px rgba(20, 24, 28, 0.06);
+}
+
+/* --- dark theme ----------------------------------------------------
+   Toggled by assets/js/theme.js, which sets data-theme on <html> and
+   mirrors the choice to localStorage. See theme-init snippet in <head>
+   for the flash-free load. */
+html[data-theme="dark"] {
+  --ink:        #eef1f4;
+  --ink-soft:   #b2bcc5;
+  --ink-faint:  #7c8790;
+  --paper:      #14181c;
+  --paper-alt:  #1b2126;
+  --line:       #2b333a;
+  --accent:     #5fc9c2;
+  --accent-dim: #17302e;
+  --header-bg:  rgba(20, 24, 28, 0.88);
+  --card-border: rgba(255, 255, 255, 0.65);
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3),
+            0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--header-h) + 1rem);
+  -webkit-text-size-adjust: 100%;
+
+  /* Always reserve the scrollbar's width, whether or not the page is long
+     enough to need one.
+
+     Without this, a long page (research) has a scrollbar and a short one
+     (contact) does not, so their viewports differ by the scrollbar's width
+     — about 15px on Windows and Linux. Everything centred, which on this
+     site is everything, then sits half that further right on the short
+     page, and moving between the two makes the whole layout twitch
+     sideways, header included.
+
+     macOS and touch devices use overlay scrollbars that take no space, so
+     this is a no-op there: nothing to reserve, nothing to shift. */
+  scrollbar-gutter: stable;
+}
+
+/* Safari only shipped scrollbar-gutter in 18.2. Older versions get the
+   blunt equivalent — a scrollbar track that is always present. Identical
+   effect on layout, just visible even when the page does not scroll. */
+@supports not (scrollbar-gutter: stable) {
+  html { overflow-y: scroll; }
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--step-0);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+/* pages with little content still push the footer to the bottom of the
+   viewport instead of leaving it stranded halfway down */
+main { flex: 1 1 auto; }
+
+.icon {
+  width: 1.05em;
+  height: 1.05em;
+  flex: 0 0 auto;
+}
+
+h1, h2, h3 {
+  line-height: 1.2;
+  margin: 0 0 0.5em;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+h1 { font-size: var(--step-3); }
+h2 { font-size: var(--step-2); }
+h3 { font-size: var(--step-1); }
+
+p { margin: 0 0 1em; }
+p:last-child { margin-bottom: 0; }
+
+a {
+  color: var(--accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+a:hover { text-decoration-thickness: 2px; }
+
+img, video { max-width: 100%; height: auto; display: block; }
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+  background: var(--paper-alt);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--accent);
+  color: #fff;
+  padding: 0.6rem 1rem;
+  z-index: 100;
+  border-radius: 0 0 var(--radius-sm) 0;
+}
+.skip-link:focus { left: 0; }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

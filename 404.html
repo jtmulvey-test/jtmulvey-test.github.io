@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+(function () {
+  try {
+    var stored = localStorage.getItem('theme');
+    var theme = stored || 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+  } catch (e) {}
+})();
+</script>
+<title>Page not found — Eshana Bethur</title>
+<link rel="stylesheet" href="/assets/css/base.css">
+<link rel="stylesheet" href="/assets/css/layout.css">
+</head>
+<body>
+<main id="main" class="wrap page">
+  <h1 class="page__title">Page not found</h1>
+  <p class="page__lead">That page doesn't exist. <a href="/">Back to the research page</a>.</p>
+</main>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+(function () {
+  try {
+    var stored = localStorage.getItem('theme');
+    var theme = stored || 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+  } catch (e) {}
+})();
+</script>
+<title>Contact — Eshana Bethur</title>
+<meta name="description" content="Get in touch with Eshana Bethur.">
+<link rel="icon" href="assets/img/site/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/layout.css">
+<link rel="stylesheet" href="assets/css/cards.css">
+<link rel="stylesheet" href="assets/css/mobile.css">
+<link rel="canonical" href="https://eshanabethur.github.io/contact.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Eshana Bethur">
+<meta property="og:url" content="https://eshanabethur.github.io/contact.html">
+<meta property="og:title" content="Contact — Eshana Bethur">
+<meta property="og:description" content="Get in touch with Eshana Bethur.">
+<meta property="og:image" content="https://eshanabethur.github.io/assets/img/site/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Eshana Bethur — DNA nanostructures, metal nanoclusters, cryo-EM.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Contact — Eshana Bethur">
+<meta name="twitter:description" content="Get in touch with Eshana Bethur.">
+<meta name="twitter:image" content="https://eshanabethur.github.io/assets/img/site/og-image.png">
+</head>
+<body>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap site-header__inner">
+    <div class="site-header__brand">
+      <a class="site-header__name" href="index.html">Eshana Bethur</a>
+      <div class="theme-switch">
+        <span class="theme-switch__label theme-switch__label--light">Light</span>
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark mode" aria-pressed="true">
+          <span class="theme-toggle__thumb"></span>
+        </button>
+        <span class="theme-switch__label theme-switch__label--dark">Dark</span>
+      </div>
+    </div>
+    <nav class="site-nav" aria-label="Main">
+      <a href="index.html">Research</a>
+      <a href="contact.html" aria-current="page">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+  <section class="hero hero--photo">
+    <div class="wrap">
+      <img class="hero__photo" src="assets/img/site/headshot.jpg" alt="Portrait of Eshana Bethur" width="256" height="256">
+      <h1 class="hero__title">Eshana Bethur, PhD</h1>
+    </div>
+  </section>
+
+  <div class="wrap page page--flush">
+    <ul id="contact-links" class="contact-links"></ul>
+    <p id="repo-note" class="contact-note" hidden></p>
+  </div>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>&copy; <span id="year"></span> Eshana Bethur</p>
+    <nav class="site-footer__links" id="footer-links" aria-label="Elsewhere"></nav>
+  </div>
+</footer>
+
+<script src="assets/js/main.js"></script>
+<script src="assets/js/theme.js"></script>
+</body>
+</html>

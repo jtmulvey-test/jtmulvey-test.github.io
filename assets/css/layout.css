@@ -1,0 +1,577 @@
+/* ------------------------------------------------------------------
+   layout.css — header, footer, page wrappers, publications, contact
+   ------------------------------------------------------------------ */
+
+.wrap {
+  width: min(100% - 2.5rem, var(--wrap));
+  margin-inline: auto;
+}
+
+/* --- header ------------------------------------------------------- */
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  height: var(--header-h);
+  background: var(--header-bg);
+  backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid var(--line);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.site-header__inner {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap);
+}
+
+.site-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+}
+
+.site-header__name {
+  font-weight: 600;
+  font-size: var(--step-0);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+/* --- dark mode switch ------------------------------------------- */
+
+.theme-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.theme-switch__label {
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  transition: color 0.2s ease;
+}
+
+/* the switch defaults to dark, so "Dark" starts emphasized; :has() flips
+   emphasis to whichever side is active without any extra JS */
+.theme-switch__label--dark { color: var(--ink); }
+
+.theme-switch:has(.theme-toggle[aria-pressed="false"]) .theme-switch__label--light { color: var(--ink); }
+.theme-switch:has(.theme-toggle[aria-pressed="false"]) .theme-switch__label--dark { color: var(--ink-faint); }
+
+.theme-toggle {
+  --track-w: 38px;
+  --track-h: 21px;
+  flex: 0 0 auto;
+  width: var(--track-w);
+  height: var(--track-h);
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  background: var(--paper-alt);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.theme-toggle__thumb {
+  width: calc(var(--track-h) - 6px);
+  height: calc(var(--track-h) - 6px);
+  border-radius: 50%;
+  background: var(--ink-faint);
+  transform: translateX(0);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.theme-toggle[aria-pressed="true"] {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+}
+
+.theme-toggle[aria-pressed="true"] .theme-toggle__thumb {
+  background: var(--accent);
+  transform: translateX(calc(var(--track-w) - var(--track-h)));
+}
+
+.site-nav {
+  display: flex;
+  gap: 1.75rem;
+}
+
+.site-nav a {
+  color: var(--ink-soft);
+  text-decoration: none;
+  font-size: var(--step--1);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  padding: 0.25rem 0;
+  border-bottom: 2px solid transparent;
+}
+
+.site-nav a:hover { color: var(--ink); }
+
+.site-nav a[aria-current="page"] {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+}
+
+/* --- hero --------------------------------------------------------- */
+
+.hero {
+  padding: clamp(2.4rem, 6.4vw, 4.8rem) 0 clamp(2rem, 5vw, 3.5rem);
+}
+
+.hero__title {
+  margin-bottom: 0.3em;
+}
+
+.hero__tagline {
+  font-family: var(--font-serif);
+  font-size: var(--step-1);
+  color: var(--ink-soft);
+  max-width: 34ch;
+  line-height: 1.45;
+}
+
+.hero--photo .wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.hero__photo {
+  width: clamp(140px, 20vw, 200px);
+  height: clamp(140px, 20vw, 200px);
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--line);
+  margin-bottom: 1.5rem;
+}
+
+.hero--photo .hero__tagline {
+  max-width: 46ch;
+}
+
+/* --- generic inner page ------------------------------------------- */
+
+/* Bottom padding, halved twice: 5rem -> 2.5rem -> 1.25rem. Together with
+   the footer's top margin it sets the run-out from the last button to the
+   footer rule, now 2.25rem (36px) against the original 9rem.
+   mobile.css overrides this below 860px. */
+.page {
+  padding: clamp(2rem, 4.8vw, 3.6rem) 0 1.25rem;
+}
+
+/* For a page whose content sits under a .hero — the hero's own bottom
+   padding is the gap, and adding this column's top padding on top of it
+   would double the space. */
+.page--flush { padding-top: 0; }
+
+.page__title { margin-bottom: 0.4em; }
+
+.page__lead {
+  color: var(--ink-soft);
+  max-width: 62ch;
+  margin-bottom: 2.5rem;
+}
+
+/* --- publications: card grid ---------------------------------------- */
+
+.pub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--gap);
+}
+
+.pub-card {
+  display: block;
+  height: 440px;
+  background: var(--paper-alt);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.2s ease;
+}
+
+.pub-card:has(.pub-card__link:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(20, 24, 28, 0.07), 0 14px 28px rgba(20, 24, 28, 0.08);
+}
+
+/* 40 / 60, image over text, on every screen size. Nothing overrides this. */
+.pub-card__link {
+  display: grid;
+  grid-template-rows: 2fr 3fr;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+
+.pub-card__thumb {
+  position: relative;
+  background: #fff;
+  display: grid;
+  overflow: hidden;
+  border-bottom: 1px solid var(--card-border);
+  transition: border-color 0.2s ease;
+}
+
+.pub-card--placeholder .pub-card__thumb {
+  background: var(--paper-alt);
+}
+
+/* Which edges a figure locks to depends on the figure's own proportions, not
+   on the frame's: wider than 2.2:1 locks left and right, anything squarer
+   locks top and bottom. render-publications.js adds .is-wide once the image
+   reports its dimensions; the default below is the top-and-bottom case.
+
+   Absolutely positioned rather than laid out in the grid — as a grid item the
+   figure sizes the implicit row, which makes its own percentage height
+   circular and silently falls back to natural pixel size. */
+.pub-card__thumb img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: none;
+  height: 100%;
+  width: auto;
+  background: inherit;
+}
+
+.pub-card__thumb img.is-wide {
+  width: 100%;
+  height: auto;
+}
+
+/* the "figure not added yet" graphic is a fixed-size mark, not a figure —
+   centred at natural size, neither locked nor scaled */
+.pub-card--placeholder .pub-card__thumb img {
+  width: auto;
+  height: auto;
+  opacity: 0.85;
+}
+
+.pub-card__body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  padding: 1.1rem 1.25rem 1.3rem;
+}
+
+.pub-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.pub-card__tag {
+  display: inline-block;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+}
+
+.pub-card__title {
+  font-size: var(--step-0);
+  font-weight: 600;
+  line-height: 1.35;
+  margin: 0 0 0.35em;
+  color: var(--ink);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+}
+
+.pub-card__link:hover .pub-card__title { color: var(--accent); }
+
+.pub-card__authors {
+  font-size: var(--step--1);
+  line-height: 1.4;
+  color: var(--ink-faint);
+  margin: 0 0 0.5em;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  overflow: hidden;
+}
+
+.pub-card__authors strong {
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+
+.pub-card__meta {
+  font-size: var(--step--1);
+  color: var(--ink-faint);
+  margin: auto 0 0;
+}
+
+/* Label and outline wear the accent permanently, so the button announces
+   itself as the page's one control rather than sitting in grey until the
+   pointer happens to find it. That leaves the fill as the only thing left
+   to change on hover — see below. mobile.css already did this at rest for
+   touch, where there is no hover to reveal anything. */
+.pub-more {
+  display: block;
+  margin: 1.75rem auto 0;
+  padding: 0.7rem 1.6rem;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  font-size: var(--step--1);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: background 0.15s;
+}
+
+/* Hover is now purely the fill washing in — the same dim accent it used
+   before, just no longer accompanied by a colour change that has already
+   happened. */
+.pub-more:hover,
+.pub-more:focus-visible {
+  background: var(--accent-dim);
+}
+
+/* --- CV-style dense publication list -------------------------------- */
+
+/* Both halves of the run-up from the "Show N more" button to the full list
+   are halved (3.5 -> 1.75 above the rule, 2.5 -> 1.25 below it), so the rule
+   stays proportionally placed in a gap that is now 3rem instead of 6rem. */
+.cv-pubs {
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+
+.cv-pubs__title {
+  font-size: var(--step-2);
+  margin-bottom: 0.6em;
+}
+
+.cv-pubs__subhead {
+  font-size: var(--step--1);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+  margin: 1.75rem 0 0.5rem;
+}
+
+.cv-pubs__list {
+  margin: 0;
+  padding-left: 1.6rem;
+  font-size: var(--step-0);
+  line-height: 1.45;
+  color: var(--ink-soft);
+  text-align: justify;
+  text-justify: inter-word;
+}
+
+.cv-pubs__list li {
+  margin-bottom: 0.55rem;
+  padding-left: 0.15rem;
+}
+
+.cv-pubs__list li::marker {
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.cv-pubs__list strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.cv-pubs__list em {
+  font-style: italic;
+  color: var(--ink-faint);
+}
+
+.cv-pubs__list em.cv-pubs__journal {
+  color: var(--ink);
+}
+
+.cv-pubs__list a {
+  color: var(--accent);
+  word-break: break-all;
+}
+
+.cv-pubs__list--bullet {
+  list-style: disc;
+}
+
+/* --- contact ------------------------------------------------------- */
+
+/* 68% of the content column, centred — the rows were running the full page
+   width, which left a lot of empty space between a short label on the left
+   and its URL on the right. First pass took 10% off each side (to 80%),
+   then a further 15% off that width. mobile.css puts it back to full
+   width, where there is none to spare. */
+.contact-links {
+  list-style: none;
+  padding: 0;
+  margin: 0 auto;
+  width: 68%;
+  display: grid;
+  gap: 0.75rem;
+}
+
+/* grid items default to min-width: auto, which lets the nowrap URL inside
+   push the row wider than the page. */
+.contact-links li { min-width: 0; }
+
+.contact-links a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  color: var(--ink);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.contact-links a:hover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.contact-links .label {
+  font-weight: 600;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.contact-links .value {
+  color: var(--ink-faint);
+  font-size: var(--step--1);
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Source-code line under the contact list. Deliberately quiet — it is a
+   footnote to the page, not a sixth link in the stack. */
+.contact-note {
+  margin: 1.75rem 0 0;
+  font-size: var(--step--1);
+  color: var(--ink-faint);
+  text-align: center;
+}
+
+.contact-note a { overflow-wrap: anywhere; }
+
+/* --- click-to-copy affordance (email row) ---------------------------
+   The email row copies instead of navigating, so it needs to say so on
+   its face — an unlabelled link that doesn't go anywhere reads as broken.
+
+   Idle and confirmed states are stacked in the same grid cell rather than
+   swapped with display:none, so the control is always as wide as its
+   widest state and the row doesn't twitch when the label changes. */
+
+.copy-affordance {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--ink-faint);
+  font-size: var(--step--2, 0.78rem);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  transition: color 0.15s;
+}
+
+.copy-affordance__icon,
+.copy-affordance__text { display: grid; }
+
+.copy-affordance__icon > *,
+.copy-affordance__text > * {
+  grid-area: 1 / 1;
+  transition: opacity 0.15s;
+}
+
+.copy-affordance__icon > :nth-child(2),
+.copy-affordance__done { opacity: 0; }
+
+.contact-links a:hover .copy-affordance { color: var(--accent); }
+
+/* confirmed state: icon flips to a check, label to "Copied", both in the
+   accent colour. main.js clears the class after two seconds. */
+.contact-links__copy.is-copied .copy-affordance { color: var(--accent); }
+.contact-links__copy.is-copied .copy-affordance__icon > :nth-child(1) { opacity: 0; }
+.contact-links__copy.is-copied .copy-affordance__icon > :nth-child(2) { opacity: 1; }
+.contact-links__copy.is-copied .copy-affordance__idle { opacity: 0; }
+.contact-links__copy.is-copied .copy-affordance__done { opacity: 1; }
+
+/* --- footer -------------------------------------------------------- */
+
+/* Was 2.5rem/3.5rem of padding around a 1.25rem-gapped stack — roughly a
+   200px band of empty page. Tightened to a compact strip; the asymmetric
+   padding (a little more below than above) keeps it from looking like the
+   copyright is falling off the bottom edge. margin-top halved with .page's
+   bottom padding, see the note there. */
+.site-footer {
+  border-top: 1px solid var(--line);
+  padding: 1.25rem 0 1.5rem;
+  margin-top: 1rem;
+  font-size: var(--step--1);
+  color: var(--ink-faint);
+}
+
+/* links row on top, copyright centered beneath it. The copyright comes
+   first in the markup (it reads better that way for screen readers and
+   with CSS off), so order flips the two visually. */
+.site-footer .wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  text-align: center;
+}
+
+.site-footer .wrap > p {
+  order: 2;
+  margin: 0;
+}
+
+.site-footer__links {
+  order: 1;
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.site-footer__links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+.site-footer__links a:hover { color: var(--accent); }

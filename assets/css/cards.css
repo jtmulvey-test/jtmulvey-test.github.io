@@ -1,0 +1,379 @@
+/* ------------------------------------------------------------------
+   cards.css — research card + gallery, desktop layout
+   Mobile overrides live in mobile.css.
+   ------------------------------------------------------------------ */
+
+.cards {
+  display: grid;
+  gap: clamp(2rem, 4vw, 3.5rem);
+  padding-bottom: 4rem;
+}
+
+.cards__loading {
+  color: var(--ink-faint);
+  padding: 3rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+/* Loading wheel — shown only after a one-second wait, see render-cards.js.
+   A ring with one quadrant in the accent colour: the incomplete arc is what
+   makes the rotation legible, a fully coloured ring would look static. */
+.spinner {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  border: 2px solid var(--line);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spinner-rotate 0.8s linear infinite;
+}
+
+@keyframes spinner-rotate { to { transform: rotate(360deg); } }
+
+/* The wheel carries the meaning visually; screen readers get the words via
+   the #cards live region instead of a silently spinning box. */
+.cards__loading-text {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* base.css clamps every animation to 0.01ms under reduced motion, which
+   would leave the wheel juddering in place rather than spinning. Drop the
+   wheel entirely for those users and show the words instead. */
+@media (prefers-reduced-motion: reduce) {
+  .spinner { display: none; }
+
+  .cards__loading-text {
+    position: static;
+    width: auto; height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+  }
+}
+
+.card {
+  background: var(--paper-alt);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  align-items: stretch;
+}
+
+/* ---- left column: text ------------------------------------------- */
+
+.card__text {
+  padding: clamp(1.75rem, 3vw, 2.75rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.card__title {
+  font-size: calc(var(--step-2) * 1.05);
+  margin: 0;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+/* the part that swaps as you click through slides — sits directly under
+   the title's rule now that the card description is gone. Flex column so
+   .card__slide-credits can be pinned to the bottom via margin-top: auto,
+   regardless of how long the description above it runs. */
+.card__slide-text {
+  min-height: 7.5rem;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  transition: opacity 0.22s ease;
+}
+
+.card__slide-text.is-swapping { opacity: 0; }
+
+.card__slide-title {
+  /* smaller than a section heading — slide titles can run as long as a full
+     paper title, so keep this compact rather than growing the card. */
+  font-size: calc(var(--step-0) * 1.05);
+  line-height: 1.35;
+  font-weight: 600;
+  margin: 0 0 0.35rem;
+}
+
+.card__slide-journal {
+  font-size: 0.819rem;
+  font-style: italic;
+  color: var(--accent);
+  margin: 0 0 0.5rem;
+  display: block;
+  text-decoration: none;
+}
+
+.card__slide-journal:hover { text-decoration: underline; }
+
+.card__slide-desc {
+  color: var(--ink-soft);
+  font-size: 0.8925rem;
+  line-height: 1.55;
+}
+
+/* extra front-matter fields (e.g. data / analysis credits) — always sits
+   at the bottom of the card, flush against the media pane's bottom edge,
+   no matter how short the description above it is. */
+.card__slide-credits {
+  margin-top: auto;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.card__slide-credit {
+  display: flex;
+  gap: 0.35rem;
+  font-size: 0.819rem;
+  line-height: 1.4;
+}
+
+.card__slide-credit dt {
+  margin: 0;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.card__slide-credit dd {
+  margin: 0;
+  color: var(--ink-faint);
+}
+
+/* A credited name with a profile URL in data/people.json. Matches the
+   journal line above it — same accent colour, underline on hover only —
+   so the two kinds of outbound link on a slide read as one thing. */
+.card__credit-link {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.card__credit-link:hover,
+.card__credit-link:focus-visible { text-decoration: underline; }
+
+/* ---- right column: media ------------------------------------------ */
+
+.card__media {
+  position: relative;
+  background: #000;
+  display: grid;
+  aspect-ratio: 4 / 3;
+  min-height: 360px;
+  max-height: 620px;
+  /* inset on all sides so the media pane reads as its own rounded tile —
+     left edge rounded to match the right, not just clipped by the card. */
+  margin: 1.25rem;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.card__slides {
+  position: relative;
+  grid-area: 1 / 1;
+  overflow: hidden;
+}
+
+.card__slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease;
+}
+
+.card__slide.is-active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.card__slide img,
+.card__slide video {
+  width: 100%;
+  height: 100%;
+  /* contain, not cover: never stretch or crop the source. Any leftover
+     space letterboxes/pillarboxes against the black .card__media backdrop. */
+  object-fit: contain;
+  background: #000;
+}
+
+/* ---- per-slide loading wheel ---------------------------------------
+   lazy-load.js adds .is-loading a second after a slide's media starts
+   fetching, if it still has no frame to paint. The track is white-alpha
+   rather than var(--line) because the media pane is black in both themes.
+   z-index stays under the arrows (4) so it never sits over a control. */
+
+.card__slide.is-loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 34px;
+  height: 34px;
+  /* centred with margins, not transform — the spin animation owns
+     transform, and the two would fight */
+  margin: -17px 0 0 -17px;
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spinner-rotate 0.8s linear infinite;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* base.css clamps animations to 0.01ms under reduced motion, which leaves
+   the wheel juddering instead of spinning. Those users get the word. */
+@media (prefers-reduced-motion: reduce) {
+  .card__slide.is-loading::after {
+    content: "Loading…";
+    width: auto;
+    height: auto;
+    margin: 0;
+    transform: translate(-50%, -50%);
+    border: 0;
+    animation: none;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 0.8rem;
+  }
+}
+
+/* ---- click-through affordance -------------------------------------- */
+
+/* prev/next: fixed to the media pane's edges, vertically centered */
+.card__arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+  backdrop-filter: blur(6px);
+  display: grid;
+  place-items: center;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.card__arrow--prev { left: 0.85rem; }
+.card__arrow--next { right: 0.85rem; }
+
+.card__arrow:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.6);
+  transform: translateY(-50%) scale(1.08);
+}
+
+.card__arrow:disabled { opacity: 0.3; cursor: default; }
+
+/* dots: centered at the bottom, no full-width gradient behind them */
+.card__controls {
+  grid-area: 1 / 1;
+  align-self: end;
+  z-index: 3;
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
+  pointer-events: none;
+}
+
+.card__controls > * { pointer-events: auto; }
+
+.card__dots {
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 0.45rem 0.6rem;
+  border-radius: 999px;
+  backdrop-filter: blur(6px);
+}
+
+.card__dot {
+  width: 9px;
+  height: 9px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  transition: background 0.15s, transform 0.15s;
+}
+
+.card__dot:hover { background: rgba(255, 255, 255, 0.7); }
+
+.card__dot.is-active {
+  background: #fff;
+  transform: scale(1.35);
+}
+
+/* on every card, and sized up a quarter — this is the only thing telling a
+   visitor the pane holds more than one dataset */
+.card__hint {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 3;
+  font-size: calc(var(--step--1) * 1.25);
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 999px;
+  padding: 0.38rem 1.06rem;
+  backdrop-filter: blur(6px);
+  animation: hint-pulse 1s ease-in-out 3;
+  transition: opacity 0.4s;
+}
+
+/* animation: none matters as much as opacity here. A running animation wins
+   over the declared value, so while the pulse was going the hint ignored
+   opacity: 0 and stayed on screen until the animation ran out — the swipe
+   looked like it hadn't registered. Cancelling the pulse lets the fade
+   start immediately, however early the visitor swipes. */
+.card__hint.is-hidden {
+  animation: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.hint--touch { display: none; }
+
+/* Nudges sideways, along the axis of the gesture it's describing — a swipe
+   and the arrow on the desktop label both point that way.
+
+   Transform only, deliberately. An animated property beats the declared one
+   for as long as the animation runs, so putting opacity in here would stop
+   .is-hidden from being able to fade the badge out mid-pulse. */
+@keyframes hint-pulse {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(-5px); }
+}
+
+/* the whole media pane advances on click */
+.card__media { cursor: pointer; }
+.card__media:has(.card__arrow:hover) { cursor: default; }
+
+/* empty-state placeholder while a folder has no media yet */
+.card__placeholder {
+  grid-area: 1 / 1;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: var(--step--1);
+  text-align: center;
+  padding: 2rem;
+}

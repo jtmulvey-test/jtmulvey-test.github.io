@@ -1,0 +1,10 @@
+{
+  "_readme": [
+    "Profile links for people credited on the research page ('Data:' lines).",
+    "Paste a URL beside a name to turn it into a link; leave \"\" for plain text.",
+    "build.py adds new credited names here automatically."
+  ],
+  "people": {
+    "Eshana Bethur": "https://scholar.google.com/citations?user=vF1LHhwAAAAJ&hl=en"
+  }
+}

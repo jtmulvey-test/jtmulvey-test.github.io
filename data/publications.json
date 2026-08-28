@@ -1,0 +1,77 @@
+{
+  "author_name": "E Bethur",
+  "publications": [
+    {
+      "title": "Xeno-nucleic acids support formation of Ag(I)-mediated duplexes and silver nanoclusters",
+      "authors": [
+        "R Guha",
+        "E Bethur",
+        "N Chim",
+        "MK Gupta",
+        "IH Lin",
+        "RE Taylor",
+        "JC Chaput",
+        "SM Copp"
+      ],
+      "journal": "Nucleic Acids Research",
+      "year": 2026,
+      "doi": "10.1093/nar/gkag132",
+      "link": "https://doi.org/10.1093/nar/gkag132",
+      "image": "assets/img/publications/2026-guha-xeno-nucleic-acids.png",
+      "tags": []
+    },
+    {
+      "title": "Assembly and solution phase properties of Ag+-mediated adenine–thymine DNA duplexes",
+      "authors": [
+        "E Bethur",
+        "Z Zhao",
+        "R Guha",
+        "H Zeng",
+        "SM Copp"
+      ],
+      "journal": "Inorganic Chemistry Frontiers",
+      "year": 2026,
+      "doi": "10.1039/D5QI01833A",
+      "link": "https://doi.org/10.1039/D5QI01833A",
+      "image": "assets/img/publications/2026-bethur-adenine-thymine-duplexes.png",
+      "tags": []
+    },
+    {
+      "title": "Formation and nanomechanical properties of silver-mediated guanine DNA duplexes in aqueous solution",
+      "authors": [
+        "E Bethur",
+        "R Guha",
+        "Z Zhao",
+        "BB Katz",
+        "PD Ashby",
+        "H Zeng",
+        "SM Copp"
+      ],
+      "journal": "ACS Nano",
+      "year": 2024,
+      "doi": "10.1021/acsnano.3c08008",
+      "link": "https://doi.org/10.1021/acsnano.3c08008",
+      "image": "assets/img/publications/2024-bethur-guanine-duplexes.png",
+      "tags": []
+    },
+    {
+      "title": "Photostability of blue phosphorescent films on plasmonic surfaces",
+      "authors": [
+        "CM Carter",
+        "KM Gwynne",
+        "R Leil",
+        "Z Shen",
+        "Z Cheng",
+        "N Javed",
+        "C Kumah",
+        "E Bethur"
+      ],
+      "journal": "The Journal of Chemical Physics",
+      "year": 2023,
+      "doi": "",
+      "link": "https://pubs.aip.org/aip/jcp/article/158/17/174704/2887570/Photostability-of-blue-phosphorescent-films-on",
+      "image": "assets/img/publications/2023-carter-blue-phosphorescent-films.png",
+      "tags": []
+    }
+  ]
+}

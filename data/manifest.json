@@ -1,0 +1,101 @@
+{
+  "generated": "2026-08-28T19:35:11+00:00",
+  "cards": [
+    {
+      "id": "01-silver-dna-duplexes",
+      "title": "Silver-mediated DNA duplexes",
+      "description": "FILLER TEXT — replace. Silver ions bridge DNA bases to form duplexes that do not exist in natural base pairing. This card is where the structural and mechanical characterization of those assemblies goes.",
+      "body_html": "",
+      "slides": [
+        {
+          "n": 1,
+          "type": "image",
+          "src": "content/01-silver-dna-duplexes/1.png",
+          "v": "ca524bee",
+          "poster": null,
+          "poster_v": "",
+          "title": "Filler dataset — duplex formation",
+          "journal": "ACS Nano",
+          "journal_link": "https://doi.org/10.1021/acsnano.3c08008",
+          "description": "FILLER TEXT — replace with one or two sentences describing what this dataset shows.",
+          "alt": "Placeholder figure standing in for a real dataset",
+          "body_html": "",
+          "extra": [
+            {
+              "label": "Data",
+              "value": "Eshana Bethur"
+            }
+          ]
+        },
+        {
+          "n": 2,
+          "type": "image",
+          "src": "content/01-silver-dna-duplexes/2.png",
+          "v": "34333137",
+          "poster": null,
+          "poster_v": "",
+          "title": "Filler dataset — nanomechanical response",
+          "journal": "",
+          "journal_link": "",
+          "description": "FILLER TEXT — replace with one or two sentences describing what this dataset shows.",
+          "alt": "Placeholder figure standing in for a real dataset",
+          "body_html": "",
+          "extra": []
+        },
+        {
+          "n": 3,
+          "type": "image",
+          "src": "content/01-silver-dna-duplexes/3.png",
+          "v": "0caa113d",
+          "poster": null,
+          "poster_v": "",
+          "title": "Filler dataset — sequence dependence",
+          "journal": "",
+          "journal_link": "",
+          "description": "FILLER TEXT — replace with one or two sentences describing what this dataset shows.",
+          "alt": "Placeholder figure standing in for a real dataset",
+          "body_html": "",
+          "extra": []
+        }
+      ]
+    },
+    {
+      "id": "02-cryoem-nanostructures",
+      "title": "Cryo-EM of nucleic acid nanostructures",
+      "description": "FILLER TEXT — replace. Cryogenic electron microscopy resolves how designed nucleic acid assemblies actually sit in solution, rather than how the design says they should.",
+      "body_html": "",
+      "slides": [
+        {
+          "n": 1,
+          "type": "image",
+          "src": "content/02-cryoem-nanostructures/1.png",
+          "v": "60f39949",
+          "poster": null,
+          "poster_v": "",
+          "title": "Filler dataset — vitrified assembly",
+          "journal": "Nucleic Acids Research",
+          "journal_link": "https://doi.org/10.1093/nar/gkag132",
+          "description": "FILLER TEXT — replace with one or two sentences describing what this dataset shows.",
+          "alt": "Placeholder figure standing in for a real dataset",
+          "body_html": "",
+          "extra": []
+        },
+        {
+          "n": 2,
+          "type": "image",
+          "src": "content/02-cryoem-nanostructures/2.png",
+          "v": "ac6549dc",
+          "poster": null,
+          "poster_v": "",
+          "title": "Filler dataset — class averages",
+          "journal": "",
+          "journal_link": "",
+          "description": "FILLER TEXT — replace with one or two sentences describing what this dataset shows.",
+          "alt": "Placeholder figure standing in for a real dataset",
+          "body_html": "",
+          "extra": []
+        }
+      ]
+    }
+  ]
+}
