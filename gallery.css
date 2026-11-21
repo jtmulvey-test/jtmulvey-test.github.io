@@ -1,0 +1,3891 @@
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: black;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+}
+
+#backLink {
+    position: fixed;
+    top: 15px;
+    left: 20px;
+    z-index: 30;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: white;
+    font-size: 22.4px;
+    line-height: 1.1;
+    text-decoration: none;
+    transition:
+        opacity 0.2s ease,
+        transform 0.2s ease;
+}
+
+#backLink:hover {
+    opacity: 0.65;
+    transform: translateX(3px);
+}
+
+#backLink:focus-visible {
+    outline: 1px solid white;
+    outline-offset: 5px;
+    border-radius: 2px;
+}
+
+#backSymbol {
+    display: inline-block;
+    font-size: 21px;
+    transform: translateY(-1px);
+}
+
+#controlArea {
+    position: fixed;
+    top: 58px;
+    left: 20px;
+    z-index: 30;
+    width: 106px;
+    height: 410px;
+}
+
+.control-button {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 1px solid white;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    cursor: pointer;
+    font-size: 19.2px;
+    text-align: center;
+    transform-origin: center;
+    transition:
+        color 0.2s ease,
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.25s ease,
+        opacity 0.2s ease;
+}
+
+.control-button:hover {
+    color: black;
+    background: white;
+    border-color: white;
+}
+
+.control-button:focus-visible {
+    outline: 1px solid white;
+    outline-offset: 5px;
+}
+
+#toggleControls {
+    z-index: 8;
+    transform: translateY(0);
+    opacity: 1;
+}
+
+#toggleControls:hover {
+    transform: translateY(0) scale(0.94);
+}
+
+#toggleControls.expanded {
+    color: black;
+    background: white;
+    border-color: white;
+}
+
+#hamburgerIcon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 18px;
+    height: 14px;
+    transform: translate(-50%, -50%);
+}
+
+#hamburgerIcon span {
+    position: absolute;
+    left: 0;
+    width: 18px;
+    height: 2px;
+    background: currentColor;
+    border-radius: 999px;
+}
+
+#hamburgerIcon span:nth-child(1) {
+    top: 0;
+}
+
+#hamburgerIcon span:nth-child(2) {
+    top: 6px;
+}
+
+#hamburgerIcon span:nth-child(3) {
+    top: 12px;
+}
+
+#helpButton {
+    z-index: 7;
+    transform: translate(58px, 0);
+}
+
+#helpButton:hover {
+    transform: translate(58px, 0) scale(0.94);
+}
+
+#helpButton .help-icon {
+    display: inline-block;
+    transform: translateY(2px);
+}
+
+#fullscreen {
+    z-index: 6;
+    transform: translateY(58px);
+}
+
+#fullscreen:hover {
+    transform: translateY(58px) scale(0.94);
+}
+
+#hideUI {
+    z-index: 5;
+    transform: translateY(116px);
+}
+
+#hideUI:hover {
+    transform: translateY(116px) scale(0.94);
+}
+
+#autoplayButton {
+    z-index: 4;
+    transform: translateY(174px);
+}
+
+#autoplayButton:hover {
+    transform: translateY(174px) scale(0.94);
+}
+
+#autoplayButton .play-icon {
+    display: inline-block;
+    transform: translate(2px, -2px);
+}
+
+#zoomIn {
+    z-index: 3;
+    transform: translateY(232px);
+}
+
+#zoomIn:hover {
+    transform: translateY(232px) scale(0.94);
+}
+
+#zoomOut {
+    z-index: 2;
+    transform: translateY(290px);
+}
+
+#zoomOut:hover {
+    transform: translateY(290px) scale(0.94);
+}
+
+#controls.collapsed #helpButton,
+#controls.collapsed #fullscreen,
+#controls.collapsed #hideUI,
+#controls.collapsed #autoplayButton,
+#controls.collapsed #zoomIn,
+#controls.collapsed #zoomOut {
+    transform: translate(0, 0);
+    opacity: 0;
+    pointer-events: none;
+}
+
+#version {
+    position: absolute;
+    top: 348px;
+    left: 0;
+    width: 48px;
+    color: red;
+    font-size: 12px;
+    text-align: center;
+    opacity: 0.8;
+    transition:
+        transform 0.3s ease,
+        opacity 0.2s ease;
+}
+
+#version.collapsed {
+    transform: translateY(-348px);
+    opacity: 0;
+}
+
+#viewer {
+    position: relative;
+    width: 100vw;
+    height: calc(100vh - 100px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    cursor: default;
+}
+
+#viewer.zoomed {
+    cursor: grab;
+}
+
+#viewer.dragging {
+    cursor: grabbing;
+}
+
+#photoStage {
+    position: relative;
+    width: calc(100vw - 176px);
+    height: 85vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+#photo {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    opacity: 1;
+    transform: none;
+    transform-origin: center;
+    filter: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    pointer-events: none;
+    visibility: visible;
+    transition: none;
+}
+
+#fadeOverlay {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    background: black;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.7s ease-in-out;
+}
+
+#fadeOverlay.visible {
+    opacity: 1;
+    transition-duration: 0.44s;
+}
+
+#bottomZoomControls {
+    position: absolute;
+    left: 50%;
+    bottom: 44px;
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    color: white;
+    background: rgba(15, 15, 15, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 999px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    transform: translate(-50%, 12px) scale(1.2);
+    transform-origin: center;
+    pointer-events: none;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition:
+        opacity 0.22s ease,
+        transform 0.22s ease;
+}
+
+#bottomZoomControls.visible {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1.2);
+    pointer-events: auto;
+}
+
+.bottom-zoom-button {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    flex: 0 0 auto;
+    color: white;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+    transition:
+        color 0.2s ease,
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.bottom-zoom-button:hover {
+    color: black;
+    background: white;
+    border-color: white;
+    transform: scale(0.94);
+}
+
+.bottom-zoom-button:focus-visible,
+#zoomSlider:focus-visible {
+    outline: 1px solid white;
+    outline-offset: 4px;
+}
+
+#zoomSlider {
+    width: min(180px, 34vw);
+    accent-color: white;
+    cursor: pointer;
+}
+
+body.ui-hidden #bottomZoomControls {
+    bottom: 51px;
+}
+
+#modeToast {
+    position: fixed;
+    top: 12vh;
+    left: 50%;
+    z-index: 120;
+    max-width: calc(100vw - 40px);
+    padding: 10px 20px 11px;
+    box-sizing: border-box;
+    color: white;
+    background: rgba(20, 20, 20, 0.68);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 999px;
+    box-shadow:
+        0 8px 30px rgba(0, 0, 0, 0.38),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    font-size: 13px;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    text-align: center;
+    white-space: nowrap;
+    opacity: 0;
+    transform:
+        translate(-50%, calc(-50% - 140px))
+        scale(0.95);
+    pointer-events: none;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition:
+        opacity 0.32s ease,
+        transform 0.62s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#modeToast.visible {
+    opacity: 1;
+    transform:
+        translate(-50%, -50%)
+        scale(1);
+}
+
+#modeToast.leaving {
+    opacity: 0;
+    transform:
+        translate(-50%, -50%)
+        scale(1);
+    transition: opacity 0.48s ease;
+}
+
+#counter {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    z-index: 25;
+    color: white;
+    transform: translateX(-50%);
+}
+
+#autoplayStatus {
+    position: fixed;
+    left: 12px;
+    bottom: 38px;
+    z-index: 25;
+    display: none;
+    color: white;
+    font-size: 14px;
+    line-height: 1;
+}
+
+#autoplayProgress {
+    position: fixed;
+    left: 12px;
+    bottom: 30px;
+    z-index: 25;
+    display: none;
+    width: 45px;
+    height: 3px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.26);
+    border-radius: 999px;
+}
+
+#autoplayProgressBar {
+    width: 0%;
+    height: 100%;
+    background: white;
+    border-radius: 999px;
+}
+
+#thumbnailBar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    z-index: 80;
+    width: 100%;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 5px 5px 20px;
+    box-sizing: border-box;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.75);
+}
+
+#filmstripButton {
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    flex: 0 0 auto;
+    color: white;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid white;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 24px;
+    line-height: 1;
+    text-align: center;
+    transition:
+        color 0.2s ease,
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.25s ease;
+}
+
+#filmstripButton:hover {
+    color: black;
+    background: white;
+    border-color: white;
+    transform: scale(0.94);
+}
+
+#filmstripButton:focus-visible {
+    outline: 1px solid white;
+    outline-offset: 4px;
+}
+
+#filmstripArrow {
+    display: inline-block;
+    transform: translateY(-3px);
+    transition: transform 0.25s ease;
+}
+
+#filmstripButton.active #filmstripArrow {
+    transform: translateY(1px) rotate(180deg);
+}
+
+#thumbnails {
+    min-width: 0;
+    height: 100%;
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior: contain;
+}
+
+.thumb {
+    width: auto;
+    height: 70px;
+    flex-shrink: 0;
+    cursor: pointer;
+    opacity: 0.5;
+    border-radius: 7px;
+    transition: opacity 0.2s ease;
+}
+
+.thumb:hover {
+    opacity: 0.8;
+}
+
+.thumb.active {
+    opacity: 1;
+}
+
+#helpOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+    background: rgba(0, 0, 0, 0.8);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+#helpOverlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#helpPanel {
+    position: relative;
+    width: min(560px, 90vw);
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 28px;
+    box-sizing: border-box;
+    color: white;
+    background: rgba(20, 20, 20, 0.97);
+    border: 1px solid white;
+    border-radius: 14px;
+    transform: translateY(15px);
+    transition: transform 0.2s ease;
+}
+
+#helpOverlay.visible #helpPanel {
+    transform: translateY(0);
+}
+
+#helpPanel h2 {
+    margin: 0 0 20px;
+    font-size: 24px;
+}
+
+#helpPanel p {
+    margin: 8px 0;
+    line-height: 1.45;
+}
+
+.help-row {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    gap: 12px;
+    align-items: center;
+    margin: 12px 0;
+}
+
+.help-key {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid white;
+    border-radius: 50%;
+    font-weight: bold;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.help-key.hamburger-help-icon {
+    position: relative;
+}
+
+.help-key.hamburger-help-icon span {
+    position: absolute;
+    left: 9px;
+    width: 16px;
+    height: 2px;
+    background: currentColor;
+    border-radius: 999px;
+}
+
+.help-key.hamburger-help-icon span:nth-child(1) {
+    top: 11px;
+}
+
+.help-key.hamburger-help-icon span:nth-child(2) {
+    top: 17px;
+}
+
+.help-key.hamburger-help-icon span:nth-child(3) {
+    top: 23px;
+}
+
+.help-key.play-help-icon {
+    padding-left: 3px;
+    padding-bottom: 2px;
+}
+
+.delay-setting {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 20px 0 4px 56px;
+}
+
+#autoplayDelay {
+    width: 65px;
+    padding: 7px;
+    box-sizing: border-box;
+    color: white;
+    background: black;
+    border: 1px solid white;
+    border-radius: 5px;
+    font: inherit;
+    text-align: center;
+}
+
+#closeHelp {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    color: white;
+    background: transparent;
+    border: 1px solid white;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    transition:
+        color 0.2s ease,
+        background-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+#closeHelp:hover {
+    color: black;
+    background: white;
+    transform: scale(0.94);
+}
+
+body.ui-hidden #backLink,
+body.ui-hidden #controlArea,
+body.ui-hidden #thumbnailBar,
+body.ui-hidden #helpOverlay {
+    display: none !important;
+}
+
+body.ui-hidden #viewer {
+    height: 100vh;
+}
+
+body.ui-hidden #photoStage {
+    width: 100vw;
+    height: 100vh;
+}
+
+body.ui-hidden #counter {
+    left: 12px;
+    bottom: 10px;
+    transform: none;
+    color: white;
+}
+
+body.ui-hidden.autoplay-active #autoplayStatus,
+body.ui-hidden.autoplay-active #autoplayProgress {
+    display: block;
+}
+
+@media (max-width: 520px) {
+    #bottomZoomControls {
+        bottom: 33px;
+        gap: 8px;
+        padding: 7px 9px;
+    }
+
+    #zoomSlider {
+        width: min(140px, 38vw);
+    }
+
+    #modeToast {
+        max-width: calc(100vw - 28px);
+        padding: 10px 16px 11px;
+        font-size: 12px;
+        white-space: normal;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #fadeOverlay,
+    .control-button,
+    #version,
+    #helpOverlay,
+    #helpPanel,
+    #closeHelp,
+    #backLink {
+        transition-duration: 0.01ms;
+    }
+
+    #modeToast {
+        transition:
+            opacity 0.2s ease,
+            transform 0.2s ease;
+    }
+
+    #modeToast.leaving {
+        transition: opacity 0.2s ease;
+    }
+}
+
+
+/* Gallery experience updates: v1.5.0 */
+
+#controlArea {
+    height: 410px;
+    transition: opacity 0.25s ease;
+}
+
+#toggleControls {
+    z-index: 8;
+}
+
+#helpButton {
+    z-index: 7;
+}
+
+#fullscreen {
+    z-index: 6;
+}
+
+#hideUI {
+    z-index: 5;
+}
+
+#autoplayButton {
+    z-index: 4;
+}
+
+#zoomIn {
+    z-index: 3;
+    transform: translateY(232px);
+}
+
+#zoomIn:hover {
+    transform: translateY(232px) scale(0.94);
+}
+
+#zoomOut {
+    z-index: 2;
+    transform: translateY(290px);
+}
+
+#zoomOut:hover {
+    transform: translateY(290px) scale(0.94);
+}
+
+#version {
+    top: 348px;
+}
+
+#version.collapsed {
+    transform: translateY(-348px);
+}
+
+#viewer,
+#photoStage,
+#counter {
+    transition:
+        height 0.32s ease,
+        bottom 0.32s ease,
+        opacity 0.25s ease,
+        transform 0.32s ease;
+}
+
+#thumbnailBar {
+    transition:
+        opacity 0.25s ease,
+        transform 0.25s ease;
+}
+
+#photo {
+    transition: none;
+}
+
+#viewer.loading #photo {
+    opacity: 1;
+    filter: none;
+}
+
+#loadingIndicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 14;
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.92);
+    pointer-events: none;
+    transition:
+        opacity 0.18s ease,
+        transform 0.18s ease;
+}
+
+#loadingIndicator.visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+#loadingIndicator span {
+    width: 26px;
+    height: 26px;
+    border: 2px solid rgba(255, 255, 255, 0.28);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: gallerySpinner 0.8s linear infinite;
+}
+
+@keyframes gallerySpinner {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+
+
+
+
+
+
+.bottom-zoom-button:disabled {
+    opacity: 0.34;
+    cursor: default;
+}
+
+.bottom-zoom-button:disabled:hover {
+    color: white;
+    background: transparent;
+    border-color: rgba(255, 255, 255, 0.72);
+    transform: none;
+}
+
+.thumb {
+    border-radius: 7px;
+    outline: 2px solid transparent;
+    outline-offset: -2px;
+    transform: none;
+    transition:
+        opacity 0.2s ease,
+        outline-color 0.22s ease;
+}
+
+.thumb.active {
+    opacity: 1;
+    outline-color: white;
+    transform: none;
+}
+
+#mosaicOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 64px 72px 110px;
+    box-sizing: border-box;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.84);
+    opacity: 0;
+    pointer-events: none;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: opacity 0.24s ease;
+}
+
+#mosaicOverlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#mosaicPanel {
+    width: min(1380px, calc(100vw - 120px));
+    height: min(800px, calc(100vh - 170px));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    box-sizing: border-box;
+    overflow: hidden;
+    background: rgba(4, 4, 4, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 18px;
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.62);
+    transform: translateY(16px) scale(0.98);
+    transition: transform 0.28s ease;
+}
+
+#mosaicOverlay.visible #mosaicPanel {
+    transform: translateY(0) scale(1);
+}
+
+#mosaicGrid {
+    position: relative;
+    flex: 0 0 auto;
+    overflow: hidden;
+}
+
+.mosaic-item {
+    position: absolute;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: #111111;
+    border: 0;
+    border-radius: 7px;
+    clip-path: inset(0 round 7px);
+    cursor: pointer;
+    opacity: 0.88;
+    transform: none;
+    transform-origin: center;
+    transition:
+        opacity 0.2s ease,
+        transform 0.22s ease,
+        box-shadow 0.22s ease;
+}
+
+.mosaic-item:hover {
+    z-index: 2;
+    opacity: 1;
+    transform: scale(1.025);
+}
+
+.mosaic-item:focus-visible {
+    outline: 2px solid white;
+    outline-offset: 3px;
+}
+
+.mosaic-item.active {
+    opacity: 1;
+}
+
+.mosaic-item.active::after {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    box-sizing: border-box;
+    content: "";
+    border: 2px solid white;
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+.mosaic-item img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 7px;
+    clip-path: inset(0 round 7px);
+    user-select: none;
+    -webkit-user-drag: none;
+    pointer-events: none;
+}
+
+#mosaicOverlay.selecting {
+    background: rgba(0, 0, 0, 0.10);
+    backdrop-filter: blur(0);
+    -webkit-backdrop-filter: blur(0);
+    transition:
+        background-color 0.72s ease,
+        backdrop-filter 0.72s ease,
+        -webkit-backdrop-filter 0.72s ease;
+}
+
+#mosaicOverlay.selecting .mosaic-item {
+    opacity: 0;
+    transform: scale(0.965);
+    pointer-events: none;
+    transition:
+        opacity 0.14s ease,
+        transform 0.14s ease;
+}
+
+#mosaicOverlay.selecting .mosaic-item.mosaic-selected {
+    z-index: 10;
+    opacity: 0;
+    transform:
+        translate(
+            var(--mosaic-center-shift-x, 0px),
+            var(--mosaic-center-shift-y, 0px)
+        )
+        scale(0.94);
+    transition:
+        opacity 1.05s ease,
+        transform 0.72s ease;
+}
+
+#mosaicOverlay.selecting #mosaicPanel {
+    background: rgba(4, 4, 4, 0.10);
+    border-color: rgba(255, 255, 255, 0.03);
+    box-shadow: none;
+    transition:
+        background-color 0.58s ease,
+        border-color 0.30s ease,
+        box-shadow 0.18s ease;
+}
+
+body.mosaic-open #counter {
+    opacity: 0;
+}
+
+body.ui-hidden #mosaicOverlay {
+    display: none !important;
+}
+
+body.ui-idle:not(.ui-hidden) #backLink,
+body.ui-idle:not(.ui-hidden) #controlArea,
+body.ui-idle:not(.ui-hidden) #counter {
+    opacity: 0;
+    pointer-events: none;
+}
+
+body.ui-idle:not(.ui-hidden):not(.mosaic-open) #thumbnailBar {
+    opacity: 0;
+    transform: translateY(100%);
+    pointer-events: none;
+}
+
+body.ui-idle:not(.ui-hidden) #bottomZoomControls.visible {
+    opacity: 0;
+    transform: translate(-50%, 12px) scale(1.2);
+    pointer-events: none;
+}
+
+body.ui-hidden #loadingIndicator {
+    display: none !important;
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+    #loadingIndicator span {
+        animation-duration: 1.6s;
+    }
+
+    #thumbnailBar,
+    #mosaicOverlay,
+    #mosaicPanel,
+    #counter,
+    #controlArea,
+    #photo {
+        transition-duration: 0.01ms;
+    }
+}
+
+
+/* Gallery experience updates: v1.5.13 */
+
+/* Place Help directly below the hamburger as the first media option. */
+#controlArea {
+    height: 468px;
+}
+
+#helpButton {
+    transform: translateY(58px);
+}
+
+#helpButton:hover {
+    transform: translateY(58px) scale(0.94);
+}
+
+#fullscreen {
+    transform: translateY(116px);
+}
+
+#fullscreen:hover {
+    transform: translateY(116px) scale(0.94);
+}
+
+#hideUI {
+    transform: translateY(174px);
+}
+
+#hideUI:hover {
+    transform: translateY(174px) scale(0.94);
+}
+
+#autoplayButton {
+    transform: translateY(232px);
+}
+
+#autoplayButton:hover {
+    transform: translateY(232px) scale(0.94);
+}
+
+#zoomIn {
+    transform: translateY(290px);
+}
+
+#zoomIn:hover {
+    transform: translateY(290px) scale(0.94);
+}
+
+#zoomOut {
+    transform: translateY(348px);
+}
+
+#zoomOut:hover {
+    transform: translateY(348px) scale(0.94);
+}
+
+#version {
+    top: 406px;
+}
+
+#version.collapsed {
+    transform: translateY(-406px);
+}
+
+.photo-nav-indicator {
+    position: fixed;
+    z-index: 18;
+    width: 40px;
+    height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgb(77, 77, 77);
+    font-size: 40px;
+    font-weight: 300;
+    line-height: 1;
+    opacity: 0;
+    transform: translateY(-50%);
+    text-shadow: none;
+    pointer-events: none;
+    user-select: none;
+    transition:
+        color 0.16s ease,
+        text-shadow 0.16s ease,
+        opacity 0.34s ease-in-out,
+        transform 0.18s ease;
+}
+
+.photo-nav-indicator.active {
+    color: rgb(128, 128, 128);
+    text-shadow:
+        0 0 6px rgba(128, 128, 128, 0.48),
+        0 0 12px rgba(128, 128, 128, 0.22);
+}
+
+.photo-nav-indicator-left.clicked {
+    transform:
+        translateY(-50%)
+        translateX(-3px)
+        scale(0.94);
+}
+
+.photo-nav-indicator-right.clicked {
+    transform:
+        translateY(-50%)
+        translateX(3px)
+        scale(0.94);
+}
+
+body.ui-idle:not(.ui-hidden) .photo-nav-indicator,
+body.ui-hidden .photo-nav-indicator,
+body.mosaic-open .photo-nav-indicator {
+    opacity: 0;
+}
+
+
+body.photo-navigation-ready .photo-nav-indicator {
+    opacity: 1;
+}
+
+/*
+Match the indicator fade to the photograph fade overlay.
+The indicators sit outside the image, so this extends the
+visual fade without enlarging the black overlay itself.
+*/
+#fadeOverlay.visible ~ .photo-nav-indicator {
+    opacity: 0;
+}
+
+body.photo-navigation-ready.ui-idle:not(.ui-hidden) .photo-nav-indicator,
+body.photo-navigation-ready.ui-hidden .photo-nav-indicator,
+body.photo-navigation-ready.mosaic-open .photo-nav-indicator {
+    opacity: 0;
+}
+
+
+/* Gallery experience updates: v1.5.19 */
+
+#thumbnailBar {
+    left: 88px;
+    width: calc(100% - 176px);
+    padding: 5px 8px;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.82);
+}
+
+#thumbnails {
+    justify-content: flex-start;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+#thumbnails::-webkit-scrollbar {
+    display: none;
+}
+
+.thumbnail-scroll-button {
+    width: 32px;
+    height: 48px;
+    padding: 0;
+    flex: 0 0 auto;
+    color: rgba(255, 255, 255, 0.58);
+    background: transparent;
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 30px;
+    font-weight: 300;
+    line-height: 1;
+    transition:
+        color 0.18s ease,
+        background-color 0.18s ease,
+        opacity 0.18s ease;
+}
+
+.thumbnail-scroll-button:hover:not(:disabled) {
+    color: white;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.thumbnail-scroll-button:focus-visible {
+    outline: 1px solid rgba(255, 255, 255, 0.7);
+    outline-offset: 2px;
+}
+
+.thumbnail-scroll-button:disabled {
+    opacity: 0.18;
+    cursor: default;
+}
+
+body.ui-hidden #thumbnailBar {
+    display: none !important;
+}
+
+
+/* Gallery experience updates: v1.5.20 */
+
+#thumbnails {
+    justify-content: center;
+}
+
+#thumbnails.has-overflow {
+    justify-content: flex-start;
+}
+
+.thumbnail-scroll-button {
+    width: 34px;
+    height: 34px;
+    color: white;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid white;
+    border-radius: 50%;
+    font-size: 24px;
+    line-height: 1;
+    transition:
+        color 0.2s ease,
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        opacity 0.18s ease,
+        transform 0.2s ease;
+}
+
+.thumbnail-scroll-button:hover:not(:disabled) {
+    color: black;
+    background: white;
+    border-color: white;
+    transform: scale(0.94);
+}
+
+.thumbnail-scroll-button:disabled {
+    color: rgba(255, 255, 255, 0.22);
+    background: transparent;
+    border-color: rgba(255, 255, 255, 0.22);
+    opacity: 1;
+    cursor: default;
+}
+
+#thumbnailBar.no-thumbnail-overflow
+.thumbnail-scroll-button {
+    color: black;
+    background: black;
+    border-color: black;
+    opacity: 1;
+}
+
+.photo-nav-indicator {
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+    font-weight: 300;
+}
+
+
+/* Gallery experience updates: v1.5.21 */
+
+/*
+Restore the mosaic button to the original left-side alignment
+with the media controls while the thumbnail strip respects the
+88 px gallery borders.
+*/
+#filmstripButton {
+    position: fixed;
+    left: 20px;
+    bottom: 16px;
+    z-index: 82;
+}
+
+#thumbnailBar {
+    opacity: 0;
+    pointer-events: none;
+    transition:
+        opacity 0.28s ease,
+        transform 0.25s ease;
+}
+
+#thumbnailBar.thumbnails-ready {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+body.ui-idle:not(.ui-hidden):not(.mosaic-open)
+#thumbnailBar.thumbnails-ready {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#thumbnails {
+    cursor: grab;
+    touch-action: pan-y;
+    user-select: none;
+}
+
+#thumbnails.dragging {
+    cursor: grabbing;
+    scroll-behavior: auto;
+}
+
+#thumbnails.dragging .thumb {
+    pointer-events: none;
+}
+
+
+/* Gallery experience updates: v1.5.22 */
+
+#thumbnailBar {
+    left: calc(88px + ((100vw - 176px) * 0.05));
+    width: calc((100vw - 176px) * 0.9);
+}
+
+
+/* Gallery experience updates: v1.5.23 */
+
+#thumbnailScrollLeft {
+    transform: translateX(-10px);
+}
+
+#thumbnailScrollRight {
+    transform: translateX(10px);
+}
+
+#thumbnailScrollLeft:hover:not(:disabled) {
+    transform:
+        translateX(-10px)
+        scale(0.94);
+}
+
+#thumbnailScrollRight:hover:not(:disabled) {
+    transform:
+        translateX(10px)
+        scale(0.94);
+}
+
+
+/* Gallery experience updates: v1.5.24 */
+
+#thumbnailBar {
+    overflow: visible;
+}
+
+
+/* Gallery experience updates: v1.5.25 */
+
+#thumbnailBar,
+body.ui-idle:not(.ui-hidden):not(.mosaic-open) #thumbnailBar,
+body.ui-idle:not(.ui-hidden):not(.mosaic-open)
+#thumbnailBar.thumbnails-ready {
+    transform: none;
+}
+
+
+/* Gallery experience updates: v1.5.32 */
+
+/*
+Mosaic spacing is enforced by the layout generator.
+No visual padding workaround is required.
+*/
+
+
+/* Gallery experience updates: v1.5.33 */
+
+#mosaicOverlay.selecting
+.mosaic-item.active::after,
+#mosaicOverlay.selecting
+.mosaic-item.mosaic-selected::after {
+    opacity: 0;
+    border-color: transparent;
+    transition: none;
+}
+
+
+/* Gallery experience updates: v1.5.36 */
+
+/*
+The full-size photograph remains hidden until the mosaic
+overlay has fully closed, then uses the normal photo fade.
+*/
+
+
+/* Gallery experience updates: v1.5.37 */
+
+body.mosaic-open #controlArea {
+    z-index: 80;
+}
+
+
+/* Gallery experience updates: v1.5.38 */
+
+.photo-nav-indicator {
+    width: 52px;
+    height: 70px;
+    font-size: 52px;
+}
+
+body.mosaic-photo-transition
+.photo-nav-indicator {
+    opacity: 0 !important;
+}
+
+
+/* Gallery experience updates: v1.5.39 */
+
+/*
+On the first page view, show only the mosaic. The initial
+body class is removed when a mosaic photograph is selected,
+allowing the photo and UI to fade in together.
+*/
+body.initial-mosaic-mode #backLink,
+body.initial-mosaic-mode #controlArea,
+body.initial-mosaic-mode #counter,
+body.initial-mosaic-mode #thumbnailBar,
+body.initial-mosaic-mode .photo-nav-indicator,
+body.initial-mosaic-mode #autoplayStatus,
+body.initial-mosaic-mode #autoplayProgress,
+body.initial-mosaic-mode #bottomZoomControls,
+body.initial-mosaic-mode #loadingIndicator {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+body.initial-mosaic-mode #backLink,
+body.initial-mosaic-mode #controlArea,
+body.initial-mosaic-mode #counter,
+body.initial-mosaic-mode #thumbnailBar,
+body.initial-mosaic-mode .photo-nav-indicator {
+    transition: opacity 0.58s ease;
+}
+
+/*
+The v1.5.37 control-layer rule remains useful after startup,
+but initial mosaic mode intentionally hides those controls.
+*/
+body.initial-mosaic-mode.mosaic-open #controlArea {
+    opacity: 0 !important;
+}
+
+
+/* Gallery experience updates: v1.5.40 */
+
+/*
+Use a slower transition only for the first reveal after
+the startup mosaic. Later gallery transitions are unchanged.
+*/
+body.initial-gallery-reveal #backLink,
+body.initial-gallery-reveal #controlArea,
+body.initial-gallery-reveal #counter,
+body.initial-gallery-reveal #thumbnailBar,
+body.initial-gallery-reveal .photo-nav-indicator,
+body.initial-gallery-reveal #autoplayStatus,
+body.initial-gallery-reveal #autoplayProgress,
+body.initial-gallery-reveal #bottomZoomControls {
+    transition-duration: 1.3s !important;
+    transition-timing-function: ease !important;
+}
+
+
+/* Gallery experience updates: v1.5.41 */
+
+/*
+The startup media controls stay collapsed through the
+1.3-second reveal, then expand 0.1 seconds afterward.
+*/
+
+
+/* Gallery experience updates: v1.5.42 */
+
+#mosaicGrid {
+    transform-origin: center center;
+    will-change: transform;
+}
+
+/*
+The open mosaic keeps its generated composition during
+fullscreen and window-size changes. The entire layout is
+scaled uniformly to fit the newly available panel space.
+*/
+
+
+/* Gallery experience updates: v1.5.43 */
+
+/*
+Mouse-wheel and trackpad zoom now use accumulated delta
+values with requestAnimationFrame easing for a smoother,
+continuous response.
+*/
+
+
+/* Gallery experience updates: v1.5.44 */
+
+/*
+After the introductory load, mosaic selections use a shorter
+tile animation so the selected photograph can begin its
+normal fade substantially sooner.
+*/
+#mosaicOverlay.priority-selection.selecting
+.mosaic-item.mosaic-selected {
+    transition:
+        opacity 0.75s ease,
+        transform 0.68s ease;
+}
+
+
+/* Gallery experience updates: v1.5.45 */
+
+/*
+After the first page load, the selected mosaic tile now
+fades for 0.75 seconds and moves toward the center over
+0.68 seconds. The overlay remains present until those
+animations have completed.
+*/
+
+
+/* Gallery experience updates: v1.5.46 */
+
+/*
+The first automatic media-control expansion, hamburger
+click expansions, and C-key expansions receive one subtle
+overshoot. Only opacity and transform are animated.
+*/
+#controls.physics-pop #helpButton {
+    animation:
+        media-control-pop-help
+        0.54s
+        ease-out
+        0ms
+        both;
+}
+
+#controls.physics-pop #fullscreen {
+    animation:
+        media-control-pop-fullscreen
+        0.56s
+        ease-out
+        28ms
+        both;
+}
+
+#controls.physics-pop #hideUI {
+    animation:
+        media-control-pop-hide
+        0.58s
+        ease-out
+        56ms
+        both;
+}
+
+#controls.physics-pop #autoplayButton {
+    animation:
+        media-control-pop-autoplay
+        0.60s
+        ease-out
+        84ms
+        both;
+}
+
+#controls.physics-pop #zoomIn {
+    animation:
+        media-control-pop-zoom-in
+        0.62s
+        ease-out
+        112ms
+        both;
+}
+
+#controls.physics-pop #zoomOut {
+    animation:
+        media-control-pop-zoom-out
+        0.64s
+        ease-out
+        140ms
+        both;
+}
+
+@keyframes media-control-pop-help {
+    0% {
+        opacity: 0;
+        transform: translateY(0);
+    }
+
+    70% {
+        opacity: 1;
+        transform: translateY(68px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(58px);
+    }
+}
+
+@keyframes media-control-pop-fullscreen {
+    0% {
+        opacity: 0;
+        transform: translateY(0);
+    }
+
+    70% {
+        opacity: 1;
+        transform: translateY(126px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(116px);
+    }
+}
+
+@keyframes media-control-pop-hide {
+    0% {
+        opacity: 0;
+        transform: translateY(0);
+    }
+
+    70% {
+        opacity: 1;
+        transform: translateY(184px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(174px);
+    }
+}
+
+@keyframes media-control-pop-autoplay {
+    0% {
+        opacity: 0;
+        transform: translateY(0);
+    }
+
+    70% {
+        opacity: 1;
+        transform: translateY(242px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(232px);
+    }
+}
+
+@keyframes media-control-pop-zoom-in {
+    0% {
+        opacity: 0;
+        transform: translateY(0);
+    }
+
+    70% {
+        opacity: 1;
+        transform: translateY(300px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(290px);
+    }
+}
+
+@keyframes media-control-pop-zoom-out {
+    0% {
+        opacity: 0;
+        transform: translateY(0);
+    }
+
+    70% {
+        opacity: 1;
+        transform: translateY(358px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(348px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #controls.physics-pop
+    .control-button {
+        animation: none !important;
+    }
+}
+
+
+/* Gallery experience updates: v1.5.47 */
+
+#photoMotionLayer {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: none;
+    transform-origin: center center;
+    will-change: auto;
+    transition: none;
+}
+
+#photoMotionLayer.autoplay-pan-active {
+    animation-duration:
+        var(--autoplay-pan-duration, 6s);
+    animation-timing-function: ease-in-out;
+    animation-fill-mode: both;
+    animation-iteration-count: 1;
+}
+
+#photoMotionLayer.autoplay-pan-active.autoplay-pan-0 {
+    animation-name: autoplay-pan-0;
+}
+
+#photoMotionLayer.autoplay-pan-active.autoplay-pan-1 {
+    animation-name: autoplay-pan-1;
+}
+
+#photoMotionLayer.autoplay-pan-active.autoplay-pan-2 {
+    animation-name: autoplay-pan-2;
+}
+
+#photoMotionLayer.autoplay-pan-active.autoplay-pan-3 {
+    animation-name: autoplay-pan-3;
+}
+
+body.autoplay-active:not(.autoplay-playing)
+#photoMotionLayer.autoplay-pan-active {
+    animation-play-state: paused;
+}
+
+@keyframes autoplay-pan-0 {
+    from {
+        transform:
+            translate(-8px, -4px)
+            scale(1.018);
+    }
+
+    to {
+        transform:
+            translate(8px, 4px)
+            scale(1.032);
+    }
+}
+
+@keyframes autoplay-pan-1 {
+    from {
+        transform:
+            translate(8px, -5px)
+            scale(1.020);
+    }
+
+    to {
+        transform:
+            translate(-8px, 5px)
+            scale(1.034);
+    }
+}
+
+@keyframes autoplay-pan-2 {
+    from {
+        transform:
+            translate(-7px, 5px)
+            scale(1.019);
+    }
+
+    to {
+        transform:
+            translate(7px, -5px)
+            scale(1.033);
+    }
+}
+
+@keyframes autoplay-pan-3 {
+    from {
+        transform:
+            translate(7px, 4px)
+            scale(1.018);
+    }
+
+    to {
+        transform:
+            translate(-7px, -4px)
+            scale(1.032);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #photoMotionLayer.autoplay-pan-active {
+        animation: none !important;
+        transform: none !important;
+    }
+}
+
+
+/* Gallery experience updates: v1.5.48 */
+
+
+/* Gallery experience updates: v1.5.49 */
+
+/*
+The initial mosaic-button cue now jumps four times higher.
+Its two recovery bounces scale with that larger jump. The
+two inverted-color blinks begin 0.1 seconds after all motion
+has stopped.
+*/
+
+
+/* Gallery experience updates: v1.5.50 */
+
+/*
+After the first photograph finishes revealing, cursor
+inactivity cannot hide the gallery UI for at least 25
+seconds. Later pointer activity still resets the normal
+idle countdown.
+*/
+
+
+/* Gallery experience updates: v1.5.51 */
+
+/*
+Experimental justified-row mosaic:
+- all rows use a consistent 7 px gap
+- image aspect ratios are preserved
+- completed rows fill the available width
+- the final row is centered when stretching would be excessive
+- photograph 1 is softly favored near the visual center
+*/
+#mosaicPanel {
+    padding: 14px;
+}
+
+.mosaic-item {
+    opacity: 0.96;
+    border-radius: 4px;
+    clip-path: inset(0 round 4px);
+}
+
+.mosaic-item img {
+    border-radius: 4px;
+    clip-path: inset(0 round 4px);
+}
+
+
+/* Gallery experience updates: v1.5.58 */
+
+/*
+Localized hover repulsion, built on the unchanged v1.5.51
+mosaic geometry. This first pass intentionally uses strong
+motion so the final values can be reduced after testing.
+*/
+#mosaicGrid .mosaic-item {
+    --mosaic-repel-x: 0px;
+    --mosaic-repel-y: 0px;
+    --mosaic-hover-scale: 1;
+
+    transform:
+        translate3d(
+            var(--mosaic-repel-x),
+            var(--mosaic-repel-y),
+            0
+        )
+        scale(
+            var(--mosaic-hover-scale)
+        );
+
+    transition:
+        opacity 0.22s ease,
+        transform 0.6s
+            cubic-bezier(
+                0.22,
+                0.61,
+                0.36,
+                1
+            );
+}
+
+#mosaicGrid.mosaic-repulsion-active
+.mosaic-item:hover {
+    z-index: 4;
+    opacity: 1;
+    transform:
+        translate3d(
+            var(--mosaic-repel-x),
+            var(--mosaic-repel-y),
+            0
+        )
+        scale(
+            var(--mosaic-hover-scale)
+        );
+}
+
+#mosaicGrid.mosaic-repulsion-returning
+.mosaic-item {
+    transition:
+        opacity 0.22s ease,
+        transform 0.6s
+            cubic-bezier(
+                0.22,
+                0.61,
+                0.36,
+                1
+            );
+}
+
+#mosaicGrid.mosaic-repulsion-immediate
+.mosaic-item {
+    transition: none !important;
+}
+
+/*
+Selection transforms continue to take priority over hover
+motion, so the existing v1.5.51 close/reveal animation is
+unchanged.
+*/
+#mosaicOverlay.selecting
+#mosaicGrid .mosaic-item {
+    transform: scale(0.965);
+}
+
+#mosaicOverlay.selecting
+#mosaicGrid
+.mosaic-item.mosaic-selected {
+    transform:
+        translate(
+            var(
+                --mosaic-center-shift-x,
+                0px
+            ),
+            var(
+                --mosaic-center-shift-y,
+                0px
+            )
+        )
+        scale(0.94);
+}
+
+@media (
+    hover: none
+),
+(
+    pointer: coarse
+),
+(
+    prefers-reduced-motion: reduce
+) {
+    #mosaicGrid .mosaic-item {
+        --mosaic-repel-x: 0px !important;
+        --mosaic-repel-y: 0px !important;
+        --mosaic-hover-scale: 1 !important;
+    }
+}
+
+
+/* Gallery experience updates: v1.5.59 */
+
+/*
+Hover repulsion tuning:
+- neighbor displacement reduced from 42 px to 21 px
+- hovered-image enlargement reduced from 7.5% to 3.75%
+- outward and return motion now ease smoothly over 1 second
+*/
+
+
+/* Gallery experience updates: v1.5.60 */
+
+/*
+Hover-motion timing:
+- total movement reduced from 1.0 s to 0.72 s
+- the beginning remains comparatively gentle
+- the easing accelerates more strongly through the second
+  half, producing a faster finish without a sharp initial
+  movement
+*/
+
+
+/* Gallery experience updates: v1.5.61 */
+
+/*
+Hover-motion refinement:
+- preserves the faster 0.72-second duration
+- restores the smoother v1.5.59 acceleration curve
+- maximum neighbor displacement reduced from 21 px to 17 px
+- influence radius increased from 360 px / 2.4 diagonals
+  to 420 px / 2.7 diagonals, spreading movement across
+  more tiles and reducing local overlap pressure
+*/
+
+
+/* Gallery experience updates: v1.5.62 */
+
+/*
+Cursor-driven hover repulsion:
+- maximum displacement reduced another 10%, from 17 px
+  to 15.3 px
+- neighboring photographs now move away from the actual
+  cursor position rather than the center of the hovered tile
+- the existing 0.72-second timing and influence radius are
+  unchanged
+*/
+
+
+/* Gallery experience updates: v1.5.63 */
+
+/*
+Cursor-field refinement:
+- maximum displacement reduced by 20%, from 15.3 px to
+  12.24 px
+- pointer tracking now runs on the entire mosaic grid
+- photographs continue reacting while the cursor moves
+  through black gaps between tiles
+- tile enlargement occurs only when the cursor is directly
+  over that photograph
+*/
+
+
+/* Gallery experience updates: v1.5.64 */
+
+/*
+Hover repulsion tuning:
+- maximum cursor-driven displacement reduced by another 30%
+- 12.24 px becomes 8.568 px
+- black-gap pointer tracking, radius, scale, timing, and
+  easing remain unchanged
+*/
+
+
+/* Gallery experience updates: v1.5.65 */
+
+/*
+Uniform edge response:
+- removed the grid-boundary clamp that reduced outward
+  movement for photographs near the mosaic edges
+- every tile now receives the same cursor-driven displacement
+  regardless of whether it is near the center or an edge
+- the mosaic grid allows temporary visual overflow
+- the surrounding panel remains the final clipping boundary
+*/
+#mosaicGrid {
+    overflow: visible;
+}
+
+
+/* Gallery experience updates: v1.5.66 */
+
+/*
+More localized cursor repulsion:
+- minimum influence radius reduced by 30%, from 420 px
+  to 294 px
+- tile-size radius multiplier reduced by 30%, from 2.7
+  diagonals to 1.89 diagonals
+- falloff exponent increased from 1.15 to 1.45 so movement
+  fades more quickly with distance
+- maximum displacement and animation timing are unchanged
+*/
+
+
+/* Gallery experience updates: v1.5.67 */
+
+/*
+Cursor-repulsion radius reduced by another 25%:
+- minimum influence radius: 294 px -> 220.5 px
+- tile-size multiplier: 1.89 -> 1.4175 diagonals
+- displacement, falloff curve, timing, and easing unchanged
+*/
+
+
+/* Gallery experience updates: v1.5.68 */
+
+/*
+Hover-motion timing reduced:
+- outward movement: 0.72 s -> 0.5 s
+- return movement: 0.72 s -> 0.5 s
+- easing curve, displacement, radius, and falloff unchanged
+*/
+
+
+/* Gallery experience updates: v1.5.69 */
+
+/*
+Hover-motion timing increased:
+- outward movement: 0.5 s -> 0.6 s
+- return movement: 0.5 s -> 0.6 s
+- easing curve, displacement, radius, and falloff unchanged
+*/
+
+
+/* Gallery experience updates: v1.5.70 */
+
+/*
+Keep the Back control permanently available:
+- visible during the initial first-view mosaic
+- visible whenever the expanded mosaic is open
+- unaffected by normal interface-idle fading
+- still visible in hide mode
+- placed above the mosaic overlay so it remains clickable
+*/
+#backLink,
+body.initial-mosaic-mode #backLink,
+body.initial-mosaic-mode.mosaic-open #backLink,
+body.mosaic-open #backLink,
+body.ui-idle:not(.ui-hidden) #backLink,
+body.ui-hidden #backLink {
+    z-index: 100;
+    display: inline-flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+
+/* Gallery experience updates: v1.5.71 */
+
+/*
+First-view mosaic entrance:
+- thumbnails begin fading only after their image is ready
+- each tile receives a slightly different delay
+- fade durations vary from 0.25 to 0.40 seconds
+- this entrance runs only during initial-mosaic-mode
+*/
+body.initial-mosaic-mode
+#mosaicGrid
+.mosaic-item.initial-thumbnail-entry {
+    opacity: 0 !important;
+    transition:
+        opacity
+        var(
+            --initial-thumbnail-duration,
+            325ms
+        )
+        ease
+        var(
+            --initial-thumbnail-delay,
+            0ms
+        ),
+        transform 0.6s
+        cubic-bezier(
+            0.22,
+            0.61,
+            0.36,
+            1
+        );
+}
+
+body.initial-mosaic-mode
+#mosaicGrid
+.mosaic-item.initial-thumbnail-entry.initial-thumbnail-visible {
+    opacity: 0.88 !important;
+}
+
+body.initial-mosaic-mode
+#mosaicGrid
+.mosaic-item.initial-thumbnail-entry.initial-thumbnail-visible.active {
+    opacity: 1 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.initial-mosaic-mode
+    #mosaicGrid
+    .mosaic-item.initial-thumbnail-entry {
+        opacity: 0.88 !important;
+        transition: none !important;
+    }
+
+    body.initial-mosaic-mode
+    #mosaicGrid
+    .mosaic-item.initial-thumbnail-entry.active {
+        opacity: 1 !important;
+    }
+}
+
+
+/* Gallery experience updates: v1.5.72 */
+
+/*
+First-view thumbnail fade variation expanded:
+- fade durations now range from 0.30 to 0.70 seconds
+- a curved timing distribution keeps some fades relatively
+  quick while allowing others to be substantially slower
+- staggered start delays remain unchanged
+*/
+
+
+/* Gallery experience updates: v1.5.73 */
+
+/*
+First-view mosaic entrance rebuilt:
+- every thumbnail uses the same 0.70-second duration
+- opacity and position animate together with the same easing
+- each thumbnail begins 80-150 px away from its final grid
+  position in a varied direction
+- every thumbnail reaches its exact grid position as its
+  fade completes
+- entry classes are removed afterward so normal mosaic hover
+  repulsion resumes
+*/
+body.initial-mosaic-mode
+#mosaicGrid
+.mosaic-item.initial-thumbnail-entry {
+    opacity: 0 !important;
+    transform:
+        translate3d(
+            var(
+                --initial-thumbnail-offset-x,
+                0px
+            ),
+            var(
+                --initial-thumbnail-offset-y,
+                0px
+            ),
+            0
+        )
+        scale(1) !important;
+    transition:
+        opacity 1.2s
+        cubic-bezier(
+            0.22,
+            0.61,
+            0.36,
+            1
+        ),
+        transform 1.3s
+        cubic-bezier(
+            0.22,
+            0.61,
+            0.36,
+            1
+        ) !important;
+}
+
+body.initial-mosaic-mode
+#mosaicGrid
+.mosaic-item.initial-thumbnail-entry.initial-thumbnail-visible {
+    opacity: 0.96 !important;
+    transform:
+        translate3d(
+            0,
+            0,
+            0
+        )
+        scale(1) !important;
+}
+
+body.initial-mosaic-mode
+#mosaicGrid
+.mosaic-item.initial-thumbnail-entry.initial-thumbnail-visible.active {
+    opacity: 1 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.initial-mosaic-mode
+    #mosaicGrid
+    .mosaic-item.initial-thumbnail-entry,
+    body.initial-mosaic-mode
+    #mosaicGrid
+    .mosaic-item.initial-thumbnail-entry.initial-thumbnail-visible {
+        opacity: 0.96 !important;
+        transform: none !important;
+        transition: none !important;
+    }
+
+    body.initial-mosaic-mode
+    #mosaicGrid
+    .mosaic-item.initial-thumbnail-entry.active {
+        opacity: 1 !important;
+    }
+}
+
+
+/* Gallery experience updates: v1.5.74 */
+
+/*
+First-view mosaic entrance tuning:
+- animation duration increased from 0.70 s to 1.00 s
+- starting displacement reduced from 80-150 px to 50-100 px
+- opacity and movement still finish together
+*/
+
+
+/* Gallery experience updates: v1.5.75 */
+
+/*
+First-view entrance timing:
+- transform: 1.3 s
+- opacity: 1.2 s
+- fade completes 0.1 s before motion finishes
+*/
+
+
+/* Gallery experience updates: v1.5.76 */
+
+/*
+First-view entrance fade timing:
+- opacity duration: 1.2 s -> 0.7 s
+- movement duration remains 1.3 s
+*/
+
+
+/* Gallery experience updates: v1.5.77 */
+
+/*
+Fix the end-of-animation brightness jump:
+- the entrance animation now finishes at the same 0.96
+  opacity used by the normal mosaic tiles
+- removing the temporary entrance classes therefore no
+  longer changes brightness
+- the selected tile still finishes at full opacity
+*/
+
+
+/* Gallery experience updates: v1.5.78 */
+
+/*
+First-view entrance fade timing:
+- opacity duration: 0.7 s -> 1.2 s
+- movement duration remains 1.3 s
+- brightness-jump fix remains in place
+*/
+
+
+/* Gallery experience updates: v1.5.79 */
+
+/*
+First-thumbnail placement refinement:
+- odd row counts place photograph 1 in the middle row
+- even row counts place photograph 1 in the upper-middle row
+- within that row, photograph 1 is strongly favored near
+  the horizontal center
+- justified-row sizing and spacing logic remain unchanged
+*/
+
+
+/* Gallery experience updates: v1.5.80 */
+
+/*
+Photo filename sequence update:
+- gallery image URLs now use 100.jpg, 200.jpg, 300.jpg...
+  instead of 1.jpg, 2.jpg, 3.jpg...
+- thumbnail and original image paths use the same sequence
+*/
+
+
+/* Gallery experience updates: v1.5.81 */
+
+/*
+Faster standard photo navigation:
+- fade-out begins immediately when a photo change is requested
+- full-size image loading/decoding runs in parallel with fade-out
+- fade-in begins as soon as the new image is ready and the
+  fade-out has completed
+- applies to thumbnail clicks, side navigation, keyboard
+  navigation, and autoplay
+- mosaic selection keeps its separate transition
+*/
+
+
+/* Consolidated mosaic-selection transitions: v1.5.4 */
+
+/*
+Both initial and later selections share the same visual
+pipeline:
+- remove non-selected thumbnails rapidly
+- hide the previous large image
+- load the selected large image in parallel
+- move, shrink, darken, and fade the selected thumbnail
+- reveal the loaded image underneath while the mosaic closes
+*/
+body.normal-mosaic-selection
+#viewer
+#photo,
+body.initial-mosaic-selection
+#viewer
+#photo {
+    opacity: 1;
+    filter: none;
+    transition: none !important;
+}
+
+body.mosaic-selection-active
+#mosaicOverlay {
+    background: rgba(0, 0, 0, 0);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    transition:
+        opacity 0.24s ease,
+        background-color 0.12s ease;
+}
+
+body.initial-mosaic-selection
+#mosaicOverlay {
+    transition:
+        opacity 0.3s ease,
+        background-color 0.12s ease;
+}
+
+body.mosaic-selection-active
+#mosaicOverlay.selecting
+#mosaicPanel {
+    background: rgba(0, 0, 0, 0);
+    border-color: transparent;
+    box-shadow: none;
+    transition:
+        background-color 0.12s ease,
+        border-color 0.12s ease,
+        box-shadow 0.12s ease;
+}
+
+body.mosaic-selection-active
+#mosaicOverlay.selecting
+.mosaic-item:not(.mosaic-selected) {
+    opacity: 0;
+    transform: scale(0.97);
+    pointer-events: none;
+    transition:
+        opacity 0.12s ease,
+        transform 0.12s ease !important;
+}
+
+body.mosaic-selection-active
+#mosaicOverlay.priority-selection.selecting
+.mosaic-item.mosaic-selected {
+    z-index: 10;
+    opacity: 0;
+    transform:
+        translate(
+            var(
+                --mosaic-center-shift-x,
+                0px
+            ),
+            var(
+                --mosaic-center-shift-y,
+                0px
+            )
+        )
+        scale(0.84);
+}
+
+body.normal-mosaic-selection
+#mosaicOverlay.priority-selection.selecting
+.mosaic-item.mosaic-selected {
+    transition:
+        opacity 0.7s ease,
+        transform 0.7s
+        cubic-bezier(
+            0.22,
+            0.61,
+            0.36,
+            1
+        ) !important;
+}
+
+body.initial-mosaic-selection
+#mosaicOverlay.priority-selection.selecting
+.mosaic-item.mosaic-selected {
+    transition:
+        opacity 1.05s ease,
+        transform 0.72s ease !important;
+}
+
+body.mosaic-selection-active
+#mosaicOverlay.priority-selection.selecting
+.mosaic-item.mosaic-selected img {
+    filter: brightness(0);
+}
+
+body.normal-mosaic-selection
+#mosaicOverlay.priority-selection.selecting
+.mosaic-item.mosaic-selected img {
+    transition:
+        filter 0.7s ease !important;
+}
+
+body.initial-mosaic-selection
+#mosaicOverlay.priority-selection.selecting
+.mosaic-item.mosaic-selected img {
+    transition:
+        filter 1.05s ease !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.mosaic-selection-active
+    #viewer
+    #photo,
+    body.mosaic-selection-active
+    #mosaicOverlay.selecting
+    .mosaic-item {
+        transition-duration: 0.01ms !important;
+    }
+}
+
+
+/* Gallery experience updates: v1.5.1 */
+
+/*
+Back-button state hierarchy:
+- hide/autoplay: 0.3 white, restore default gallery
+- any mosaic: full white
+- later mosaic: close mosaic
+- startup mosaic: return to Collections
+- ordinary fullscreen: return to Collections
+*/
+body.ui-hidden #backLink,
+body.autoplay-active #backLink {
+    color: rgba(255, 255, 255, 0.3) !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+body.mosaic-open:not(.ui-hidden):not(.autoplay-active)
+#backLink,
+:fullscreen:not(.ui-hidden):not(.autoplay-active)
+#backLink {
+    color: rgba(255, 255, 255, 1) !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+/* Keep Back above the mosaic overlay so it remains usable. */
+body.mosaic-open #backLink {
+    z-index: 90;
+}
+
+
+/* Gallery experience updates: v1.5.2 */
+
+/*
+Back behavior:
+- pure fullscreen: full opacity, returns to collections
+- normal mosaic: 0.3 opacity, closes mosaic
+- first-view mosaic: full opacity, returns to collections
+*/
+
+
+/* Gallery experience updates: v1.5.3 */
+
+/*
+Fade the media controls out while the expanded mosaic is
+open. Back remains independently available under its
+existing mosaic rules.
+*/
+#controlArea {
+    transition:
+        opacity 0.24s ease,
+        transform 0.24s ease;
+}
+
+body.mosaic-open #controlArea {
+    opacity: 0;
+    transform: translateY(-8px);
+    pointer-events: none;
+}
+
+
+/* Gallery experience updates: v1.5.4 */
+
+/*
+- Back is full opacity in the expanded mosaic.
+- The startup selection now uses the same consolidated
+  transition pipeline as later selections.
+- Startup retains its slower 900 ms minimum, 300 ms mosaic
+  close, 1.05 s selected-tile fade, and 1.3 s image reveal.
+*/
+
+
+/* Gallery experience updates: v1.5.5 */
+
+/*
+First-view mosaic selection:
+- minimum delay before the main image begins fading in:
+  1300 ms
+- main-image fade-in duration: 1300 ms
+- image loading continues in parallel with the minimum delay
+*/
+
+
+/* Gallery experience updates: v1.6.6 */
+
+/*
+First-view mosaic selection:
+- main-image fade-in begins after a 1000 ms minimum
+  instead of 1300 ms
+- main-image fade-in lasts 1600 ms instead of 1300 ms
+*/
+
+
+/* Gallery experience updates: v1.6.10 */
+
+/*
+The expanded mosaic uses the same 1.3-second movement and
+1.2-second fade rhythm as the first-view mosaic. JavaScript
+sets each tile's starting center inside the thumbnail bar
+and animates the actual mosaic tile into its final position.
+*/
+.mosaic-item.expanded-mosaic-entering {
+    will-change:
+        transform,
+        opacity;
+}
+
+
+
+/*
+Critical v1.6.10 flight fix:
+The first-view animation only moves tiles 50–100 px, so the
+existing overflow clipping is not obvious. A flight from the
+thumbnail bar is much farther and was completely clipped by
+#mosaicPanel and #mosaicGrid. Overflow is temporarily opened
+only while the expanded-mosaic entrance runs.
+*/
+body.expanded-mosaic-entry-active
+#mosaicPanel,
+body.expanded-mosaic-entry-active
+#mosaicGrid {
+    overflow: visible !important;
+}
+
+
+/* Gallery experience updates: v1.6.11 */
+
+/*
+Expanded mosaic entry:
+- starting points moved lower, near the bottom edge of the
+  thumbnail bar
+- starting mosaic tiles are much smaller before rising into
+  their final positions
+*/
+
+
+/* Gallery experience updates: v1.6.12 */
+
+/*
+Every expanded-mosaic tile now shares one origin:
+the bottom-center of the thumbnail bar.
+*/
+
+
+/* Gallery experience updates: v1.6.13 */
+
+/*
+Expanded mosaic population:
+- total movement duration reduced from 1.3 s to 1.1 s
+- opacity duration set to 1.1 s
+- easing changed to cubic-bezier(0.25, 0.75, 0.45, 1)
+  so the final approach settles more quickly
+*/
+
+
+/* Gallery experience updates: v1.6.14 */
+
+/*
+Expanded mosaic entry:
+- total duration: 0.7 s
+- tiles begin displaced toward the grid center
+- displacement varies from roughly 10 px near the center
+  to a maximum of 80 px near the outer edge
+- starting scale varies from 0.94 near the center to 0.78
+  near the outer edge
+- thumbnail bar no longer blacks out
+*/
+
+
+/* Gallery experience updates: v1.6.15 */
+
+/*
+Disable the old cursor-inactivity fade behavior completely.
+These safeguards also restore the UI if an old ui-idle class
+is still present during a cached page transition.
+*/
+body.ui-idle:not(.ui-hidden) #backLink,
+body.ui-idle:not(.ui-hidden) #controlArea,
+body.ui-idle:not(.ui-hidden) #counter {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+body.ui-idle:not(.ui-hidden) #thumbnailBar,
+body.ui-idle:not(.ui-hidden)
+#thumbnailBar.thumbnails-ready {
+    opacity: 1 !important;
+    transform: none !important;
+    pointer-events: auto !important;
+}
+
+body.ui-idle:not(.ui-hidden)
+#bottomZoomControls.visible {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+/*
+When the expanded mosaic is open, fade away the visible
+thumbnail strip while leaving its collapse button available.
+*/
+#thumbnailBar,
+#thumbnails,
+.thumbnail-scroll-button {
+    transition:
+        opacity 0.28s ease,
+        background-color 0.28s ease,
+        border-color 0.28s ease;
+}
+
+body.mosaic-open:not(.initial-mosaic-mode)
+#thumbnailBar {
+    background: transparent;
+}
+
+body.mosaic-open:not(.initial-mosaic-mode)
+#thumbnails,
+body.mosaic-open:not(.initial-mosaic-mode)
+.thumbnail-scroll-button {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/*
+Keep the mosaic collapse button outside the mosaic panel at
+the lower-left corner of the viewport.
+*/
+body.mosaic-open:not(.initial-mosaic-mode)
+#filmstripButton {
+    position: fixed;
+    left: 20px;
+    bottom: 20px;
+    z-index: 92;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+
+/* Gallery experience updates: v1.6.16 */
+
+/*
+In expanded mosaic mode, JavaScript places the collapse
+button immediately outside the mosaic panel's lower-left
+corner. Its bottom edge sits 12 px above the panel bottom.
+*/
+body.mosaic-open:not(.initial-mosaic-mode)
+#filmstripButton {
+    position: fixed;
+    z-index: 92;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+
+/* Gallery experience updates: v1.6.17 */
+
+/*
+The mosaic button now sits farther left of the mosaic box
+and smoothly travels between its default-gallery and
+expanded-mosaic positions.
+*/
+#filmstripButton {
+    transition:
+        left 0.36s cubic-bezier(0.25, 0.75, 0.45, 1),
+        bottom 0.36s cubic-bezier(0.25, 0.75, 0.45, 1),
+        color 0.2s ease,
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.25s ease;
+}
+
+
+/* Gallery experience updates: v1.6.18 */
+
+/*
+Reshuffle control shown beside the collapse button in the
+expanded mosaic view.
+*/
+#mosaicReshuffleButton {
+    position: fixed;
+    left: 80px;
+    bottom: 16px;
+    z-index: 92;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid white;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 26px;
+    line-height: 1;
+    opacity: 0;
+    transform: rotate(0deg);
+    transition:
+        left 0.36s cubic-bezier(0.25, 0.75, 0.45, 1),
+        bottom 0.36s cubic-bezier(0.25, 0.75, 0.45, 1),
+        color 0.2s ease,
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        opacity 0.24s ease,
+        transform 0.25s ease;
+}
+
+body.mosaic-open:not(.initial-mosaic-mode)
+#mosaicReshuffleButton {
+    display: flex;
+    opacity: 1;
+}
+
+#mosaicReshuffleButton:hover:not(:disabled) {
+    color: black;
+    background: white;
+    border-color: white;
+    transform: rotate(24deg) scale(0.94);
+}
+
+#mosaicReshuffleButton:focus-visible {
+    outline: 1px solid white;
+    outline-offset: 4px;
+}
+
+#mosaicReshuffleButton:disabled {
+    opacity: 0.38;
+    cursor: default;
+}
+
+#mosaicGrid.reshuffling {
+    pointer-events: none;
+}
+
+#mosaicGrid.reshuffling .mosaic-item {
+    will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #mosaicReshuffleButton {
+        transition-duration: 0.01ms;
+    }
+}
+
+
+/* Gallery experience updates: v1.6.19 */
+
+/*
+Automatic reshuffle:
+- toggles on/off
+- reshuffles every 5 seconds
+- each transition lasts 2.4 seconds
+- the button sits immediately left of the collapse button
+*/
+#mosaicReshuffleButton.active {
+    color: black;
+    background: white;
+    border-color: white;
+}
+
+#mosaicReshuffleButton.active {
+    animation:
+        mosaic-reshuffle-spin
+        1.4s
+        linear
+        infinite;
+}
+
+#mosaicReshuffleButton.active:hover {
+    color: black;
+    background: white;
+    border-color: white;
+}
+
+@keyframes mosaic-reshuffle-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/*
+The button remains clickable while a reshuffle is in
+progress so automatic mode can always be turned off.
+*/
+#mosaicReshuffleButton:disabled {
+    opacity: 1;
+    cursor: pointer;
+}
+
+
+/* Gallery experience updates: v1.6.20 */
+
+/*
+Reshuffle depth now follows vertical position:
+- top tiles grow up to about 1.18x
+- center tiles stay near 1.0x
+- bottom tiles shrink to about 0.82x
+- temporary stacking is also based on vertical position
+- the previous cubic-bezier(0.25, 0.75, 0.45, 1)
+  acceleration curve is retained
+*/
+
+
+/* Gallery experience updates: v1.6.21 */
+
+/*
+Reshuffle motion and depth are animated independently:
+- movement keeps the prior acceleration curve continuously
+  for the full 2.4 seconds
+- scaling uses a smooth ease-in-out pulse
+- this removes the abrupt midpoint slowdown
+- top tiles now grow to about 1.36x
+- bottom tiles now shrink to about 0.64x
+*/
+
+
+/* Gallery experience updates: v1.6.22 */
+
+/*
+The maximum growth/shrink point now occurs at 40% of the
+2.4-second reshuffle animation instead of 50%.
+*/
+
+
+/* Gallery experience updates: v1.6.23 */
+
+/*
+The maximum growth/shrink point now occurs at 25% of the
+2.4-second reshuffle animation.
+*/
+
+
+/* Gallery experience updates: v1.6.24 */
+
+/*
+The maximum growth/shrink point now occurs at 15% of the
+2.4-second reshuffle animation.
+*/
+
+
+/* Gallery experience updates: v1.6.25 */
+
+/* Back remains at 30% gray in Hide and Play modes. */
+body.ui-hidden #backLink,
+body.autoplay-active #backLink {
+    color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/*
+The toggle stays solid while automatic reshuffling is on,
+but it spins only during an actual photo rearrangement.
+*/
+#mosaicReshuffleButton.active {
+    animation: none;
+}
+
+#mosaicReshuffleButton.reshuffling {
+    animation:
+        mosaic-reshuffle-spin
+        1.4s
+        linear
+        infinite;
+}
+
+#mosaicReshuffleButton.active.reshuffling {
+    color: black;
+    background: white;
+    border-color: white;
+}
+
+
+/* Gallery experience updates: v1.6.26 */
+
+/*
+In Hide and Play modes, preserve the full Back click box but
+show only the arrow at 30% white.
+*/
+body.ui-hidden #backLink > span:last-child,
+body.autoplay-active #backLink > span:last-child {
+    visibility: hidden;
+}
+
+body.ui-hidden #backSymbol,
+body.autoplay-active #backSymbol {
+    color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/*
+During each 2.4-second rearrangement, the shuffle button
+makes exactly two rotations using the same fast-start,
+slow-finish curve as the photo movement.
+*/
+#mosaicReshuffleButton.reshuffling {
+    animation:
+        mosaic-reshuffle-two-turns
+        2.4s
+        cubic-bezier(0.25, 0.75, 0.45, 1)
+        1
+        both;
+}
+
+@keyframes mosaic-reshuffle-two-turns {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(720deg);
+    }
+}
+
+/* Gallery experience updates: v1.6.33 */
+
+/* Hidden is authoritative even when legacy display rules match. */
+[hidden] {
+    display: none !important;
+}
+
+/* Modern Back chevron, aligned to the word Back. */
+#backSymbol {
+    display: inline-flex;
+    width: 20px;
+    height: 28px;
+    align-items: center;
+    justify-content: center;
+    font-size: 42px;
+    line-height: 1;
+    transform: translateY(-1px);
+}
+
+/* Roughly 20% larger Back click target without menu overlap. */
+#backLink {
+    margin-top: -5px;
+    margin-left: -8px;
+    padding: 5px 8px;
+    box-sizing: border-box;
+}
+
+body.ui-hidden #backLink,
+body.autoplay-active #backLink {
+    min-height: 0;
+    margin-top: -7px;
+    margin-left: -10px;
+    padding: 7px 10px;
+}
+
+body.ui-hidden #backLink > span:last-child,
+body.autoplay-active #backLink > span:last-child {
+    visibility: hidden;
+}
+
+body.ui-hidden #backSymbol,
+body.autoplay-active #backSymbol {
+    color: rgba(255, 255, 255, 0.4) !important;
+    font-size: 52px;
+}
+
+/* First-view mosaic controls. */
+body.initial-mosaic-mode #thumbnailBar {
+    opacity: 1 !important;
+    transform: none !important;
+    pointer-events: none !important;
+    background: transparent !important;
+}
+
+body.initial-mosaic-mode #filmstripButton,
+body.initial-mosaic-mode #initialMosaicFullscreenButton {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: none !important;
+}
+
+body.initial-mosaic-mode.initial-mosaic-controls-ready
+#filmstripButton,
+body.initial-mosaic-mode.initial-mosaic-controls-ready
+#initialMosaicFullscreenButton {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+body.initial-mosaic-mode #thumbnails,
+body.initial-mosaic-mode .thumbnail-scroll-button,
+body.initial-mosaic-mode #mosaicReshuffleButton {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* Fast exit for first-view controls after a photo click. */
+body.initial-mosaic-controls-exiting
+#filmstripButton,
+body.initial-mosaic-controls-exiting
+#initialMosaicFullscreenButton {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity 0.12s ease !important;
+}
+
+
+/*
+Hold all player UI at zero until the restored mosaic button
+is at its default coordinates. Removing this class starts the
+same 1.3-second reveal for the thumbnail bar and menu button.
+*/
+body.initial-player-ui-held #backLink,
+body.initial-player-ui-held #controlArea,
+body.initial-player-ui-held #counter,
+body.initial-player-ui-held #thumbnailBar,
+body.initial-player-ui-held .photo-nav-indicator,
+body.initial-player-ui-held #autoplayStatus,
+body.initial-player-ui-held #autoplayProgress,
+body.initial-player-ui-held #bottomZoomControls {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* Expanded mosaic photo selection hides both buttons instantly. */
+body.mosaic-selection-buttons-hidden
+#filmstripButton,
+body.mosaic-selection-buttons-hidden
+#mosaicReshuffleButton {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition:
+        opacity 0s linear,
+        left 0s linear,
+        bottom 0s linear !important;
+}
+
+/* First-view fullscreen control. */
+#initialMosaicFullscreenButton {
+    position: fixed;
+    z-index: 92;
+    min-width: 132px;
+    height: 42px;
+    padding: 0 20px;
+    display: none;
+    color: rgba(255, 255, 255, 0.5);
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 21px;
+    cursor: pointer;
+    font-size: 15px;
+    transform: translateX(-50%);
+    transition:
+        color 0.2s ease,
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+body.initial-mosaic-mode #initialMosaicFullscreenButton {
+    display: block;
+}
+
+#initialMosaicFullscreenButton:hover,
+#initialMosaicFullscreenButton.active {
+    color: black;
+    background: white;
+    border-color: white;
+}
+
+#initialMosaicFullscreenButton:hover {
+    transform: translateX(-50%) scale(0.97);
+}
+
+#initialMosaicFullscreenButton:focus-visible {
+    outline: 1px solid white;
+    outline-offset: 4px;
+}
+
+
+/* Gallery experience updates: v1.6.34 */
+
+/*
+When a photograph is selected from the normal expanded
+mosaic, the expand button and thumbnail strip now begin
+their return together and use the same 0.28-second fade.
+*/
+body.normal-mosaic-selection
+#filmstripButton {
+    transition:
+        opacity 0.28s ease,
+        left 0s linear,
+        bottom 0s linear,
+        color 0.2s ease,
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.25s ease !important;
+}
+
+
+/* Gallery experience updates: v1.6.35 */
+
+/*
+When the normal mosaic closes after selecting a photo, force
+the expand arrow into its upright state before the button
+starts fading in. This prevents the previous 180-degree
+collapse rotation from being visible during the fade.
+*/
+body.normal-mosaic-selection
+#filmstripArrow {
+    transform: translateY(-3px) rotate(0deg) !important;
+    transition: none !important;
+}
+
+
+/* Gallery experience updates: v1.6.36 */
+
+/*
+First-view chrome now enters with the first thumbnail using
+the same 1.2-second easing.
+*/
+body.initial-mosaic-mode #filmstripButton,
+body.initial-mosaic-mode #initialMosaicFullscreenButton {
+    opacity: 0 !important;
+    transition:
+        opacity 1.2s
+        cubic-bezier(0.22, 0.61, 0.36, 1)
+        !important;
+}
+
+body.initial-mosaic-mode.initial-mosaic-controls-ready.initial-mosaic-chrome-visible
+#filmstripButton,
+body.initial-mosaic-mode.initial-mosaic-controls-ready.initial-mosaic-chrome-visible
+#initialMosaicFullscreenButton {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+/*
+Fade the frame itself without applying parent opacity to the
+thumbnail images.
+*/
+body.initial-mosaic-mode #mosaicPanel {
+    background: rgba(4, 4, 4, 0);
+    border-color: rgba(255, 255, 255, 0);
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0);
+    transition:
+        transform 0.28s ease,
+        background-color 1.2s
+        cubic-bezier(0.22, 0.61, 0.36, 1),
+        border-color 1.2s
+        cubic-bezier(0.22, 0.61, 0.36, 1),
+        box-shadow 1.2s
+        cubic-bezier(0.22, 0.61, 0.36, 1)
+        !important;
+}
+
+body.initial-mosaic-mode.initial-mosaic-chrome-visible
+#mosaicPanel {
+    background: rgba(4, 4, 4, 0.72);
+    border-color: rgba(255, 255, 255, 0.18);
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.62);
+}
+
+
+/* Gallery experience updates: v1.6.37 */
+
+/*
+During a first-view photo selection, keep the collapse arrow
+upright for the entire button fade-out. The active-state
+rotation is disabled before opacity begins changing.
+*/
+body.initial-mosaic-controls-exiting
+#filmstripArrow {
+    transform: translateY(-3px) rotate(0deg) !important;
+    transition: none !important;
+}
+
+
+/* Gallery experience updates: v1.6.38 */
+
+/*
+During the first-view fade-out, keep the mosaic arrow in its
+expanded/downward orientation until the button is fully gone.
+The arrow can reset only after the button has been unloaded.
+*/
+body.initial-mosaic-controls-exiting
+#filmstripArrow {
+    transform: translateY(1px) rotate(180deg) !important;
+    transition: none !important;
+}
+
+/*
+Refine the Back label:
+- smaller modern chevron
+- tighter spacing between chevron and text
+- shift the complete label 10px left
+*/
+#backLink {
+    left: 10px;
+    gap: 2px;
+}
+
+#backSymbol {
+    font-size: 28px;
+    line-height: 0.8;
+    transform: translateY(-1px);
+}
+
+body.ui-hidden #backSymbol,
+body.autoplay-active #backSymbol {
+    font-size: 40px;
+}
+
+
+/* Gallery experience updates: v1.6.39 */
+
+/*
+On first-view photo selection, fade the collapse button,
+mosaic frame, and Full Screen button out together over
+0.5 seconds.
+*/
+body.initial-mosaic-controls-exiting
+#filmstripButton,
+body.initial-mosaic-controls-exiting
+#initialMosaicFullscreenButton {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition:
+        opacity 0.5s ease !important;
+}
+
+body.initial-mosaic-controls-exiting
+#mosaicPanel {
+    background: rgba(4, 4, 4, 0) !important;
+    border-color: rgba(255, 255, 255, 0) !important;
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0) !important;
+    transition:
+        background-color 0.5s ease,
+        border-color 0.5s ease,
+        box-shadow 0.5s ease !important;
+}
+
+/*
+Back-label refinements:
+- move the chevron up 3px
+- move Back 7px left
+- reduce the chevron-to-text spacing by 20%
+*/
+#backLink {
+    gap: 1.6px;
+}
+
+#backSymbol {
+    transform: translateY(-4px);
+}
+
+#backLink > span:last-child {
+    transform: translateX(-7px);
+}
+
+
+/* Gallery experience updates: v1.6.40 */
+
+/*
+Match the first-view chrome fade-out to the selected
+thumbnail's existing 1.05-second opacity fade.
+*/
+body.initial-mosaic-controls-exiting
+#filmstripButton,
+body.initial-mosaic-controls-exiting
+#initialMosaicFullscreenButton {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition:
+        opacity 1.05s ease !important;
+}
+
+body.initial-mosaic-controls-exiting
+#mosaicPanel {
+    background: rgba(4, 4, 4, 0) !important;
+    border-color: rgba(255, 255, 255, 0) !important;
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0) !important;
+    transition:
+        background-color 1.05s ease,
+        border-color 1.05s ease,
+        box-shadow 1.05s ease !important;
+}
+
+/*
+Relax the Back-label spacing and move the chevron down 1px
+relative to the previous position.
+*/
+#backLink {
+    gap: 3px;
+}
+
+#backSymbol {
+    transform: translateY(-3px);
+}
+
+#backLink > span:last-child {
+    transform: translateX(-3px);
+}
+
+
+/* Gallery experience updates: v1.6.41 */
+
+/*
+First-view photo selection uses one uninterrupted 1.05-second
+fade for the collapse button and Full Screen button. Neither
+element is hidden or removed until this transition finishes.
+*/
+body.initial-mosaic-controls-exiting
+#filmstripButton,
+body.initial-mosaic-controls-exiting
+#initialMosaicFullscreenButton {
+    display: block !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition:
+        opacity 1.05s ease !important;
+}
+
+/*
+Keep the first-view controls above the closing mosaic layers
+for the complete fade.
+*/
+body.initial-mosaic-controls-exiting
+#filmstripButton,
+body.initial-mosaic-controls-exiting
+#initialMosaicFullscreenButton {
+    visibility: visible !important;
+}
+
+
+/* Gallery experience updates: v1.6.42 */
+
+/*
+The visible first-view rules use several body-state classes,
+so the earlier fade selectors were not specific enough to
+override them. These selectors deliberately match that full
+state and fade the chrome to black with the selected photo.
+*/
+body.initial-mosaic-mode.initial-mosaic-controls-ready.initial-mosaic-chrome-visible.initial-mosaic-controls-exiting
+#filmstripButton,
+body.initial-mosaic-mode.initial-mosaic-controls-ready.initial-mosaic-chrome-visible.initial-mosaic-controls-exiting
+#initialMosaicFullscreenButton {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition:
+        opacity 1.05s ease !important;
+}
+
+body.initial-mosaic-mode.initial-mosaic-chrome-visible.initial-mosaic-controls-exiting
+#mosaicPanel {
+    background: rgba(4, 4, 4, 0) !important;
+    border-color: rgba(255, 255, 255, 0) !important;
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0) !important;
+    transition:
+        background-color 1.05s ease,
+        border-color 1.05s ease,
+        box-shadow 1.05s ease !important;
+}
+
+/*
+Keep the collapse arrow pointing downward while the button
+itself fades to black.
+*/
+body.initial-mosaic-mode.initial-mosaic-controls-ready.initial-mosaic-chrome-visible.initial-mosaic-controls-exiting
+#filmstripArrow {
+    transform: translateY(1px) rotate(180deg) !important;
+    transition: none !important;
+}
+
+
+/* Gallery experience updates: v1.6.43 */
+
+/*
+In Hide and Play modes, brighten the Back chevron to a
+0.7 white level while the preserved click target is hovered.
+*/
+body.ui-hidden #backLink:hover #backSymbol,
+body.autoplay-active #backLink:hover #backSymbol {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/*
+Automatic shuffle mode removes the current-photo white
+selection frame in the normal expanded mosaic.
+*/
+body.mosaic-shuffle-mode-active
+#mosaicGrid
+.mosaic-item.active::after {
+    content: none !important;
+    border: 0 !important;
+}
+
+/*
+Move the thumbnail-bar chevrons upward by 1px while
+preserving their hover scaling.
+*/
+.thumbnail-scroll-button {
+    transform: translateY(-1px);
+}
+
+.thumbnail-scroll-button:hover:not(:disabled) {
+    transform: translateY(-1px) scale(0.94);
+}
+
+.thumbnail-scroll-button:disabled {
+    transform: translateY(-1px);
+}
+
+
+/* Gallery experience updates: v1.6.44 */
+
+/*
+Move only the thumbnail-scroll chevrons upward. The circular
+buttons remain in their existing positions.
+*/
+.thumbnail-scroll-button {
+    transform: none;
+}
+
+.thumbnail-scroll-button:hover:not(:disabled) {
+    transform: scale(0.94);
+}
+
+.thumbnail-scroll-button:disabled {
+    transform: none;
+}
+
+.thumbnail-scroll-button > span {
+    display: inline-block;
+    transform: translateY(-1px);
+    line-height: 1;
+}
+
+/*
+In Hide and Play modes, extend the Back-chevron click target
+downward by roughly 60% of its existing total height without
+moving the visible chevron.
+*/
+body.ui-hidden #backLink,
+body.autoplay-active #backLink {
+    padding-top: 7px;
+    padding-right: 10px;
+    padding-bottom: 32px;
+    padding-left: 10px;
+}
+
+
+/* Gallery experience updates: v1.6.45 */
+
+/*
+While the player UI is being held invisible after the first
+mosaic selection, keep the restored expand button rendered.
+This lets the thumbnail bar's parent opacity animate both
+together during the reveal.
+*/
+body.initial-player-ui-held #filmstripButton {
+    display: block !important;
+}
+
+
+/* Gallery experience updates: v1.6.46 */
+
+/*
+The fixed-position expand button does not reliably follow the
+thumbnail bar's composited opacity transition. During the
+first player reveal, keep the bar container fully rendered
+and fade its visible contents independently. This gives the
+expand button, thumbnails, scroll buttons, bar background,
+and media controls the same 1.3-second entrance.
+*/
+body.initial-gallery-reveal #thumbnailBar {
+    opacity: 1 !important;
+    transition:
+        background-color 1.3s ease !important;
+}
+
+body.initial-gallery-reveal.initial-player-ui-held
+#thumbnailBar {
+    opacity: 1 !important;
+    background-color: rgba(0, 0, 0, 0) !important;
+}
+
+body.initial-gallery-reveal #filmstripButton,
+body.initial-gallery-reveal #thumbnails,
+body.initial-gallery-reveal .thumbnail-scroll-button {
+    transition:
+        opacity 1.3s ease !important;
+}
+
+body.initial-gallery-reveal.initial-player-ui-held
+#filmstripButton,
+body.initial-gallery-reveal.initial-player-ui-held
+#thumbnails,
+body.initial-gallery-reveal.initial-player-ui-held
+.thumbnail-scroll-button {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+
+/* Gallery experience updates: v1.6.47 */
+
+/*
+The startup collapse control, overlay dismissal, Escape key,
+and mode-entry actions all use the same highlighted-photo
+selection path as clicking that photo directly.
+*/
+
+
+/* Gallery experience updates: v1.6.48 */
+
+/* Move only the Back text 5px farther left. */
+#backLink > span:last-child {
+    transform: translateX(-8px);
+}
+
+
+/* Gallery experience updates: v1.6.49 */
+
+/*
+Move the Back chevron 5px left only while the Back text is
+visible. Hide and Autoplay modes keep the chevron in its
+existing position.
+*/
+body:not(.ui-hidden):not(.autoplay-active)
+#backSymbol {
+    transform:
+        translateX(-5px)
+        translateY(-3px);
+}
+
+
+/* Gallery experience updates: v1.6.50 */
+
+/* Move the visible Back chevron and text 1px to the right. */
+body:not(.ui-hidden):not(.autoplay-active)
+#backSymbol {
+    transform:
+        translateX(-4px)
+        translateY(-3px);
+}
+
+#backLink > span:last-child {
+    transform: translateX(-7px);
+}
+
+
+/* Gallery experience updates: v1.6.51 */
+
+/*
+GPU seam prevention:
+The full-resolution photograph remains fully opaque and
+static for every load and transition. Only this solid black
+rectangle changes opacity while image sources are swapped.
+*/
+#fadeOverlay {
+    background: #000;
+    will-change: auto;
+}
+
+#viewer #fadeOverlay.instant-black {
+    opacity: 1 !important;
+    transition: none !important;
+}
+
+body.normal-mosaic-selection
+#fadeOverlay {
+    transition-duration: 0.7s !important;
+    transition-timing-function: ease !important;
+}
+
+body.initial-mosaic-selection
+#fadeOverlay {
+    transition-duration: 1.6s !important;
+    transition-timing-function: ease !important;
+}
+
+
+/* Gallery experience updates: v1.6.52 */
+
+/*
+Zoom panning is clamped in JavaScript to the scaled image
+edges, preventing the photograph from being dragged beyond
+the visible stage.
+*/
+
+
+/* Gallery experience updates: v1.6.53 */
+
+/*
+Zoom boundaries now use the smallest display-aspect-ratio
+rectangle that encloses the photograph. This preserves useful
+side-to-side motion for portrait images and vertical motion
+for landscape images.
+*/
+
+
+/* Gallery experience updates: v1.6.54 */
+
+/*
+The most recently completed reshuffle becomes the normal
+mosaic order for the remainder of the current page session.
+No browser storage is used.
+*/
+
+
+/* Gallery experience updates: v1.6.55 */
+
+/*
+Starting automatic reshuffle now uses the existing bottom
+toast system. The shuffle depth pulse reaches its maximum
+or minimum size 20% into the 2.4-second animation.
+*/
+
+
+/* Gallery experience updates: v1.6.56 */
+
+/*
+The automatic-shuffle toast enters upward from below the
+viewport. Other mode toasts retain their existing top entry.
+*/
+#modeToast.bottom-entry {
+    top: auto;
+    bottom: 12vh;
+    transform:
+        translate(-50%, calc(50% + 140px))
+        scale(0.95);
+}
+
+#modeToast.bottom-entry.visible {
+    transform:
+        translate(-50%, 50%)
+        scale(1);
+}
+
+#modeToast.bottom-entry.leaving {
+    transform:
+        translate(-50%, 50%)
+        scale(1);
+}
+
+
+/* Gallery experience updates: v1.6.57 */
+
+/*
+Reshuffle movement now uses a strongly symmetric ease-in-out
+curve: very low velocity at both ends, with maximum velocity
+near the midpoint of the 2.4-second movement.
+*/
+
+
+/* Gallery experience updates: v1.6.58 */
+
+/*
+The reshuffle FLIP animation now applies each tile's inverse
+position and scale before the next browser paint, eliminating
+the one-frame jump to the new grid before motion begins.
+*/
+
+
+/* Gallery experience updates: v1.6.59 */
+
+/*
+Reshuffling now animates forward from the existing grid.
+The old box geometry remains untouched until motion ends, so
+the first animation frame is exactly the previous layout.
+*/
+
+
+/* Gallery experience updates: v1.6.60 */
+
+/* Move the Auto Shuffle Started toast 50px lower. */
+#modeToast.bottom-entry {
+    bottom: calc(12vh - 50px);
+}
+
+
+/* Gallery experience updates: v1.6.61 */
+
+/*
+After automatic reshuffling is stopped, preserve the
+borderless mosaic state for the remainder of the page
+session.
+*/
+body.mosaic-current-border-hidden
+#mosaicGrid
+.mosaic-item.active::after {
+    content: none !important;
+    border: 0 !important;
+}
+
+
+/* Gallery experience updates: v1.6.62 */
+
+/*
+Move both automatic-shuffle toast messages 20px upward from
+their v1.6.60/v1.6.61 position.
+*/
+#modeToast.bottom-entry {
+    bottom: calc(12vh - 30px);
+}

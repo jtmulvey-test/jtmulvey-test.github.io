@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Gallery</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script>
+        (function () {
+            const mobileLayout =
+                window.matchMedia(
+                    "(max-width: 820px), " +
+                    "(pointer: coarse) and (max-width: 1100px)"
+                ).matches;
+
+            if (mobileLayout) {
+                window.location.replace(
+                    "mobile-gallery.html" +
+                    window.location.search
+                );
+            }
+        }());
+    </script>
+
+    <link rel="icon" type="image/png" href="data/favicon.png">
+
+    <link rel="stylesheet" href="gallery.css">
+</head>
+
+<body class="initial-mosaic-mode">
+    <a
+        id="backLink"
+        href="collections.html"
+        aria-label="Back to collections"
+    >
+        <span id="backSymbol" aria-hidden="true">‹</span>
+        <span>Back</span>
+    </a>
+
+    <div id="controlArea">
+        <div id="controls" class="collapsed">
+            <button
+                id="toggleControls"
+                class="control-button"
+                aria-label="Toggle media controls"
+            >
+                <span id="hamburgerIcon" aria-hidden="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </span>
+            </button>
+
+            <button
+                id="helpButton"
+                class="control-button"
+                aria-label="Show help"
+            >
+                <span class="help-icon">?</span>
+            </button>
+
+            <button
+                id="fullscreen"
+                class="control-button"
+                aria-label="Toggle fullscreen"
+            >F</button>
+
+            <button
+                id="hideUI"
+                class="control-button"
+                aria-label="Toggle hide mode"
+            >H</button>
+
+            <button
+                id="autoplayButton"
+                class="control-button"
+                aria-label="Play or pause autoplay"
+            >
+                <span class="play-icon">▶</span>
+            </button>
+
+            <button
+                id="zoomIn"
+                class="control-button"
+                aria-label="Zoom in"
+            >+</button>
+
+            <button
+                id="zoomOut"
+                class="control-button"
+                aria-label="Zoom out"
+            >−</button>
+        </div>
+
+        <div id="version" class="collapsed"></div>
+    </div>
+
+    <div id="viewer">
+        <div id="photoStage">
+            <div id="photoMotionLayer">
+                <img id="photo" alt="">
+            </div>
+        </div>
+
+        <div id="fadeOverlay"></div>
+
+        <div
+            id="previousPhotoIndicator"
+            class="photo-nav-indicator photo-nav-indicator-left"
+            aria-hidden="true"
+        >‹</div>
+
+        <div
+            id="nextPhotoIndicator"
+            class="photo-nav-indicator photo-nav-indicator-right"
+            aria-hidden="true"
+        >›</div>
+
+        <div
+            id="loadingIndicator"
+            role="status"
+            aria-label="Loading photograph"
+        >
+            <span aria-hidden="true"></span>
+        </div>
+
+        <div
+            id="bottomZoomControls"
+            aria-label="Image zoom controls"
+        >
+            <button
+                id="bottomZoomOut"
+                class="bottom-zoom-button"
+                type="button"
+                aria-label="Zoom out"
+            >−</button>
+
+            <input
+                id="zoomSlider"
+                type="range"
+                min="1"
+                max="5"
+                step="0.5"
+                value="1"
+                aria-label="Zoom level"
+            >
+
+            <button
+                id="bottomZoomIn"
+                class="bottom-zoom-button"
+                type="button"
+                aria-label="Zoom in"
+            >+</button>
+        </div>
+    </div>
+
+    <div
+        id="modeToast"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+    ></div>
+
+    <div id="autoplayStatus"></div>
+
+    <div id="autoplayProgress">
+        <div id="autoplayProgressBar"></div>
+    </div>
+
+    <div id="counter"></div>
+
+    <div id="thumbnailBar">
+        <button
+            id="filmstripButton"
+            type="button"
+            aria-label="Open thumbnail mosaic"
+            aria-pressed="false"
+        >
+            <span id="filmstripArrow" aria-hidden="true">↑</span>
+        </button>
+
+        <button
+            id="mosaicReshuffleButton"
+            type="button"
+            hidden
+            aria-label="Start automatic mosaic reshuffling"
+            aria-pressed="false"
+            title="Automatic mosaic reshuffle"
+        >
+            ↻
+        </button>
+
+        <button
+            id="thumbnailScrollLeft"
+            class="thumbnail-scroll-button"
+            type="button"
+            aria-label="Scroll thumbnails left"
+        ><span aria-hidden="true">‹</span></button>
+
+        <div id="thumbnails"></div>
+
+        <button
+            id="thumbnailScrollRight"
+            class="thumbnail-scroll-button"
+            type="button"
+            aria-label="Scroll thumbnails right"
+        ><span aria-hidden="true">›</span></button>
+    </div>
+
+    <div
+        id="mosaicOverlay"
+        aria-hidden="true"
+    >
+        <div
+            id="mosaicPanel"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Select a photograph"
+        >
+            <div id="mosaicGrid"></div>
+        </div>
+
+        <button
+            id="initialMosaicFullscreenButton"
+            type="button"
+            aria-label="Toggle full screen"
+            aria-pressed="false"
+        >
+            Full Screen
+        </button>
+    </div>
+
+    <div id="helpOverlay" aria-hidden="true">
+        <div
+            id="helpPanel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="helpTitle"
+        >
+            <button id="closeHelp" aria-label="Close help">×</button>
+
+            <h2 id="helpTitle">Gallery Controls</h2>
+
+            <div class="help-row">
+                <span
+                    class="help-key hamburger-help-icon"
+                    aria-hidden="true"
+                >
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </span>
+
+                <p>
+                    Media controls (keypress "C")
+                </p>
+            </div>
+
+            <div class="help-row">
+                <span class="help-key">F</span>
+                <p>
+                    Full Screen Mode (keypress "F")
+                </p>
+            </div>
+
+            <div class="help-row">
+                <span class="help-key">H</span>
+                <p>
+                    Hide Mode (keypress "H")
+                </p>
+            </div>
+
+            <div class="help-row">
+                <span class="help-key play-help-icon">▶</span>
+                <p>
+                    Play or pause Autoplay Mode
+                    (keypress "P")
+                </p>
+            </div>
+
+            <div class="delay-setting">
+                <label for="autoplayDelay">
+                    Autoplay delay:
+                </label>
+
+                <input
+                    id="autoplayDelay"
+                    type="number"
+                    min="2"
+                    max="60"
+                    step="1"
+                    value="6"
+                >
+
+                <span>seconds</span>
+            </div>
+
+            <div class="help-row">
+                <span class="help-key">+</span>
+                <p>
+                    Zoom in (keypress "+")
+                </p>
+            </div>
+
+            <div class="help-row">
+                <span class="help-key">−</span>
+                <p>
+                    Zoom out (keypress "-")
+                </p>
+            </div>
+
+            <div class="help-row">
+                <span class="help-key">↑</span>
+                <p>
+                    Thumbnail mosaic (keypress "T")
+                </p>
+            </div>
+
+            <div class="help-row">
+                <span class="help-key">↕</span>
+                <p>
+                    Mouse wheel to zoom in or out
+                </p>
+            </div>
+
+            <div class="help-row">
+                <span class="help-key">!</span>
+                <p>
+                    Double click to zoom in or out.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="gallery.js" defer></script>
+</body>
+</html>
